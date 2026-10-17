@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { CorrectionConfig, CorrectionFailure, CorrectionInput, CorrectionSuccess,
   ERROR_MESSAGES, type CorrectionResult, type PublicConfig } from '@gramota/contracts'
+import type { ResultViewMode } from './components/result-view'
 
 type Feedback = { original: string; message: string }
 
@@ -9,6 +10,7 @@ export function useCorrection(text: string) {
   const [configFailed, setConfigFailed] = useState(false)
   const [pending, setPending] = useState(false)
   const [result, setResult] = useState<CorrectionResult | null>(null)
+  const [resultView, setResultView] = useState<ResultViewMode>('changes')
   const [error, setError] = useState<Feedback | null>(null)
   const [copyFeedback, setCopyFeedback] = useState<Feedback | null>(null)
   const [copying, setCopying] = useState(false)
@@ -50,6 +52,7 @@ export function useCorrection(text: string) {
       }
       const value = CorrectionSuccess.parse(payload)
       if (value.originalText !== original) throw Error('Mismatched original')
+      setResultView('changes')
       setResult(value)
     } catch {
       setError({ original, message: 'Could not complete correction. Your text was kept. You can try again.' })
@@ -65,12 +68,14 @@ export function useCorrection(text: string) {
     setCopyFeedback(null)
     try {
       if (!window.isSecureContext || !navigator.clipboard?.writeText) {
+        setResultView('text')
         setCopyFeedback({ original, message: `Clipboard unavailable here. ${fallback}` })
         return
       }
       await navigator.clipboard.writeText(visibleResult.correctedText)
       setCopyFeedback({ original, message: 'Copied' })
     } catch {
+      setResultView('text')
       setCopyFeedback({ original, message: `Could not access the clipboard. ${fallback}` })
     } finally { writing.current = false; setCopying(false) }
   }
@@ -78,7 +83,7 @@ export function useCorrection(text: string) {
   const availability = configFailed ? 'Could not connect to the correction server.'
     : !config ? 'Connecting...' : !config.available ? ERROR_MESSAGES.NOT_CONFIGURED : ''
   const validationMessage = text && !validation.success ? validation.error.issues[0]?.message ?? '' : ''
-  return { config, pending, visibleResult, canCorrect, correct, copy, copying, availability,
+  return { config, pending, visibleResult, resultView, setResultView, canCorrect, correct, copy, copying, availability,
     validationMessage, error: error?.original === text ? error.message : '',
     copyFeedback: copyFeedback?.original === text ? copyFeedback.message : '',
     draftChanged: result !== null && visibleResult === null }

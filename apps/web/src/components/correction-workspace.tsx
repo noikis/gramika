@@ -2,6 +2,7 @@ import type { useCorrectionDraft } from '../use-correction-draft'
 import type { useCorrection } from '../use-correction'
 import { Button } from './ui/button'
 import { Textarea } from './ui/textarea'
+import { ResultView } from './result-view'
 
 type Draft = ReturnType<typeof useCorrectionDraft>
 type Correction = ReturnType<typeof useCorrection>
@@ -51,14 +52,17 @@ export function CorrectionWorkspace({ draft, correction }: { draft: Draft; corre
       <div className="editors">
         <OriginalEditor draft={draft} correction={correction} />
         <section className="editor" aria-labelledby="result-title" aria-busy={correction.pending}>
-          <div className="editor-heading"><h2 id="result-title">Result</h2></div>
           {correction.visibleResult ? (
-            <Textarea className="editor-input result-text" readOnly aria-labelledby="result-title"
-              aria-describedby="copy-feedback" value={correction.visibleResult.correctedText} lang="ru" spellCheck={false} />
-          ) : <div className="result-box"><p>{correction.pending ? 'Correcting...'
-            : correction.draftChanged ? 'Your original has changed. Correct it to get a new result.' : 'No result yet.'}</p></div>}
+            <ResultView result={correction.visibleResult} view={correction.resultView}
+              onViewChange={correction.setResultView} labelId="result-title" />
+          ) : <>
+            <div className="editor-heading"><h2 id="result-title">Result</h2></div>
+            <div className="result-box"><p>{correction.pending ? 'Correcting...'
+              : correction.draftChanged ? 'Your original has changed. Correct it to get a new result.' : 'No result yet.'}</p></div>
+          </>}
           <p id="correction-status" className="clipboard-feedback" role="status" aria-atomic="true">
-            {correction.availability || (correction.pending ? 'Correcting...' : correction.visibleResult ? 'Correction ready.' : '')}
+            {correction.availability || (correction.pending ? 'Correcting...' : correction.visibleResult
+              ? correction.visibleResult.originalText === correction.visibleResult.correctedText ? 'No changes.' : 'Correction ready.' : '')}
           </p>
           {correction.error && <p className="clipboard-feedback" role="alert">{correction.error}</p>}
           <p id="copy-feedback" className="clipboard-feedback" role="status" aria-atomic="true">{correction.copyFeedback}</p>

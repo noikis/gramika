@@ -42,6 +42,30 @@ h2 { font-size: var(--text-base); font-weight: 500; }
 }
 .result-box p + p { margin-top: var(--space-2); font-size: var(--text-sm); }
 .result-text { color: var(--text); white-space: pre-wrap; }
+.result-changes {
+  height: var(--editor-height);
+  overflow: auto;
+  white-space: pre-wrap;
+  line-height: var(--line);
+  color: var(--text);
+  tab-size: 4;
+}
+.result-changes:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.result-changes del { color: var(--removed); background: var(--removed-bg); text-decoration: line-through; }
+.result-changes ins { color: var(--added); background: var(--added-bg); text-decoration: underline; text-underline-offset: .15em; }
+.result-toggle {
+  display: inline-flex;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  font-size: var(--text-sm);
+}
+.result-toggle label { padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); color: var(--muted); cursor: pointer; }
+.result-toggle label:has(input:checked) { color: var(--text); background: var(--surface-raised); }
+.result-toggle input { position: absolute; opacity: 0; width: 0; height: 0; }
+.result-toggle label:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
 .editor-actions { display: flex; justify-content: flex-end; margin-top: var(--space-3); }
 .editor-actions button { min-width: 7rem; }
 .clipboard-feedback { margin-top: var(--space-3); color: var(--muted); font-size: var(--text-sm); overflow-wrap: anywhere; }
@@ -58,5 +82,6 @@ h2 { font-size: var(--text-base); font-weight: 500; }
   .editors { grid-template-columns: minmax(0, 1fr); }
   .editor-input, .result-box { min-height: var(--editor-height-mobile); padding: var(--space-4); }
   .editor-input { height: var(--editor-height-mobile); }
+  .result-changes { height: var(--editor-height-mobile); }
   .editor-actions button { width: 100%; }
 }
