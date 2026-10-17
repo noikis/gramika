@@ -2,20 +2,30 @@ import { z } from 'zod'
 
 export const MODEL_ID = 'qwen/qwen3.5-flash-02-23'
 export const MODEL_NAME = 'Qwen3.5 Flash'
+export const MODELS = [
+  { id: 'qwen/qwen3.7-flash', name: 'Qwen 3.7 Flash' },
+  { id: 'google/gemma-4-26b-a4b-it', name: 'Gemma 4 26B A4B' },
+  { id: MODEL_ID, name: MODEL_NAME },
+  { id: 'deepseek/deepseek-v3.2', name: 'DeepSeek V3.2' },
+  { id: 'qwen/qwen3.8-27b', name: 'Qwen 3.8 27B' },
+] as const
+export const ModelId = z.enum(MODELS.map(model => model.id))
+export type ModelId = z.infer<typeof ModelId>
+export const ModelPreference = z.strictObject({ modelId: ModelId })
 export const MAX_INPUT_CHARACTERS = 5000
-export const TIMEOUT_MS = 30000
+export const TIMEOUT_MS = 60000
 
 export const OriginalText = z.string().refine(text => text.trim().length > 0, 'Enter some text.')
   .refine(text => Array.from(text).length <= MAX_INPUT_CHARACTERS, 'Use 5,000 characters or fewer.')
   .refine(text => !/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/u.test(text), 'Invalid Unicode text.')
-export const CorrectionInput = z.strictObject({ text: OriginalText })
+export const CorrectionInput = z.strictObject({ text: OriginalText, modelId: ModelId, correctionId: z.uuid().optional() })
 export const CorrectionConfig = z.strictObject({
-  modelId: z.literal(MODEL_ID), modelName: z.literal(MODEL_NAME),
+  modelId: ModelId.nullable(), models: z.array(z.strictObject({ id: ModelId, name: z.string() })),
   maxInputCharacters: z.literal(MAX_INPUT_CHARACTERS), timeoutMs: z.literal(TIMEOUT_MS), available: z.boolean(),
 })
 export const CorrectionSuccess = z.strictObject({
   correctionId: z.uuid(), requestId: z.uuid(), originalText: OriginalText,
-  correctedText: z.string().refine(text => text.trim().length > 0), modelId: z.literal(MODEL_ID),
+  correctedText: z.string().refine(text => text.trim().length > 0), modelId: ModelId,
 })
 export const ErrorCode = z.enum(['INVALID_INPUT', 'PAYLOAD_TOO_LARGE', 'NOT_CONFIGURED',
   'STORAGE_ERROR', 'UPSTREAM_ERROR', 'INVALID_RESPONSE', 'REASONING_NOT_DISABLED', 'TIMEOUT'])

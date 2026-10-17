@@ -2,7 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import Fastify from 'fastify'
 import { MockAgent } from 'undici'
-import { OriginalText, MODEL_ID } from '@gramota/contracts'
+import { OriginalText, MODEL_ID, MODELS } from '@gramota/contracts'
 import { CorrectionDatabase, storageDiagnostic } from '../src/database'
 import { correctionApi } from '../src/correction-api'
 import { parseConfig } from '../src/correction-config'
@@ -60,7 +60,7 @@ test('success sends only exact original and fixed instruction; records real metr
   assert.equal(row?.output_tokens, 10)
   assert.equal(row?.cached_input_tokens, 5)
   assert.equal(row?.cost_usd, 0.00001)
-  assert.equal(row?.prompt_version, 'strict-v2')
+  assert.equal(row?.prompt_version, 'strict-v3')
 })
 
 test('upstream failures are recorded without fabricated output or metrics', async t => {
@@ -101,6 +101,28 @@ test('unknown metrics remain null and valid partial metrics survive', async () =
     assert.equal(row?.output_tokens, null)
     assert.equal(row?.cost_usd, null)
   } finally { database.close() }
+})
+
+test('all models wait 60 seconds before the default timeout', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout'] })
+  const database = new CorrectionDatabase(':memory:')
+  t.after(() => database.close())
+  let calls = 0
+  let signal: AbortSignal | undefined
+  const correct = createCorrectionService({ database, available: true, transport: {
+    async send(_body, value) { calls++; signal = value; return new Promise(() => {}) }, async close() {},
+  } })
+  for (const model of MODELS) {
+    const pending = correct('Fictional text', model.id)
+    const rejected = assert.rejects(pending, (error: unknown) => error instanceof AttemptError && error.code === 'TIMEOUT')
+    t.mock.timers.tick(59999)
+    await Promise.resolve()
+    assert.equal(signal?.aborted, false)
+    t.mock.timers.tick(1)
+    await rejected
+    assert.equal(signal?.aborted, true)
+  }
+  assert.equal(calls, MODELS.length)
 })
 
 test('timeout aborts one attempt without retrying', async () => {
@@ -173,7 +195,7 @@ test('Fastify validates contracts, invalid JSON and oversized input without upst
   const oversized = await app.inject({ method: 'POST', url: '/api/corrections', payload: { text: 'x'.repeat(140000) } })
   assert.equal(oversized.statusCode, 413)
   assert.equal(calls, 0)
-  const success = await app.inject({ method: 'POST', url: '/api/corrections', payload: { text: 'Привет мир!' } })
+  const success = await app.inject({ method: 'POST', url: '/api/corrections', payload: { text: 'Привет мир!', modelId: MODEL_ID } })
   assert.equal(success.statusCode, 200)
   assert.equal(success.json().correctedText, 'Привет, мир!')
 })
@@ -233,7 +255,7 @@ test('API failure statuses are safe and database outcomes remain available', asy
       const db = new CorrectionDatabase(':memory:')
       await correctionApi(app, { environment: available ? environment : {}, database: db, transport: transport(data, upstreamStatus) })
       try {
-        const response = await app.inject({ method: 'POST', url: '/api/corrections', payload: { text: 'text' } })
+        const response = await app.inject({ method: 'POST', url: '/api/corrections', payload: { text: 'text', modelId: MODEL_ID } })
         assert.equal(response.statusCode, expected)
         assert.equal(response.json().error.code, code)
         assert.equal(response.body.includes('private'), false)
@@ -256,7 +278,8 @@ test('request abort event does not cancel accepted correction recording', async 
     }, async close() {},
   } })
   try {
-    await app.inject({ method: 'POST', url: '/api/corrections', payload: { text: 'text' } })
+    await app.inject({ method: 'POST', url: '/api/corrections', payload: { text: 'text', modelId: MODEL_ID } })
     assert.equal(db.db.prepare('SELECT status FROM model_requests').get()?.status, 'succeeded')
   } finally { await app.close() }
 })
+

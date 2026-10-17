@@ -17,7 +17,9 @@ nav [aria-current] { background: var(--surface-raised); color: var(--text); }
 main { padding-top: var(--space-6); }
 h1 { font-size: var(--text-xl); font-weight: 600; }
 h2 { font-size: var(--text-base); font-weight: 500; }
-.model-control { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-5); }
+.model-control { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); margin-bottom: var(--space-5); }
+.model-feedback { color: var(--muted); font-size: var(--text-sm); overflow-wrap: anywhere; }
+.model-feedback:empty { display: none; }
 .model-control select {
   min-height: var(--control);
   max-width: 100%;
@@ -102,6 +104,7 @@ h2 { font-size: var(--text-base); font-weight: 500; }
   main { padding-top: var(--space-4); }
   .model-control { margin-bottom: var(--space-4); }
   .model-control select { flex: 1; min-width: 0; }
+  .model-feedback { flex-basis: 100%; }
   .editors { grid-template-columns: minmax(0, 1fr); }
   .editor-input, .result-box { min-height: var(--editor-height-mobile); padding: var(--space-4); }
   .editor-input { height: var(--editor-height-mobile); }

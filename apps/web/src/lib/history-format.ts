@@ -1,6 +1,6 @@
-import { MODEL_ID, MODEL_NAME } from '@gramota/contracts'
+import { MODELS } from '@gramota/contracts'
 
-export function modelName(id: string) { return id === MODEL_ID ? MODEL_NAME : id }
+export function modelName(id: string) { return MODELS.find(model => model.id === id)?.name ?? id }
 
 export function formatDate(value: string | null) {
   return value === null ? 'Unavailable' : new Date(value).toLocaleString('en-GB', {

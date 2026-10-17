@@ -47,7 +47,7 @@ test('v1 migration preserves saved text, outcomes and generation IDs; new metric
     assert.equal(detail.requests[0].appRequestTimeMs, 100)
     db.close(); db = undefined
     db = new CorrectionDatabase(file)
-    assert.equal(db.db.prepare('PRAGMA user_version').get()?.user_version, 2)
+    assert.equal(db.db.prepare('PRAGMA user_version').get()?.user_version, 3)
     assert.equal(db.getHistory(correctionId)?.requests.length, 1)
   } finally { db?.close(); rmSync(directory, { recursive: true, force: true }) }
 })
@@ -159,3 +159,4 @@ test('missing or failed storage returns safe History errors', async t => {
     t.after(() => app.close())
   }
 })
+

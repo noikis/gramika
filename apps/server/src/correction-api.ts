@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify'
 import { CorrectionConfig, CorrectionInput, CorrectionSuccess, CorrectionFailure,
-  ERROR_MESSAGES, MODEL_ID, MODEL_NAME, MAX_INPUT_CHARACTERS, TIMEOUT_MS, type ErrorCode } from '@gramota/contracts'
+  ERROR_MESSAGES, ModelId, ModelPreference, MODELS, MAX_INPUT_CHARACTERS, TIMEOUT_MS, type ErrorCode } from '@gramota/contracts'
 import { parseConfig, readEnvironment, type Environment } from './correction-config'
 import { CorrectionDatabase, storageDiagnostic } from './database'
 import { AttemptError, createCorrectionService } from './correction-service'
@@ -37,15 +37,37 @@ export async function correctionApi(app: FastifyInstance, options: CorrectionOpt
         error: { code, message: ERROR_MESSAGES[code] }, correctionId: null, requestId: null,
       }))
     })
-    api.get('/api/correction-config', async () => CorrectionConfig.parse({
-      modelId: MODEL_ID, modelName: MODEL_NAME, maxInputCharacters: MAX_INPUT_CHARACTERS,
-      timeoutMs: TIMEOUT_MS, available: config.available && database !== null,
-    }))
+    function failure(reply: import('fastify').FastifyReply, code: ErrorCode) {
+      return reply.code(statusCodes[code]).send(CorrectionFailure.parse({
+        error: { code, message: ERROR_MESSAGES[code] }, correctionId: null, requestId: null,
+      }))
+    }
+    api.get('/api/correction-config', async (_request, reply) => {
+      try {
+        if (!database) return failure(reply, 'STORAGE_ERROR')
+        const selected = ModelId.safeParse(database.getModelPreference())
+        return CorrectionConfig.parse({ modelId: selected.success ? selected.data : null, models: MODELS,
+          maxInputCharacters: MAX_INPUT_CHARACTERS, timeoutMs: TIMEOUT_MS, available: config.available })
+      } catch {
+        return failure(reply, 'STORAGE_ERROR')
+      }
+    })
+    api.put('/api/model-preference', async (request, reply) => {
+      const parsed = ModelPreference.safeParse(request.body)
+      if (!parsed.success) return failure(reply, 'INVALID_INPUT')
+      try {
+        if (!database) return failure(reply, 'STORAGE_ERROR')
+        database.setModelPreference(parsed.data.modelId)
+        return parsed.data
+      } catch {
+        return failure(reply, 'STORAGE_ERROR')
+      }
+    })
     api.post('/api/corrections', { bodyLimit: 128 * 1024 }, async (request, reply) => {
       const parsed = CorrectionInput.safeParse(request.body)
       try {
         if (!parsed.success) throw new AttemptError('INVALID_INPUT', null)
-        return CorrectionSuccess.parse(await correct(parsed.data.text))
+        return CorrectionSuccess.parse(await correct(parsed.data.text, parsed.data.modelId, parsed.data.correctionId))
       } catch (error) {
         if (!(error instanceof AttemptError)) throw error
         return reply.code(statusCodes[error.code]).send(CorrectionFailure.parse({
