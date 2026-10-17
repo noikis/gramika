@@ -15,6 +15,11 @@ dist-ssr/
 .DS_Store
 Thumbs.db
 *.swp
+apps/server/data/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+*.sqlite-journal
 
 # Blueprint generated local state
 blueprint/.state/

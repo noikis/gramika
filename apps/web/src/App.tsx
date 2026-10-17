@@ -2,11 +2,13 @@ import { useState } from 'react'
 import { Button } from './components/ui/button'
 import { CorrectionWorkspace } from './components/correction-workspace'
 import { useCorrectionDraft } from './use-correction-draft'
+import { useCorrection } from './use-correction'
 import './App.css'
 
 function App() {
   const [view, setView] = useState<'correction' | 'history'>('correction')
   const draft = useCorrectionDraft()
+  const correction = useCorrection(draft.text)
 
   return (
     <div className="shell">
@@ -22,7 +24,7 @@ function App() {
         </nav>
       </header>
       <main>
-        {view === 'correction' ? <CorrectionWorkspace draft={draft} /> : (
+        {view === 'correction' ? <CorrectionWorkspace draft={draft} correction={correction} /> : (
           <section aria-labelledby="history-title" className="history-unavailable">
             <h1 id="history-title">History</h1>
             <p>History is not available yet.</p>

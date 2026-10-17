@@ -4,12 +4,13 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
+    "dev": "npm run build -w @gramota/contracts && vite",
+    "build": "npm run build -w @gramota/contracts && tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@gramota/contracts": "^1.0.0",
     "@radix-ui/react-slot": "^1.5.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

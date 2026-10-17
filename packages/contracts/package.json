@@ -2,8 +2,16 @@
   "name": "@gramota/contracts",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
-  "scripts": {},
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "browser": "./src/index.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": { "build": "tsc -p tsconfig.json" },
   "keywords": [],
   "author": "",
   "license": "ISC",

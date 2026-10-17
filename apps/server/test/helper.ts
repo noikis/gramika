@@ -13,7 +13,8 @@ const AppPath = path.join(__dirname, '..', 'src', 'app.ts')
 // needed for testing the application
 function config () {
   return {
-    skipOverride: true // Register our application with fastify-plugin
+    skipOverride: true,
+    correction: { environment: {}, databasePath: ':memory:' }
   }
 }
 

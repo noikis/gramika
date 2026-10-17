@@ -1,9 +1,10 @@
 import { join } from 'node:path'
 import AutoLoad, { AutoloadPluginOptions } from '@fastify/autoload'
 import { FastifyPluginAsync, FastifyServerOptions } from 'fastify'
+import { correctionApi, type CorrectionOptions } from './correction-api'
 
 export interface AppOptions extends FastifyServerOptions, Partial<AutoloadPluginOptions> {
-
+  correction?: CorrectionOptions
 }
 // Pass --options via CLI arguments in command to enable these options.
 const options: AppOptions = {
@@ -13,7 +14,7 @@ const app: FastifyPluginAsync<AppOptions> = async (
   fastify,
   opts
 ): Promise<void> => {
-  // Place here your custom code!
+  await correctionApi(fastify, opts.correction)
 
   // Do not touch the following lines
 

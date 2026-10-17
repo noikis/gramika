@@ -1,10 +1,12 @@
 import type { useCorrectionDraft } from '../use-correction-draft'
+import type { useCorrection } from '../use-correction'
 import { Button } from './ui/button'
 import { Textarea } from './ui/textarea'
 
 type Draft = ReturnType<typeof useCorrectionDraft>
+type Correction = ReturnType<typeof useCorrection>
 
-function OriginalEditor({ draft }: { draft: Draft }) {
+function OriginalEditor({ draft, correction }: { draft: Draft; correction: Correction }) {
   const { text, edit, paste, pending, feedback, inputRef } = draft
   return (
     <section className="editor" aria-labelledby="original-title">
@@ -21,36 +23,47 @@ function OriginalEditor({ draft }: { draft: Draft }) {
         onChange={event => edit(event.target.value)}
         ref={inputRef}
         placeholder="Type or paste your text"
-        aria-describedby="clipboard-feedback"
+        aria-describedby="clipboard-feedback input-feedback"
+        aria-invalid={Boolean(correction.validationMessage)}
         lang="ru"
         spellCheck={false}
       />
       <p id="clipboard-feedback" className="clipboard-feedback" role="status" aria-atomic="true">{feedback}</p>
+      <p id="input-feedback" className="clipboard-feedback" role="status">{correction.validationMessage}</p>
       <div className="editor-actions">
-        <Button type="button" disabled aria-describedby="correction-availability">Correct</Button>
+        <Button type="button" disabled={!correction.canCorrect} onClick={correction.correct} aria-describedby="correction-status">
+          {correction.pending ? 'Correcting...' : 'Correct'}
+        </Button>
       </div>
     </section>
   )
 }
 
-export function CorrectionWorkspace({ draft }: { draft: Draft }) {
+export function CorrectionWorkspace({ draft, correction }: { draft: Draft; correction: Correction }) {
   return (
     <>
       <h1 className="sr-only">Correction</h1>
       <div className="model-control">
         <label htmlFor="model">Model</label>
-        <select id="model" disabled aria-describedby="model-availability"><option>Not configured</option></select>
+        <select id="model" disabled aria-describedby="model-availability"><option>{correction.config?.modelName ?? 'Not configured'}</option></select>
         <span id="model-availability" className="sr-only">Model selection is not available yet.</span>
       </div>
       <div className="editors">
-        <OriginalEditor draft={draft} />
-        <section className="editor" aria-labelledby="result-title">
+        <OriginalEditor draft={draft} correction={correction} />
+        <section className="editor" aria-labelledby="result-title" aria-busy={correction.pending}>
           <div className="editor-heading"><h2 id="result-title">Result</h2></div>
-          <div className="result-box">
-            <p>No result yet.</p>
-            <p id="correction-availability">Correction is not available yet.</p>
-          </div>
-          <div className="editor-actions"><Button type="button" disabled aria-describedby="correction-availability">Copy</Button></div>
+          {correction.visibleResult ? (
+            <Textarea className="editor-input result-text" readOnly aria-labelledby="result-title"
+              aria-describedby="copy-feedback" value={correction.visibleResult.correctedText} lang="ru" spellCheck={false} />
+          ) : <div className="result-box"><p>{correction.pending ? 'Correcting...'
+            : correction.draftChanged ? 'Your original has changed. Correct it to get a new result.' : 'No result yet.'}</p></div>}
+          <p id="correction-status" className="clipboard-feedback" role="status" aria-atomic="true">
+            {correction.availability || (correction.pending ? 'Correcting...' : correction.visibleResult ? 'Correction ready.' : '')}
+          </p>
+          {correction.error && <p className="clipboard-feedback" role="alert">{correction.error}</p>}
+          <p id="copy-feedback" className="clipboard-feedback" role="status" aria-atomic="true">{correction.copyFeedback}</p>
+          <div className="editor-actions"><Button type="button" disabled={!correction.visibleResult || correction.copying}
+            onClick={correction.copy} aria-describedby="copy-feedback">{correction.copying ? 'Copying...' : 'Copy'}</Button></div>
         </section>
       </div>
     </>

@@ -41,6 +41,7 @@ h2 { font-size: var(--text-base); font-weight: 500; }
   overflow-wrap: anywhere;
 }
 .result-box p + p { margin-top: var(--space-2); font-size: var(--text-sm); }
+.result-text { color: var(--text); white-space: pre-wrap; }
 .editor-actions { display: flex; justify-content: flex-end; margin-top: var(--space-3); }
 .editor-actions button { min-width: 7rem; }
 .clipboard-feedback { margin-top: var(--space-3); color: var(--muted); font-size: var(--text-sm); overflow-wrap: anywhere; }
