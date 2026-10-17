@@ -5,3 +5,16 @@ dist/
 !.env.example
 *.tsbuildinfo
 coverage/
+
+# Generated output and local files
+logs/
+*.log
+.nyc_output/
+dist-ssr/
+*.local
+.DS_Store
+Thumbs.db
+*.swp
+
+# Blueprint generated local state
+blueprint/.state/

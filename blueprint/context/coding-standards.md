@@ -1,133 +1,74 @@
 # Coding Standards
 
-> Your conventions. Edit these once to match your stack. The defaults below
-> assume Next.js + TypeScript + Tailwind + Prisma; change or trim anything that
-> doesn't fit your project.
->
-> Run `/onboard` after installing the Blueprint. It tunes this file to the real
-> project stack, along with `AGENTS.md`, `CLAUDE.md` when present,
-> `ai-interaction.md`, `.gitignore`, and README placement. Review the result
-> before `/overview`.
+## Stack and scope
 
-## TypeScript
+- Use npm workspaces and the root package-lock.json. Do not introduce pnpm,
+  Lerna, Turborepo, or additional services without a concrete requirement.
+- Web: React 19, Vite 8, TypeScript, client rendering. No Next.js or Server Actions.
+- Server: Node.js, Fastify 5, TypeScript. Keep HTTP adaptation separate from logic.
+- Contracts: public Zod schemas and inferred types; no server resources or secrets.
+- Reuse existing code and dependencies. Keep changes limited to the active task.
+- Commands and available verification gates are listed in AGENTS.md.
 
-- Strict mode enabled
-- No `any` types - use proper typing or `unknown`
-- Define interfaces for all props, API responses, and data models
-- Use type inference where obvious, explicit types where helpful
+## TypeScript and naming
 
-## React
+- Preserve existing compiler settings; strict mode is not an agreed requirement.
+- Prefer inference where clear and explicit types at boundaries; avoid any.
+- Components and types use PascalCase; functions use camelCase.
+- Follow the surrounding file's formatting. No formatter is configured.
 
-- Functional components only (no class components)
-- Use hooks for state and side effects
-- Keep components focused - one job per component
-- Extract reusable logic into custom hooks
+## Structure and rendering
 
-## Next.js
-
-- Server components by default
-- Only use `'use client'` when needed (interactivity, hooks, browser APIs)
-- Use Server Actions for form submissions and simple mutations
-- Use API routes when you need:
-  - Webhooks (Clerk, GitHub, etc.)
-  - File uploads with progress tracking
-  - Long-running operations
-  - Specific HTTP status codes or headers
-  - Endpoints for future mobile/CLI clients
-  - Third-party integrations
-- Otherwise, fetch data directly in server components
-- Dynamic routes for item/collection pages
-
-## File Organization
-
-- Components: `src/components/[feature]/ComponentName.tsx`
-- Pages: `src/app/[route]/page.tsx`
-- Server Actions: `src/actions/[feature].ts`
-- Types: `src/types/[feature].ts`
-- Lib/Utils: `src/lib/[utility].ts`
-
-## Naming
-
-- Components: PascalCase (`ItemCard.tsx`)
-- Files: Match component name or kebab-case
-- Functions: camelCase
-- Constants: SCREAMING_SNAKE_CASE
-- Types/Interfaces: PascalCase (no prefix)
+- apps/web/src contains the React entry point, App.tsx, and plain CSS.
+- apps/server/src contains app.ts, plugins/, and routes/; the scaffold currently
+  uses Fastify CLI and autoload.
+- apps/server/test contains node:test tests using Fastify inject.
+- packages/contracts currently contains a manifest with Zod, with no source yet.
+- docs/architecture.md describes the planned feature/module layout and explicit
+  plugin registration. It is a target, not evidence those modules exist.
+- Use functional React components and hooks; keep components focused.
 
 ## Styling
 
-- Tailwind CSS for all styling
-- Tailwind v4: CSS-first config (`@theme` in `globals.css`), no `tailwind.config.js`
-- Use shadcn/ui components where applicable
-- No inline styles
-- Dark mode first, light mode as option
+Current styling is plain CSS in App.css and index.css. Tailwind CSS and shadcn/ui
+are selected in the product documents but are not installed. Introduce them only
+as part of approved implementation; do not assume a theme or design is settled.
+Preserve accessible controls, keyboard interaction, and mobile usability.
 
-## Database
+## Data, validation, and errors
 
-- Use Prisma ORM for all database operations
-- Always use `prisma migrate dev` for schema changes (not `db push`)
-- Run `prisma migrate status` before committing to verify migrations are in sync
-- Production deployments must run `prisma migrate deploy` before the app starts
+- OpenRouter is server-only. Keep keys and server dependencies out of web bundles.
+- Validate untrusted requests and upstream responses at runtime. Use the planned
+  shared Zod contracts for public boundaries when implemented.
+- SQLite is selected, but no driver, schema, migration command, or repository
+  exists yet. Do not prescribe Prisma or invent migration commands.
+- Respect docs/environments.md: Home Lab requires its configured proxy, with no
+  direct fallback. Development uses the user's system VPN configuration.
+- Preserve input on request failure. Never show truncated or failed responses as
+  successful, or report copying before the clipboard operation succeeds.
+- Auth and external access are deferred. Do not introduce Clerk or ownership
+  fields as if they were current requirements.
 
-## Data Fetching
-
-- Server components fetch directly with Prisma
-- Client components use Server Actions
-- Validate all inputs with Zod
-- Scope every user-owned query by the authenticated Clerk user id (`clerkUserId`); never trust a client-supplied user id
-
-## Error Handling
-
-- Use try/catch in Server Actions
-- Return `{ success, data, error }` pattern from actions
-- Display user-friendly error messages via toast
+> TODO: Choose SQLite access/migrations, API contracts, environment validation,
+> exact TypeScript settings, and approved UI design during relevant feature work.
 
 ## Testing
 
-The blueprint installs no test runner; testing is opt-in at the project level,
-because the overlay can't know your stack. Adding unit testing is an explicit
-setup task the AI can do through the normal workflow, either as a build-plan item
-or with `/tests`. The setup should choose the stack-native runner, wire the
-scripts or commands, add a small example test, and update the Commands section
-of `AGENTS.md`.
+Server testing is already configured: npm test -w apps/server builds the server,
+typechecks tests, and runs node:test through ts-node with c8. The server test gate
+applies to server logic changes. Add focused cases for meaningful inputs, errors,
+and edge cases; use Fastify inject for routes and stub external LLM calls.
+Ordinary tests must not make paid requests or use real personal texts.
 
-When `AGENTS.md` declares a `Verify` command, treat it as the umbrella automated
-gate. It combines only the checks this project actually has, in this order when
-available: typecheck, tests, then build. The command does not enable an absent
-test runner or replace focused evidence. It gives local work and optional CI one
-exact command to run. `/ci` owns Verify and CI setup. `/tests` adds the real test
-command to Verify when it already exists, but never creates CI only because
-testing was configured.
+Web and contracts have no test command. Do not invent a passing test gate or
+install a runner silently; use /tests for explicit setup. Browser automation has
+no configured harness; use /tests browser for setup.
 
-**The opt-in switch is one signal: a `test` command in the Commands section of
-`AGENTS.md`.** Declare one and **tests become a gate for logic-bearing steps**,
-not an optional extra; leave it out and the loop verifies logic with the evidence
-it already uses (run it, a screenshot, the build). Adding the runner is itself a
-deliberate step, never a silent mid-step install. This is the single definition
-of the switch; the skills and `ai-interaction.md` only point back here.
-
-- **What to test (the scope rule):** pure logic where a wrong answer is possible -
-  parsers, formatters, validators, id/slug builders, server actions. These have
-  assertable inputs and outputs and real edge cases (empty, missing, malformed).
-- **What not to test:** UI components and integration-level surfaces (render or
-  export routes, anything driving a real browser or external service). Verify those
-  with a screenshot and the build, not brittle unit tests.
-- **The gate (when a runner is configured):** a build step that adds in-scope logic
-  must ship a passing test in the same reviewable diff. The project's test command
-  must be green before the step is approved, before any checkpoint commit, and
-  before `/complete` merges. UI and integration-only steps are exempt and ride on
-  screenshot plus build evidence.
-- **When it's named:** the `/feature` spec's Testing section predicts the coverage,
-  `/implement` writes the test with the step, and if a step surfaces logic the spec
-  didn't foresee, add a focused test then.
-- An empty suite should fail, not pass, so "no tests ran" never looks like "passed".
-- Test files live next to source files (for example `feature.test.ts`).
-- Run them via the project's test command (see Commands in `AGENTS.md`), not a
-  hardcoded tool name.
-
-Stack binding (swap for yours): a TypeScript app uses Vitest, `vi.mock()` for
-external dependencies (Prisma, Clerk, etc.), and `vi.useFakeTimers()` for
-time-dependent logic; a Python app would use pytest; a Go app `go test`.
+When AGENTS.md declares a Verify command, use it as the final automated gate.
+Until then, run the relevant documented builds and server tests for affected
+code, plus web lint for web changes. Verify and CI setup belong to /ci.
+Tests should prove behavior rather than mirror implementation. Keep the existing
+server tests in apps/server/test; no Vitest convention is established.
 
 ## Browser Verification
 

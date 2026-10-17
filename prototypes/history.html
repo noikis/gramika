@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gramota · History</title>
+  <link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<!-- Design reference with fictional texts, models and metrics. Copy uses the clean result, regardless of the selected view. -->
+<div class="shell">
+  <header>
+    <a class="brand" href="correction.html">gramota</a>
+    <nav aria-label="Main navigation"><a href="correction.html">Correction</a><a href="history.html" aria-current="page">History</a></nav>
+  </header>
+  <main>
+    <div class="toolbar"><h1>History</h1></div>
+    <div class="history">
+      <details class="history-entry">
+        <summary><span class="entry"><span class="entry-text" lang="ru">Здравствуйте Анна! Подскажите пожалуйста...</span><span class="entry-meta"><time datetime="2026-10-17T14:32:00+07:00">Oct 17, 14:32</time> · Model A, Model B</span></span></summary>
+        <div class="history-detail">
+          <div class="editor-heading"><h2>Original</h2></div>
+          <div class="text-box result" lang="ru">Здравствуйте Анна!
+
+Подскажите пожалуйста, можно ли перенести встречу на пятницу? Я буду свободен после трех часов.
+
+Спасибо за помощ!</div>
+          <section class="request output" aria-labelledby="a-title">
+            <div class="editor-heading"><h2 id="a-title">Model A</h2>
+              <div class="toggle" role="group" aria-label="Model A result view">
+                <label><input type="radio" name="a-view">Text</label>
+                <label><input class="view-changes" type="radio" name="a-view" checked>Changes</label>
+              </div>
+            </div>
+            <div class="text-box result clean" lang="ru">Здравствуйте, Анна!
+
+Подскажите, пожалуйста, можно ли перенести встречу на пятницу? Я буду свободен после трех часов.
+
+Спасибо за помощь!</div>
+            <div class="text-box result diff" lang="ru">Здравствуйте<ins>,</ins> Анна!
+
+Подскажите<ins>,</ins> пожалуйста, можно ли перенести встречу на пятницу? Я буду свободен после трех часов.
+
+Спасибо за <del>помощ</del><ins>помощь</ins>!</div>
+            <div class="history-result-footer"><div class="metrics"><span>1.8 s</span><span>Input: 142</span><span>Output: 48</span><span>$0.0002</span></div><button class="copy-result primary" type="button">Copy</button></div>
+          </section>
+          <section class="request output" aria-labelledby="b-title">
+            <div class="editor-heading"><h2 id="b-title">Model B</h2>
+              <div class="toggle" role="group" aria-label="Model B result view">
+                <label><input type="radio" name="b-view">Text</label>
+                <label><input class="view-changes" type="radio" name="b-view" checked>Changes</label>
+              </div>
+            </div>
+            <div class="text-box result clean" lang="ru">Здравствуйте, Анна!
+
+Подскажите, пожалуйста, можно ли перенести встречу на пятницу? Я буду свободен после трех часов.
+
+Спасибо за помощь!</div>
+            <div class="text-box result diff" lang="ru">Здравствуйте<ins>,</ins> Анна!
+
+Подскажите<ins>,</ins> пожалуйста, можно ли перенести встречу на пятницу? Я буду свободен после трех часов.
+
+Спасибо за <del>помощ</del><ins>помощь</ins>!</div>
+            <div class="history-result-footer"><div class="metrics"><span>2.6 s</span><span>Input: 150</span><span>Output: 51</span><span>Cost unavailable</span></div><button class="copy-result primary" type="button">Copy</button></div>
+          </section>
+        </div>
+      </details>
+      <details class="history-entry">
+        <summary><span class="entry"><span class="entry-text" lang="ru">Добрый день! Отправляю документы во вложении.</span><span class="entry-meta"><time datetime="2026-10-17T11:08:00+07:00">Oct 17, 11:08</time> · Model A</span></span></summary>
+        <div class="history-detail">
+          <section class="output" aria-labelledby="unchanged-title">
+            <div class="editor-heading"><h2 id="unchanged-title">Model A</h2><small>No changes</small></div>
+            <div class="text-box result clean" lang="ru">Добрый день! Отправляю документы во вложении. Спасибо!</div>
+            <div class="history-result-footer"><div class="metrics"><span>1.2 s</span><span>Input: 96</span><span>Output: 19</span><span>$0.0001</span></div><button class="copy-result primary" type="button">Copy</button></div>
+          </section>
+        </div>
+      </details>
+      <details class="history-entry">
+        <summary><span class="entry"><span class="entry-text" lang="ru">Подскажите пожалуйста, во сколько начнется семинар?</span><span class="entry-meta"><time datetime="2026-10-17T09:15:00+07:00">Oct 17, 09:15</time> · Model A</span></span></summary>
+        <div class="history-detail">
+          <div class="editor-heading"><h2>Original</h2></div>
+          <div class="text-box result" lang="ru">Подскажите пожалуйста, во сколько начнется семинар?</div>
+          <p class="history-error error">Request failed. No result available.</p>
+          <div class="metrics"><span>30 s</span><span>Tokens unavailable</span><span>Cost unavailable</span></div>
+        </div>
+      </details>
+    </div>
+    <p id="clipboard-status" class="clipboard-status" role="status"></p>
+  </main>
+</div>
+<script>
+  const status = document.querySelector('#clipboard-status');
+  document.querySelectorAll('.copy-result').forEach(button => {
+    button.addEventListener('click', async () => {
+      status.textContent = '';
+      button.textContent = 'Copy';
+      const output = button.closest('.output');
+      try {
+        await navigator.clipboard.writeText(output.querySelector('.clean').textContent);
+        button.textContent = 'Copied';
+        status.textContent = 'Copied';
+      } catch {
+        const textView = output.querySelector('input[type="radio"]');
+        if (textView) textView.checked = true;
+        status.textContent = 'Clipboard unavailable. Select the result and copy it manually.';
+      }
+    });
+  });
+</script>
+</body>
+</html>

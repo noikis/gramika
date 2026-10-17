@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gramota · Correction</title>
+  <link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<!-- Design reference with working clipboard controls. Text and models are fictional; correction is disabled. All models will use reasoning disabled in the implementation. -->
+<div class="shell">
+  <header>
+    <a class="brand" href="correction.html">gramota</a>
+    <nav aria-label="Main navigation"><a href="correction.html" aria-current="page">Correction</a><a href="history.html">History</a></nav>
+  </header>
+  <main>
+    <div class="toolbar">
+      <div class="model"><label for="model">Model</label><select id="model"><option>Model A</option><option>Model B</option></select></div>
+    </div>
+    <div class="editors">
+      <section class="editor" aria-labelledby="source-title">
+        <div class="editor-heading"><h2 id="source-title"><label for="source">Original</label></h2><button id="paste" type="button">Paste</button></div>
+        <textarea class="text-box" id="source" lang="ru" spellcheck="false">Здравствуйте Анна!
+
+Подскажите пожалуйста, можно ли перенести встречу на пятницу? Я буду свободен после трех часов.
+
+Спасибо за помощ!</textarea>
+        <div class="editor-actions"><button class="primary" type="button" disabled>Correct</button></div>
+      </section>
+      <section class="editor output" aria-labelledby="result-title">
+        <div class="editor-heading"><h2 id="result-title">Result</h2>
+        <div class="toggle" role="group" aria-label="Result view">
+          <label><input type="radio" name="view">Text</label>
+          <label><input id="changes" type="radio" name="view" checked>Changes</label>
+        </div></div>
+        <div class="text-box result clean" lang="ru">Здравствуйте, Анна!
+
+Подскажите, пожалуйста, можно ли перенести встречу на пятницу? Я буду свободен после трех часов.
+
+Спасибо за помощь!</div>
+        <div class="text-box result diff" lang="ru">Здравствуйте<ins>,</ins> Анна!
+
+Подскажите<ins>,</ins> пожалуйста, можно ли перенести встречу на пятницу? Я буду свободен после трех часов.
+
+Спасибо за <del>помощ</del><ins>помощь</ins>!</div>
+        <div class="editor-actions"><button id="copy" type="button" class="primary">Copy</button></div>
+      </section>
+    </div>
+    <p id="clipboard-status" class="clipboard-status" role="status"></p>
+  </main>
+</div>
+<script>
+  const status = document.querySelector('#clipboard-status');
+  document.querySelector('#paste').addEventListener('click', async () => {
+    status.textContent = '';
+    try {
+      const text = await navigator.clipboard.readText();
+      const source = document.querySelector('#source');
+      source.value = text;
+      source.focus();
+      status.textContent = 'Pasted';
+    } catch {
+      status.textContent = 'Clipboard unavailable. Paste directly into the Original field.';
+    }
+  });
+  document.querySelector('#copy').addEventListener('click', async () => {
+    status.textContent = '';
+    try {
+      await navigator.clipboard.writeText(document.querySelector('.clean').textContent);
+      status.textContent = 'Copied';
+    } catch {
+      document.querySelector('.toggle input').checked = true;
+      status.textContent = 'Clipboard unavailable. Select the result and copy it manually.';
+    }
+  });
+</script>
+</body>
+</html>
