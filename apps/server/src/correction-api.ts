@@ -5,6 +5,7 @@ import { parseConfig, readEnvironment, type Environment } from './correction-con
 import { CorrectionDatabase, storageDiagnostic } from './database'
 import { AttemptError, createCorrectionService } from './correction-service'
 import { createTransport, type CorrectionTransport } from './openrouter'
+import { historyApi } from './history-api'
 
 export type CorrectionOptions = {
   environment?: Environment; databasePath?: string; transport?: CorrectionTransport
@@ -23,6 +24,7 @@ export async function correctionApi(app: FastifyInstance, options: CorrectionOpt
   const correct = createCorrectionService({ database, transport, available: config.available, timeoutMs: options.timeoutMs,
     onStorageFailure: diagnostic => app.log.error(diagnostic, 'Correction storage operation failed') })
   app.addHook('onClose', async () => { try { await transport?.close() } finally { database?.close() } })
+  await historyApi(app, database)
 
   app.register(async api => {
     api.setErrorHandler((error, _request, reply) => {

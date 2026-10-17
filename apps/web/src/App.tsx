@@ -3,6 +3,7 @@ import { Button } from './components/ui/button'
 import { CorrectionWorkspace } from './components/correction-workspace'
 import { useCorrectionDraft } from './use-correction-draft'
 import { useCorrection } from './use-correction'
+import { HistoryPage } from './components/history-page'
 import './App.css'
 
 function App() {
@@ -24,12 +25,7 @@ function App() {
         </nav>
       </header>
       <main>
-        {view === 'correction' ? <CorrectionWorkspace draft={draft} correction={correction} /> : (
-          <section aria-labelledby="history-title" className="history-unavailable">
-            <h1 id="history-title">History</h1>
-            <p>History is not available yet.</p>
-          </section>
-        )}
+        {view === 'correction' ? <CorrectionWorkspace draft={draft} correction={correction} /> : <HistoryPage />}
       </main>
     </div>
   )

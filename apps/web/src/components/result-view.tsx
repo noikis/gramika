@@ -6,22 +6,24 @@ import { Textarea } from './ui/textarea'
 export type ResultViewMode = 'text' | 'changes'
 
 type Props = {
-  result: CorrectionResult
+  result: Pick<CorrectionResult, 'originalText' | 'correctedText'>
   view: ResultViewMode
   onViewChange: (view: ResultViewMode) => void
   labelId: string
+  feedbackId?: string
+  title?: string
 }
 
-export function ResultView({ result, view, onViewChange, labelId }: Props) {
+export function ResultView({ result, view, onViewChange, labelId, feedbackId = 'copy-feedback', title = 'Result' }: Props) {
   const groupName = useId()
-  const segments = useMemo(() => diffText(result.originalText, result.correctedText), [result])
+  const segments = useMemo(() => diffText(result.originalText, result.correctedText), [result.originalText, result.correctedText])
 
   return (
     <>
       <div className="editor-heading">
-        <h2 id={labelId}>Result</h2>
+        <h2 id={labelId}>{title}</h2>
         <fieldset className="result-toggle">
-          <legend className="sr-only">Result view</legend>
+          <legend className="sr-only">{title === 'Result' ? 'Result view' : `${title} result view`}</legend>
           {(['text', 'changes'] as const).map(mode => (
             <label key={mode}>
               <input type="radio" name={groupName} value={mode} checked={view === mode}
@@ -33,7 +35,7 @@ export function ResultView({ result, view, onViewChange, labelId }: Props) {
       </div>
       {view === 'text' ? (
         <Textarea className="editor-input result-text" readOnly aria-labelledby={labelId}
-          aria-describedby="copy-feedback" value={result.correctedText} lang="ru" spellCheck={false} />
+          aria-describedby={feedbackId} value={result.correctedText} lang="ru" spellCheck={false} />
       ) : (
         <div className="result-box result-changes" role="region" aria-labelledby={labelId} tabIndex={0} lang="ru">
           {segments.map((segment, index) => segment.kind === 'equal' ? segment.text

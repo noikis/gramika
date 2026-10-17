@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { CorrectionConfig, CorrectionFailure, CorrectionInput, CorrectionSuccess,
   ERROR_MESSAGES, type CorrectionResult, type PublicConfig } from '@gramota/contracts'
 import type { ResultViewMode } from './components/result-view'
+import { writeClipboardText } from './lib/clipboard'
 
 type Feedback = { original: string; message: string }
 
@@ -62,21 +63,13 @@ export function useCorrection(text: string) {
   async function copy() {
     if (!visibleResult || writing.current) return
     const original = visibleResult.originalText
-    const fallback = 'Select the result and copy it manually.'
     writing.current = true
     setCopying(true)
     setCopyFeedback(null)
     try {
-      if (!window.isSecureContext || !navigator.clipboard?.writeText) {
-        setResultView('text')
-        setCopyFeedback({ original, message: `Clipboard unavailable here. ${fallback}` })
-        return
-      }
-      await navigator.clipboard.writeText(visibleResult.correctedText)
-      setCopyFeedback({ original, message: 'Copied' })
-    } catch {
-      setResultView('text')
-      setCopyFeedback({ original, message: `Could not access the clipboard. ${fallback}` })
+      const outcome = await writeClipboardText(visibleResult.correctedText)
+      if (!outcome.success) setResultView('text')
+      setCopyFeedback({ original, message: outcome.message })
     } finally { writing.current = false; setCopying(false) }
   }
 

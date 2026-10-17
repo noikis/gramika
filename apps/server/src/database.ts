@@ -1,6 +1,7 @@
 import { DatabaseSync } from 'node:sqlite'
 import { mkdirSync } from 'node:fs'
 import { dirname } from 'node:path'
+import { HistoryDetail, HistoryList } from '@gramota/contracts'
 
 export type Attempt = { correctionId: string; requestId: string }
 export function storageDiagnostic(error: unknown, stage: 'initialize' | 'begin' | 'finish') {
@@ -15,10 +16,25 @@ export function storageDiagnostic(error: unknown, stage: 'initialize' | 'begin' 
 export type Outcome = {
   status: 'succeeded' | 'failed'; correctedText: string | null; endedAt: string; durationMs: number
   errorCode: string | null; errorMessage: string | null
-  returnedModel?: string | null; provider?: string | null; providerRequestId?: string | null
+  returnedModel?: string | null; provider?: string | null; openrouterGenerationId?: string | null
   inputTokens?: number | null; outputTokens?: number | null; reasoningTokens?: number | null
   cachedInputTokens?: number | null; costUsd?: number | null; finishReason?: string | null
+  totalTokens?: number | null; cacheWriteTokens?: number | null; generationTimeMs?: number | null
+  upstreamInferenceCostUsd?: number | null; upstreamPromptCostUsd?: number | null; upstreamCompletionCostUsd?: number | null
+  routingStrategy?: string | null; routingRegion?: string | null; routingAttempt?: number | null; isByok?: boolean | null
 }
+
+const requestColumns = {
+  id: 'id', requestedModel: 'requested_model', returnedModel: 'returned_model', provider: 'provider',
+  openrouterGenerationId: 'openrouter_generation_id', promptVersion: 'prompt_version',
+  correctedText: 'corrected_text', startedAt: 'started_at', endedAt: 'ended_at', appRequestTimeMs: 'duration_ms',
+  inputTokens: 'input_tokens', outputTokens: 'output_tokens', totalTokens: 'total_tokens', reasoningTokens: 'reasoning_tokens',
+  cachedInputTokens: 'cached_input_tokens', cacheWriteTokens: 'cache_write_tokens', costUsd: 'cost_usd',
+  generationTimeMs: 'generation_time_ms', upstreamInferenceCostUsd: 'upstream_inference_cost_usd',
+  upstreamPromptCostUsd: 'upstream_prompt_cost_usd', upstreamCompletionCostUsd: 'upstream_completion_cost_usd',
+  routingStrategy: 'routing_strategy', routingRegion: 'routing_region', routingAttempt: 'routing_attempt',
+  finishReason: 'finish_reason', status: 'status', errorCode: 'error_code', errorMessage: 'error_message',
+} as const
 
 export class CorrectionDatabase {
   readonly db: DatabaseSync
@@ -37,9 +53,8 @@ export class CorrectionDatabase {
 
   private migrate() {
     const version = this.db.prepare('PRAGMA user_version').get()?.user_version
-    if (typeof version !== 'number' || version > 1) throw new Error('Unsupported database version')
-    if (version === 1) return
-    this.transaction(() => this.db.exec(`
+    if (typeof version !== 'number' || version > 2) throw new Error('Unsupported database version')
+    if (version === 0) this.transaction(() => this.db.exec(`
       CREATE TABLE corrections (
         id TEXT PRIMARY KEY NOT NULL, created_at TEXT NOT NULL, original_text TEXT NOT NULL,
         language TEXT NOT NULL CHECK(language='ru'), mode TEXT NOT NULL CHECK(mode='strict')
@@ -60,6 +75,20 @@ export class CorrectionDatabase {
           OR (status='failed' AND corrected_text IS NULL AND ended_at IS NOT NULL AND error_code IS NOT NULL AND error_message IS NOT NULL))
       );
       PRAGMA user_version = 1;
+    `))
+    if (version < 2) this.transaction(() => this.db.exec(`
+      ALTER TABLE model_requests RENAME COLUMN provider_request_id TO openrouter_generation_id;
+      ALTER TABLE model_requests ADD COLUMN total_tokens INTEGER CHECK(total_tokens>=0);
+      ALTER TABLE model_requests ADD COLUMN cache_write_tokens INTEGER CHECK(cache_write_tokens>=0);
+      ALTER TABLE model_requests ADD COLUMN generation_time_ms REAL CHECK(generation_time_ms>=0);
+      ALTER TABLE model_requests ADD COLUMN upstream_inference_cost_usd REAL CHECK(upstream_inference_cost_usd>=0);
+      ALTER TABLE model_requests ADD COLUMN upstream_prompt_cost_usd REAL CHECK(upstream_prompt_cost_usd>=0);
+      ALTER TABLE model_requests ADD COLUMN upstream_completion_cost_usd REAL CHECK(upstream_completion_cost_usd>=0);
+      ALTER TABLE model_requests ADD COLUMN routing_strategy TEXT;
+      ALTER TABLE model_requests ADD COLUMN routing_region TEXT;
+      ALTER TABLE model_requests ADD COLUMN routing_attempt INTEGER CHECK(routing_attempt>=0);
+      ALTER TABLE model_requests ADD COLUMN is_byok INTEGER CHECK(is_byok IN (0,1));
+      PRAGMA user_version = 2;
     `))
   }
 
@@ -82,15 +111,55 @@ export class CorrectionDatabase {
 
   finish(requestId: string, outcome: Outcome) {
     const result = this.db.prepare(`UPDATE model_requests SET status=?, corrected_text=?, ended_at=?,
-      duration_ms=?, error_code=?, error_message=?, returned_model=?, provider=?, provider_request_id=?,
-      input_tokens=?, output_tokens=?, reasoning_tokens=?, cached_input_tokens=?, cost_usd=?, finish_reason=?
+      duration_ms=?, error_code=?, error_message=?, returned_model=?, provider=?, openrouter_generation_id=?,
+      input_tokens=?, output_tokens=?, reasoning_tokens=?, cached_input_tokens=?, cost_usd=?, finish_reason=?,
+      total_tokens=?, cache_write_tokens=?, generation_time_ms=?, upstream_inference_cost_usd=?,
+      upstream_prompt_cost_usd=?, upstream_completion_cost_usd=?, routing_strategy=?, routing_region=?, routing_attempt=?, is_byok=?
       WHERE id=? AND status='pending'`).run(
       outcome.status, outcome.correctedText, outcome.endedAt, outcome.durationMs,
       outcome.errorCode, outcome.errorMessage, outcome.returnedModel ?? null, outcome.provider ?? null,
-      outcome.providerRequestId ?? null, outcome.inputTokens ?? null, outcome.outputTokens ?? null,
+      outcome.openrouterGenerationId ?? null, outcome.inputTokens ?? null, outcome.outputTokens ?? null,
       outcome.reasoningTokens ?? null, outcome.cachedInputTokens ?? null, outcome.costUsd ?? null,
-      outcome.finishReason ?? null, requestId)
+      outcome.finishReason ?? null, outcome.totalTokens ?? null, outcome.cacheWriteTokens ?? null,
+      outcome.generationTimeMs ?? null, outcome.upstreamInferenceCostUsd ?? null,
+      outcome.upstreamPromptCostUsd ?? null, outcome.upstreamCompletionCostUsd ?? null,
+      outcome.routingStrategy ?? null, outcome.routingRegion ?? null, outcome.routingAttempt ?? null,
+      outcome.isByok == null ? null : Number(outcome.isByok), requestId)
     if (result.changes !== 1) throw Object.assign(new Error('Attempt is not pending'), { code: 'ATTEMPT_NOT_PENDING' })
+  }
+
+  listHistory() {
+    const segmenter = new Intl.Segmenter('ru', { granularity: 'grapheme' })
+    const requests = this.db.prepare('SELECT correction_id, requested_model FROM model_requests ORDER BY started_at, id').all()
+    const models = new Map<string, string[]>()
+    for (const row of requests) {
+      const key = String(row.correction_id)
+      const values = models.get(key) ?? []
+      if (!values.includes(String(row.requested_model))) values.push(String(row.requested_model))
+      models.set(key, values)
+    }
+    const rows = this.db.prepare('SELECT id, created_at, original_text FROM corrections ORDER BY created_at DESC, id DESC').all()
+    return HistoryList.parse({ items: rows.map(row => {
+      let preview = '', count = 0
+      for (const part of segmenter.segment(String(row.original_text))) {
+        if (count++ === 120) break
+        preview += part.segment
+      }
+      return { id: row.id, createdAt: row.created_at, preview, models: models.get(String(row.id)) ?? [] }
+    }) })
+  }
+
+  getHistory(id: string) {
+    const correction = this.db.prepare('SELECT * FROM corrections WHERE id=?').get(id)
+    if (!correction) return null
+    const rows = this.db.prepare('SELECT * FROM model_requests WHERE correction_id=? ORDER BY started_at, id').all(id)
+    return HistoryDetail.parse({ id: correction.id, createdAt: correction.created_at,
+      originalText: correction.original_text, language: correction.language, mode: correction.mode,
+      requests: rows.map(row => ({
+        ...Object.fromEntries(Object.entries(requestColumns).map(([field, column]) => [field, row[column] ?? null])),
+        parameters: JSON.parse(String(row.parameters_json)), isByok: row.is_byok == null ? null : row.is_byok === 1,
+      })),
+    })
   }
 
   close() { this.db.close() }

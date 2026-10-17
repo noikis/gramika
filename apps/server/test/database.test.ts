@@ -35,12 +35,12 @@ test('newer database version is rejected without replacing its contents', () => 
   const directory = mkdtempSync(join(tmpdir(), 'gramota-version-'))
   const path = join(directory, 'test.sqlite')
   const raw = new DatabaseSync(path)
-  raw.exec('PRAGMA user_version=2; CREATE TABLE existing(value TEXT);')
+  raw.exec('PRAGMA user_version=3; CREATE TABLE existing(value TEXT);')
   raw.close()
   try {
     assert.throws(() => new CorrectionDatabase(path), /Unsupported database version/)
     const check = new DatabaseSync(path)
-    try { assert.equal(check.prepare('PRAGMA user_version').get()?.user_version, 2) }
+    try { assert.equal(check.prepare('PRAGMA user_version').get()?.user_version, 3) }
     finally { check.close() }
   } finally { rmSync(directory, { recursive: true, force: true }) }
 })

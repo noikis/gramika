@@ -35,7 +35,20 @@ and driver codes, never exception messages, user text, keys or database paths.
 The fixed Qwen3.5 Flash model sends only the Strict instruction and current text,
 with reasoning disabled, no streaming, automatic retries or application caching.
 The maximum is 5,000 Unicode code points with a 30-second upstream deadline.
-Copy always uses the complete clean output. History and diff arrive later.
+Copy always uses the complete clean output in both Text and Changes views.
+
+History reads saved corrections through GET /api/history and
+GET /api/history/:correctionId, without an OpenRouter key or upstream requests.
+Normal server startup migrates schema v1 to v2 transactionally. Existing records,
+originals, results and IDs are preserved. New metrics on older records remain
+unavailable; there is no network backfill or automatic replay.
+
+Requests opt in with X-OpenRouter-Metadata: enabled. The server records validated
+reported token totals, cache reads/writes, charged cost, upstream cost breakdown,
+generation time, selected provider and routing fields. It does not estimate missing
+metrics or calculate totals. OpenRouter generation time is separate from locally
+measured App request time. No raw responses, free-form pipeline details, headers,
+credentials or reasoning text are stored. Missing metadata does not fail correction.
 
 `npm test -w apps/server` uses injected environments, isolated SQLite databases
 and mocked upstream responses. It does not load the private environment file or

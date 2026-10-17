@@ -33,15 +33,25 @@ export const PARAMETERS = {
 const TokenCount = z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER)
 const OptionalString = z.string().nullish().catch(null)
 const OptionalCount = TokenCount.nullish().catch(null)
+const OptionalAmount = z.number().finite().nonnegative().nullish().catch(null)
+const OptionalBoolean = z.boolean().nullish().catch(null)
 const Usage = z.object({
   prompt_tokens: OptionalCount, completion_tokens: OptionalCount,
-  cost: z.number().finite().nonnegative().nullish().catch(null),
-  prompt_tokens_details: z.object({ cached_tokens: OptionalCount }).nullish().catch(null),
+  total_tokens: OptionalCount, cost: OptionalAmount, is_byok: OptionalBoolean,
+  cost_details: z.object({ upstream_inference_cost: OptionalAmount,
+    upstream_inference_prompt_cost: OptionalAmount, upstream_inference_completions_cost: OptionalAmount }).nullish().catch(null),
+  prompt_tokens_details: z.object({ cached_tokens: OptionalCount, cache_write_tokens: OptionalCount }).nullish().catch(null),
   completion_tokens_details: z.object({ reasoning_tokens: OptionalCount }).nullish().catch(null),
 })
 const Metadata = z.object({
   id: OptionalString, model: OptionalString, provider: OptionalString,
   usage: Usage.nullish().catch(null),
+  openrouter_metadata: z.object({
+    generation_time: OptionalAmount, strategy: OptionalString, region: OptionalString,
+    attempt: OptionalCount, is_byok: OptionalBoolean,
+    endpoints: z.object({ available: z.array(z.object({ provider: z.string(), selected: z.boolean() })
+      .nullable().catch(null)).nullish().catch(null) }).nullish().catch(null),
+  }).nullish().catch(null),
   choices: z.array(z.object({ finish_reason: OptionalString })).optional().catch(undefined),
 })
 const Success = z.object({
@@ -57,13 +67,22 @@ const Success = z.object({
 function metadata(data: unknown): Partial<Outcome> {
   const parsed = Metadata.safeParse(data)
   if (!parsed.success) return {}
-  const { usage, ...value } = parsed.data
+  const { usage, openrouter_metadata: routing, ...value } = parsed.data
+  const selected = routing?.endpoints?.available?.filter(endpoint => endpoint?.selected) ?? []
   return {
-    returnedModel: value.model, provider: value.provider, providerRequestId: value.id,
+    returnedModel: value.model, provider: selected.length === 1 ? selected[0]!.provider : value.provider,
+    openrouterGenerationId: value.id,
     inputTokens: usage?.prompt_tokens, outputTokens: usage?.completion_tokens,
     reasoningTokens: usage?.completion_tokens_details?.reasoning_tokens,
     cachedInputTokens: usage?.prompt_tokens_details?.cached_tokens,
     costUsd: usage?.cost, finishReason: value.choices?.[0]?.finish_reason,
+    totalTokens: usage?.total_tokens, cacheWriteTokens: usage?.prompt_tokens_details?.cache_write_tokens,
+    generationTimeMs: routing?.generation_time, routingStrategy: routing?.strategy,
+    routingRegion: routing?.region, routingAttempt: routing?.attempt,
+    isByok: usage?.is_byok ?? routing?.is_byok,
+    upstreamInferenceCostUsd: usage?.cost_details?.upstream_inference_cost,
+    upstreamPromptCostUsd: usage?.cost_details?.upstream_inference_prompt_cost,
+    upstreamCompletionCostUsd: usage?.cost_details?.upstream_inference_completions_cost,
   }
 }
 

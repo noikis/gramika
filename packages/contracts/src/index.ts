@@ -35,3 +35,44 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
   REASONING_NOT_DISABLED: 'The model did not respect the reasoning setting.',
   TIMEOUT: 'Correction timed out. You can try again.',
 }
+
+const NullableCount = z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).nullable()
+const NullableAmount = z.number().finite().nonnegative().nullable()
+const NullableText = z.string().nullable()
+const Timestamp = z.iso.datetime({ precision: 3 })
+
+export const HistorySummary = z.strictObject({
+  id: z.uuid(), createdAt: Timestamp, preview: z.string(), models: z.array(z.string()),
+})
+export const HistoryRequest = z.strictObject({
+  id: z.uuid(), requestedModel: z.string(), returnedModel: NullableText,
+  provider: NullableText, openrouterGenerationId: NullableText,
+  promptVersion: z.string(), parameters: z.record(z.string(), z.json()),
+  correctedText: NullableText, startedAt: Timestamp, endedAt: Timestamp.nullable(),
+  appRequestTimeMs: NullableAmount, inputTokens: NullableCount, outputTokens: NullableCount,
+  totalTokens: NullableCount, reasoningTokens: NullableCount, cachedInputTokens: NullableCount,
+  cacheWriteTokens: NullableCount, costUsd: NullableAmount, generationTimeMs: NullableAmount,
+  upstreamInferenceCostUsd: NullableAmount, upstreamPromptCostUsd: NullableAmount,
+  upstreamCompletionCostUsd: NullableAmount, routingStrategy: NullableText, routingRegion: NullableText,
+  routingAttempt: NullableCount, isByok: z.boolean().nullable(), finishReason: NullableText,
+  status: z.enum(['pending', 'succeeded', 'failed']), errorCode: NullableText, errorMessage: NullableText,
+}).superRefine((value, ctx) => {
+  const valid = value.status === 'succeeded'
+    ? value.correctedText !== null && value.correctedText.trim().length > 0 && value.endedAt !== null
+      && value.appRequestTimeMs !== null && value.errorCode === null && value.errorMessage === null
+    : value.correctedText === null && (value.status === 'pending'
+      ? value.endedAt === null && value.appRequestTimeMs === null && value.errorCode === null && value.errorMessage === null
+      : value.endedAt !== null && value.errorCode !== null && value.errorMessage !== null)
+  if (!valid) ctx.addIssue({ code: 'custom', message: 'Inconsistent recorded request outcome.' })
+})
+export const HistoryList = z.strictObject({ items: z.array(HistorySummary) })
+export const HistoryDetail = z.strictObject({
+  id: z.uuid(), createdAt: Timestamp, originalText: z.string(), language: z.literal('ru'),
+  mode: z.literal('strict'), requests: z.array(HistoryRequest),
+})
+export const HistoryFailure = z.strictObject({ error: z.strictObject({
+  code: z.enum(['INVALID_HISTORY_ID', 'HISTORY_NOT_FOUND', 'HISTORY_UNAVAILABLE']), message: z.string(),
+}) })
+export type HistorySummary = z.infer<typeof HistorySummary>
+export type HistoryRequest = z.infer<typeof HistoryRequest>
+export type HistoryDetail = z.infer<typeof HistoryDetail>
