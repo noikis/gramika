@@ -56,6 +56,29 @@ because the directory isn't empty.
 
 The workflow is defined by the local skills and context files below.
 
+## Lightweight completion (project override)
+
+This user-approved policy overrides the default completion procedure in Blueprint
+skills for this project:
+
+- Review is manual and belongs to the user. Start a review sub-agent only when
+  explicitly requested; Implement and Complete must never trigger one themselves.
+- Run relevant checks during implementation. Reuse passing evidence when the
+  implementation is unchanged; do not repeat builds, lint or tests just to complete
+  the feature. Report missing evidence or failed checks immediately.
+- Complete performs only necessary bookkeeping (archive the finished spec, update
+  its plan checkbox, reset live context) and ordinary Git status, diff, commit and
+  authorized local merge operations. Preserve unrelated changes and existing
+  history. On a conflict or ambiguous state, report the blocker instead of adding
+  recovery machinery.
+- Do not create review-checkpoint commits, temporary Git indexes, source-tree
+  proofs, hash/fingerprint reconciliation, exported diffs, screenshots or generated
+  walkthroughs as part of completion. Preserve existing archive metadata; future
+  archives need only the finished spec and concise completion notes.
+- Reuse Git permissions already given in the chat. Keep updates and the final
+  report brief. Pushing remains the user's responsibility unless explicitly
+  requested otherwise.
+
 ## Proportional engineering
 
 Build for established requirements, not hypothetical scale, threats, or future
