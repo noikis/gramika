@@ -21,7 +21,11 @@ export function createTransport(config: ServerConfig, factories: DispatcherFacto
     async send(body, signal) {
       const response = await request('https://openrouter.ai/api/v1/chat/completions', {
         dispatcher, method: 'POST', signal,
-        headers: { authorization: `Bearer ${config.apiKey}`, 'content-type': 'application/json' },
+        headers: {
+          authorization: `Bearer ${config.apiKey}`,
+          'content-type': 'application/json',
+          'X-OpenRouter-Metadata': 'enabled',
+        },
         body: JSON.stringify(body),
       })
       const chunks: Buffer[] = []

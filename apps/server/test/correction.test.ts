@@ -60,7 +60,7 @@ test('success sends only exact original and fixed instruction; records real metr
   assert.equal(row?.output_tokens, 10)
   assert.equal(row?.cached_input_tokens, 5)
   assert.equal(row?.cost_usd, 0.00001)
-  assert.equal(row?.prompt_version, 'strict-v1')
+  assert.equal(row?.prompt_version, 'strict-v2')
 })
 
 test('upstream failures are recorded without fabricated output or metrics', async t => {
@@ -181,7 +181,10 @@ test('Fastify validates contracts, invalid JSON and oversized input without upst
 test('transport uses only an isolated mock dispatcher with real networking disabled', async t => {
   const agent = new MockAgent()
   agent.disableNetConnect()
-  agent.get('https://openrouter.ai').intercept({ path: '/api/v1/chat/completions', method: 'POST' })
+  agent.get('https://openrouter.ai').intercept({
+    path: '/api/v1/chat/completions', method: 'POST',
+    headers: { 'x-openrouter-metadata': 'enabled' },
+  })
     .reply(200, output())
   const client = createTransport(parseConfig(environment), { direct: () => agent, proxy: () => { throw Error('Unexpected proxy') } })
   t.after(() => client.close())
