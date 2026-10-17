@@ -15,18 +15,18 @@
     "uiEvidence": "when-available"
   },
   "review": {
-    "independentExecution": "automatic"
+    "independentExecution": "manual"
   },
   "qualityGates": {
     "regular": {
       "audit": "manual",
-      "independentReview": "when-sensitive",
+      "independentReview": "manual",
       "check": "manual",
       "tryGuide": "when-testable"
     },
     "continuous": {
       "audit": "manual",
-      "independentReview": "when-sensitive",
+      "independentReview": "manual",
       "check": "manual",
       "tryGuide": "when-testable"
     }
