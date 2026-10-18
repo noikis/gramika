@@ -150,9 +150,11 @@ The repository is scaffolded; planned features are not implemented yet.
 
 ### LLM policy
 
-Proposed initial default: Qwen 3.5 Flash. Verify the exact OpenRouter identifier
-and support for fully disabling reasoning in Feature 2; do not substitute a model
-or enable reasoning silently. Every model must use reasoning disabled.
+User selection on 2026-10-19: Gemma 4 26B A4B
+(`google/gemma-4-26b-a4b-it`) is the default; Gemini 3.1 Flash Lite
+(`google/gemini-3.1-flash-lite`) is the only alternative. Other model choices
+are removed. Gemini has not been established as better than Gemma. Requests
+continue to ask for disabled reasoning.
 
 Send a compact instruction and only the current text. Never send correction
 history, request explanations, diff markup or a duplicated original. Treat text

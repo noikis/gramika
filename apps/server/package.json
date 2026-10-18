@@ -7,6 +7,7 @@
     "test": "test"
   },
   "scripts": {
+    "benchmark": "npm run build:ts && node dist/benchmark.js",
     "lint": "eslint src test eslint.config.mjs",
     "lint:fix": "npm run lint -- --fix",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\" eslint.config.mjs",

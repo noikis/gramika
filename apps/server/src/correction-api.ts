@@ -7,6 +7,7 @@ import {
   ERROR_MESSAGES,
   ModelId,
   ModelPreference,
+  MODEL_ID,
   MODELS,
   MAX_INPUT_CHARACTERS,
   TIMEOUT_MS,
@@ -97,8 +98,9 @@ export async function correctionApi(app: FastifyInstance, options: CorrectionOpt
       try {
         if (!database) return failure(reply, 'STORAGE_ERROR')
         const selected = ModelId.safeParse(database.getModelPreference())
+        if (!selected.success) database.setModelPreference(MODEL_ID)
         return CorrectionConfig.parse({
-          modelId: selected.success ? selected.data : null,
+          modelId: selected.success ? selected.data : MODEL_ID,
           models: MODELS,
           maxInputCharacters: MAX_INPUT_CHARACTERS,
           timeoutMs: TIMEOUT_MS,

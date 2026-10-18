@@ -16,6 +16,7 @@ dist-ssr/
 Thumbs.db
 *.swp
 apps/server/data/
+apps/server/benchmark-data/
 *.sqlite
 *.sqlite-wal
 *.sqlite-shm

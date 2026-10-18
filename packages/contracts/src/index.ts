@@ -1,13 +1,10 @@
 import { z } from 'zod'
 
-export const MODEL_ID = 'qwen/qwen3.5-flash-02-23'
-export const MODEL_NAME = 'Qwen3.5 Flash'
+export const MODEL_ID = 'google/gemma-4-26b-a4b-it'
+export const MODEL_NAME = 'Gemma 4 26B A4B'
 export const MODELS = [
-  { id: 'qwen/qwen3.7-flash', name: 'Qwen 3.7 Flash' },
-  { id: 'google/gemma-4-26b-a4b-it', name: 'Gemma 4 26B A4B' },
   { id: MODEL_ID, name: MODEL_NAME },
-  { id: 'deepseek/deepseek-v3.2', name: 'DeepSeek V3.2' },
-  { id: 'qwen/qwen3.8-27b', name: 'Qwen 3.8 27B' },
+  { id: 'google/gemini-3.1-flash-lite', name: 'Gemini 3.1 Flash Lite' },
 ] as const
 export const ModelId = z.enum(MODELS.map(model => model.id))
 export type ModelId = z.infer<typeof ModelId>

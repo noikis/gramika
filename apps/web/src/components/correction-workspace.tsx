@@ -7,6 +7,11 @@ import { ResultView } from './result-view'
 type Draft = ReturnType<typeof useCorrectionDraft>
 type Correction = ReturnType<typeof useCorrection>
 
+const modelLabels: Record<string, string> = {
+  'google/gemma-4-26b-a4b-it': 'Gemma 4 · Standard',
+  'google/gemini-3.1-flash-lite': 'Gemini 3.1 Flash Lite · Higher cost',
+}
+
 function OriginalEditor({ draft, correction }: { draft: Draft; correction: Correction }) {
   const { text, edit, paste, pending, inputRef } = draft
   return (
@@ -65,7 +70,11 @@ export function CorrectionWorkspace({
           value={correction.config?.modelId ?? ''}
           disabled={!correction.config || correction.pending || correction.savingModel}
           onChange={(event) => correction.selectModel(event.target.value)}
-          aria-describedby="model-availability"
+          aria-describedby={
+            correction.config?.modelId === 'google/gemini-3.1-flash-lite'
+              ? 'model-description model-availability'
+              : 'model-availability'
+          }
         >
           {!correction.config?.modelId && (
             <option value="" disabled>
@@ -74,10 +83,15 @@ export function CorrectionWorkspace({
           )}
           {correction.config?.models.map((model) => (
             <option key={model.id} value={model.id}>
-              {model.name}
+              {modelLabels[model.id] ?? model.name}
             </option>
           ))}
         </select>
+        {correction.config?.modelId === 'google/gemini-3.1-flash-lite' && (
+          <p id="model-description" className="model-description">
+            Gemini is an alternative; better correction quality hasn’t been established.
+          </p>
+        )}
         {correction.configFailed && (
           <Button type="button" variant="secondary" onClick={correction.reloadConfig}>
             Retry

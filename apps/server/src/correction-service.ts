@@ -170,14 +170,23 @@ type Dependencies = {
   uuid?: () => string
   timeoutMs?: number
   onStorageFailure?: (diagnostic: ReturnType<typeof storageDiagnostic>) => void
+  allowedModelIds?: readonly string[]
+  rejectReasoning?: boolean
 }
 
 export function createCorrectionService(deps: Dependencies) {
   const now = deps.now ?? (() => new Date().toISOString())
   const clock = deps.clock ?? (() => performance.now())
   const uuid = deps.uuid ?? randomUUID
+  const allowedModelIds = new Set(deps.allowedModelIds)
+  const inputSchema =
+    deps.allowedModelIds === undefined
+      ? CorrectionInput
+      : CorrectionInput.extend({
+          modelId: z.string().refine((id) => allowedModelIds.has(id)),
+        })
   return async function correct(text: string, modelId: string = MODEL_ID, correctionId?: string) {
-    const input = CorrectionInput.safeParse({ text, modelId, correctionId })
+    const input = inputSchema.safeParse({ text, modelId, correctionId })
     if (!input.success) throw new AttemptError('INVALID_INPUT', null)
     if (!deps.available || !deps.transport) throw new AttemptError('NOT_CONFIGURED', null)
     if (!deps.database) throw new AttemptError('STORAGE_ERROR', null)
@@ -235,10 +244,11 @@ export function createCorrectionService(deps: Dependencies) {
       if (!parsed.success) throw new CorrectionError('INVALID_RESPONSE')
       const message = parsed.data.choices[0].message
       if (
-        message.reasoning ||
-        message.reasoning_content ||
-        message.reasoning_details?.length ||
-        (details.reasoningTokens ?? 0) > 0
+        deps.rejectReasoning !== false &&
+        (message.reasoning ||
+          message.reasoning_content ||
+          message.reasoning_details?.length ||
+          (details.reasoningTokens ?? 0) > 0)
       ) {
         throw new CorrectionError('REASONING_NOT_DISABLED')
       }

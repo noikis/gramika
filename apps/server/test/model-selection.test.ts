@@ -67,7 +67,7 @@ test('model preference migrates v2 history and persists after reopening', (t) =>
   }
 })
 
-test('preference routes validate, expose unsupported selection and handle save failure without inference', async (t) => {
+test('preference routes validate, reset unsupported selection to Gemma and handle save failure without inference', async (t) => {
   const database = new CorrectionDatabase(':memory:')
   const app = Fastify()
   let calls = 0
@@ -91,13 +91,19 @@ test('preference routes validate, expose unsupported selection and handle save f
     app.inject({ method: 'PUT', url: '/api/model-preference', payload })
   assert.equal((await save({ modelId: MODELS[1].id })).statusCode, 200)
   assert.equal(database.getModelPreference(), MODELS[1].id)
-  for (const payload of [{}, { modelId: 'unknown' }, { modelId: MODEL_ID, reasoning: true }]) {
+  for (const payload of [
+    {},
+    { modelId: 'unknown' },
+    { modelId: 'qwen/qwen3.5-flash-02-23' },
+    { modelId: MODEL_ID, reasoning: true },
+  ]) {
     assert.equal((await save(payload)).statusCode, 400)
     assert.equal(database.getModelPreference(), MODELS[1].id)
   }
-  database.db.prepare('UPDATE model_preference SET model_id=?').run('removed/model')
+  database.db.prepare('UPDATE model_preference SET model_id=?').run('qwen/qwen3.5-flash-02-23')
   config = CorrectionConfig.parse((await app.inject('/api/correction-config')).json())
-  assert.equal(config.modelId, null)
+  assert.equal(config.modelId, MODEL_ID)
+  assert.equal(database.getModelPreference(), MODEL_ID)
   assert.equal((await save({ modelId: MODEL_ID })).statusCode, 200)
   database.db.exec(`CREATE TRIGGER deny_preference BEFORE UPDATE ON model_preference
     BEGIN SELECT RAISE(ABORT, 'private storage detail'); END;`)
@@ -251,7 +257,7 @@ test('concurrent models keep their own parameters even when preference changes',
   })
   const first = correct('First', MODELS[0].id)
   const second = correct('Second', MODELS[1].id)
-  database.setModelPreference(MODELS[3].id)
+  database.setModelPreference(MODELS[1].id)
   releases.forEach((release) => release())
   const results = await Promise.all([first, second])
   assert.deepEqual(

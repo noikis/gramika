@@ -39,6 +39,15 @@ but are not yet implemented. Do not assume Next.js, Prisma, or Clerk.
 Do not impose `strict: true` as a user requirement; TypeScript settings remain
 an open decision in `docs/architecture.md`.
 
+## Manual benchmarks
+
+Only the human user may invoke `npm run benchmark` or the benchmark entry point,
+including preview mode. Agents must never invoke them, schedule them, or include
+them in CI, application startup, or automatic verification. Implement and verify
+benchmark helpers using injected mocked transport only; never make paid calls.
+Local cases and run outputs belong in ignored `apps/server/benchmark-data/`.
+See `docs/benchmark.md` for the user's manual workflow.
+
 ## Playwright MCP
 
 Before calling any Playwright MCP tool, ask for explicit permission in plain
