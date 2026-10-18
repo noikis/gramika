@@ -1,5 +1,28 @@
 # Approved UI prototypes
 
+## History redesign (awaiting visual review)
+
+- [History v2](history-v2.html): search, model/result/date filters, newest/oldest
+  sorting, pagination, and explicit plus/minus expansion controls.
+- [No matching results](history-v2-empty.html): search-empty state and clear action.
+- Both use the existing shared theme; `history-v2.css` contains scoped layout rules.
+  Original approved prototypes are preserved.
+- Revised against the implemented History UI: one model per correction in this
+  design. Generation time, input/output tokens and cost stay visible; Request
+  details groups the existing model/routing, usage/cost, timing/diagnostics and
+  sent-parameter fields. Unknown values remain explicitly unavailable.
+- Controls retain comfortable touch height with flatter secondary treatments,
+  slightly squarer corners, less padding and unboxed plus/minus affordances.
+- Mobile filters expand inline, rows truncate long previews, and pagination stacks
+  on narrow screens. Desktop uses a wider filter grid.
+- Static UI references with fictional content: search, sorting, filters and page
+  navigation do not query data. Native expansion, result-view toggles and existing
+  clipboard behavior are available. Production search should cover original and
+  corrected text; list counts and pagination refer to corrections.
+- Playwright inspected the running app and verified the revised prototype at
+  390px and 1440px: no horizontal overflow, working expansion and request-detail
+  disclosures, responsive filter/detail grids and preserved touch heights.
+
 **Status: both prototypes approved by the user on 2026-10-17.**
 
 Use these as the design reference when preparing the Blueprint build plan and

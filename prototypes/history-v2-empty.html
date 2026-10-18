@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gramota · History</title><link rel="icon" href="data:,">
+  <link rel="stylesheet" href="theme.css"><link rel="stylesheet" href="history-v2.css">
+</head>
+<body>
+<!-- Design reference with fictional texts, models and metrics. Copy uses the clean result, regardless of the selected view. -->
+<div class="shell">
+  <header>
+    <a class="brand" href="correction.html">gramota</a>
+    <nav aria-label="Main navigation"><a href="correction.html">Correction</a><a href="history-v2.html" aria-current="page">History</a></nav>
+  </header>
+  <main>
+    <div class="toolbar"><h1>History</h1></div>
+<form class="history-tools" onsubmit="return false">
+<label class="field search-field">Search history<input type="search" placeholder="Search original or corrected text" value="conference"></label>
+<details class="filter-panel"><summary>Filters</summary><div class="filter-fields">
+<label class="field">Model<select><option>All models</option><option>Qwen3.5 Flash</option><option>Gemma 4 26B A4B</option></select></label>
+<label class="field">Result<select><option>All results</option><option>Corrected</option><option>No changes</option><option>Failed</option><option>Pending</option></select></label>
+<label class="field">From<input type="date"></label><label class="field">To<input type="date"></label>
+<button class="reset" type="reset">Reset filters</button>
+</div></details></form>
+<div class="list-heading"><small>0 corrections</small><label class="field sort-field">Sort by<select><option>Newest first</option><option>Oldest first</option></select></label></div>
+<section class="empty-state"><h2>No matching corrections</h2><p>Try another phrase or clear your search and filters.</p><a class="button" href="history-v2.html">Clear search and filters</a></section><p id="clipboard-status" class="clipboard-status" role="status"></p>
+  </main>
+</div>
+<script>
+  const status = document.querySelector('#clipboard-status');
+  document.querySelectorAll('.copy-result').forEach(button => {
+    button.addEventListener('click', async () => {
+      status.textContent = '';
+      button.textContent = 'Copy text';
+      const output = button.closest('.output');
+      try {
+        await navigator.clipboard.writeText(output.querySelector('.clean').textContent);
+        button.textContent = 'Copied';
+        status.textContent = 'Copied';
+      } catch {
+        const textView = output.querySelector('input[type="radio"]');
+        if (textView) textView.checked = true;
+        status.textContent = 'Clipboard unavailable. Select the result and copy it manually.';
+      }
+    });
+  });
+</script>
+</body>
+</html>

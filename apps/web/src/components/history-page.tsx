@@ -1,9 +1,16 @@
 import { useEffect, useId, useRef, useState } from 'react'
-import { HistoryDetail, HistoryList, type HistorySummary } from '@gramota/contracts'
+import {
+  HISTORY_PAGE_SIZE,
+  MAX_INPUT_CHARACTERS,
+  HistoryDetail,
+  type HistorySummary,
+  type HistorySearchQuery,
+} from '@gramota/contracts'
 import { formatDate, modelName } from '../lib/history-format'
 import { HistoryRequest } from './history-request'
-import { Textarea } from './ui/textarea'
 import { Button } from './ui/button'
+import { useHistory } from '../use-history'
+import './history.css'
 
 function HistoryEntry({ item }: { item: HistorySummary }) {
   const [detail, setDetail] = useState<HistoryDetail | null>(null)
@@ -60,6 +67,7 @@ function HistoryEntry({ item }: { item: HistorySummary }) {
             {item.models.map(modelName).join(', ') || 'Unavailable'}
           </span>
         </span>
+        <span className="expand-control" aria-hidden="true" />
       </summary>
       <div className="history-detail" aria-busy={loading}>
         {loading && (
@@ -82,14 +90,15 @@ function HistoryEntry({ item }: { item: HistorySummary }) {
             <div className="editor-heading">
               <h2 id={originalId}>Original</h2>
             </div>
-            <Textarea
-              readOnly
+            <div
               className="history-original"
+              role="region"
               aria-labelledby={originalId}
-              value={detail.originalText}
               lang="ru"
-              spellCheck={false}
-            />
+              tabIndex={0}
+            >
+              {detail.originalText}
+            </div>
             {detail.requests.map((request) => (
               <HistoryRequest key={request.id} request={request} original={detail.originalText} />
             ))}
@@ -103,29 +112,136 @@ function HistoryEntry({ item }: { item: HistorySummary }) {
   )
 }
 
+const initialFilters = {
+  search: '',
+  model: '',
+  result: 'all' as HistorySearchQuery['result'],
+  from: '',
+  to: '',
+  sort: 'newest' as HistorySearchQuery['sort'],
+  page: 1,
+}
+
+function dateBoundary(value: string, nextDay = false) {
+  if (!value) return null
+  const date = new Date(`${value}T00:00:00`)
+  if (nextDay) date.setDate(date.getDate() + 1)
+  return date.toISOString()
+}
+
 export function HistoryPage() {
-  const [items, setItems] = useState<HistorySummary[] | null>(null)
-  const [error, setError] = useState('')
-  const [attempt, setAttempt] = useState(0)
+  const [search, setSearch] = useState('')
+  const [filters, setFilters] = useState(initialFilters)
+  const history = useHistory({
+    ...filters,
+    from: dateBoundary(filters.from),
+    to: dateBoundary(filters.to, true),
+  })
+  const { data, loading, error } = history
+  const models = [...history.models].sort((a, b) => modelName(a).localeCompare(modelName(b)))
+  const page = data?.page ?? 1
+  const total = data?.total ?? 0
+  const pageCount = Math.max(1, Math.ceil(total / HISTORY_PAGE_SIZE))
+  const start = (page - 1) * HISTORY_PAGE_SIZE
+  const activeFilters = Boolean(
+    filters.search || filters.model || filters.from || filters.to || filters.result !== 'all',
+  )
 
   useEffect(() => {
-    const controller = new AbortController()
-    fetch('/api/history', { signal: controller.signal })
-      .then(async (response) => {
-        if (!response.ok) throw Error('History unavailable')
-        const value = HistoryList.parse(await response.json())
-        if (!controller.signal.aborted) setItems(value.items)
-      })
-      .catch(() => {
-        if (!controller.signal.aborted) setError('Could not load history. Please try again.')
-      })
-    return () => controller.abort()
-  }, [attempt])
+    const timer = window.setTimeout(() => {
+      setFilters((previous) =>
+        previous.search === search.trim()
+          ? previous
+          : { ...previous, search: search.trim(), page: 1 },
+      )
+    }, 300)
+    return () => window.clearTimeout(timer)
+  }, [search])
+
+  function updateFilters(patch: Partial<typeof initialFilters>) {
+    setFilters((previous) => ({ ...previous, ...patch, page: 1 }))
+  }
+
+  function resetFilters() {
+    setSearch('')
+    setFilters((previous) => ({ ...initialFilters, sort: previous.sort }))
+  }
 
   return (
-    <section className="history-page" aria-labelledby="history-title">
+    <section className="history-page" aria-labelledby="history-title" aria-busy={loading}>
       <h1 id="history-title">History</h1>
-      {items === null && !error && (
+      <form
+        className="history-tools"
+        onSubmit={(event) => event.preventDefault()}
+        onReset={resetFilters}
+      >
+        <label className="history-field search-field">
+          Search history
+          <input
+            type="search"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            maxLength={MAX_INPUT_CHARACTERS}
+            placeholder="Search original or corrected text"
+          />
+        </label>
+        <details className="filter-panel">
+          <summary>Filters</summary>
+          <div className="filter-fields">
+            <label className="history-field">
+              Model
+              <select
+                value={filters.model}
+                onChange={(event) => updateFilters({ model: event.target.value })}
+              >
+                <option value="">All models</option>
+                {models.map((id) => (
+                  <option key={id} value={id}>
+                    {modelName(id)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="history-field">
+              Result
+              <select
+                value={filters.result}
+                onChange={(event) =>
+                  updateFilters({ result: event.target.value as HistorySearchQuery['result'] })
+                }
+              >
+                <option value="all">All results</option>
+                <option value="corrected">Corrected</option>
+                <option value="unchanged">No changes</option>
+                <option value="failed">Failed</option>
+                <option value="pending">Pending</option>
+              </select>
+            </label>
+            <label className="history-field">
+              From
+              <input
+                type="date"
+                value={filters.from}
+                max={filters.to || undefined}
+                onChange={(event) => updateFilters({ from: event.target.value })}
+              />
+            </label>
+            <label className="history-field">
+              To
+              <input
+                type="date"
+                value={filters.to}
+                min={filters.from || undefined}
+                onChange={(event) => updateFilters({ to: event.target.value })}
+              />
+            </label>
+            <Button className="reset" type="reset" variant="secondary">
+              Reset filters
+            </Button>
+          </div>
+        </details>
+      </form>
+      {loading && (
         <p className="clipboard-feedback" role="status">
           Loading history...
         </p>
@@ -135,25 +251,80 @@ export function HistoryPage() {
           <p className="history-error" role="alert">
             {error}
           </p>
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => {
-              setError('')
-              setAttempt((value) => value + 1)
-            }}
-          >
+          <Button type="button" variant="secondary" onClick={history.retry}>
             Retry
           </Button>
         </div>
       )}
-      {items?.length === 0 && <p className="clipboard-feedback">No corrections yet.</p>}
-      {items && items.length > 0 && (
-        <div className="history-list">
-          {items.map((item) => (
-            <HistoryEntry key={item.id} item={item} />
-          ))}
-        </div>
+      {data && !error && (
+        <>
+          <div className="list-heading">
+            <small role="status" aria-atomic="true">
+              {total
+                ? `${start + 1}-${Math.min(start + HISTORY_PAGE_SIZE, total)} of ${total} corrections`
+                : '0 corrections'}
+            </small>
+            <label className="history-field sort-field">
+              Sort by
+              <select
+                value={filters.sort}
+                onChange={(event) =>
+                  updateFilters({ sort: event.target.value as HistorySearchQuery['sort'] })
+                }
+              >
+                <option value="newest">Newest first</option>
+                <option value="oldest">Oldest first</option>
+              </select>
+            </label>
+          </div>
+          {data.items.length === 0 ? (
+            <section className="history-empty">
+              <h2>{activeFilters ? 'No matching corrections' : 'No corrections yet'}</h2>
+              <p>
+                {activeFilters
+                  ? 'Try another phrase or clear your search and filters.'
+                  : 'Your corrections will appear here after you correct some text.'}
+              </p>
+              {activeFilters && (
+                <Button type="button" variant="secondary" onClick={resetFilters}>
+                  Clear search and filters
+                </Button>
+              )}
+            </section>
+          ) : (
+            <>
+              <div className="history-list" key={JSON.stringify(filters)}>
+                {data.items.map((item) => (
+                  <HistoryEntry key={item.id} item={item} />
+                ))}
+              </div>
+              <nav className="history-pagination" aria-label="History pagination">
+                <small>{HISTORY_PAGE_SIZE} per page</small>
+                <div className="page-buttons">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    disabled={page === 1}
+                    onClick={() => setFilters((previous) => ({ ...previous, page: page - 1 }))}
+                  >
+                    Previous
+                  </Button>
+                  <span aria-current="page" aria-label={`Page ${page} of ${pageCount}`}>
+                    {page} / {pageCount}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    disabled={page === pageCount}
+                    onClick={() => setFilters((previous) => ({ ...previous, page: page + 1 }))}
+                  >
+                    Next
+                  </Button>
+                </div>
+              </nav>
+            </>
+          )}
+        </>
       )}
     </section>
   )

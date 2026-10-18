@@ -12,6 +12,8 @@ import {
 } from '@gramota/contracts'
 import type { ResultViewMode } from './components/result-view'
 import { writeClipboardText } from './lib/clipboard'
+import { notify } from './lib/notifications'
+import { modelName } from './lib/history-format'
 
 type Feedback = { original: string; message: string }
 
@@ -26,7 +28,6 @@ export function useCorrection(text: string) {
   const [result, setResult] = useState<CorrectionResult | null>(null)
   const [resultView, setResultView] = useState<ResultViewMode>('changes')
   const [error, setError] = useState<Feedback | null>(null)
-  const [copyFeedback, setCopyFeedback] = useState<Feedback | null>(null)
   const [copying, setCopying] = useState(false)
   const sending = useRef(false)
   const writing = useRef(false)
@@ -98,7 +99,6 @@ export function useCorrection(text: string) {
     setPending(true)
     setResult(null)
     setError(null)
-    setCopyFeedback(null)
     try {
       const response = await fetch('/api/corrections', {
         method: 'POST',
@@ -130,6 +130,10 @@ export function useCorrection(text: string) {
       association.current = { original, correctionId: value.correctionId }
       setResultView('changes')
       setResult(value)
+      notify(
+        `${modelName(value.modelId)}: ${value.originalText === value.correctedText ? 'No changes.' : 'Correction ready.'}`,
+        true,
+      )
     } catch {
       setError({
         original,
@@ -143,14 +147,12 @@ export function useCorrection(text: string) {
 
   async function copy() {
     if (!visibleResult || writing.current) return
-    const original = visibleResult.originalText
     writing.current = true
     setCopying(true)
-    setCopyFeedback(null)
     try {
       const outcome = await writeClipboardText(visibleResult.correctedText)
       if (!outcome.success) setResultView('text')
-      setCopyFeedback({ original, message: outcome.message })
+      notify(outcome.message, outcome.success)
     } finally {
       writing.current = false
       setCopying(false)
@@ -185,7 +187,6 @@ export function useCorrection(text: string) {
     availability,
     validationMessage,
     error: error?.original === text ? error.message : '',
-    copyFeedback: copyFeedback?.original === text ? copyFeedback.message : '',
     draftChanged: result !== null && visibleResult === null,
   }
 }

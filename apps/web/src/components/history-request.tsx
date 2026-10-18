@@ -2,20 +2,27 @@ import { useId, useRef, useState } from 'react'
 import type { HistoryRequest as SavedRequest } from '@gramota/contracts'
 import { formatCost, formatCount, formatDate, formatTime, modelName } from '../lib/history-format'
 import { writeClipboardText } from '../lib/clipboard'
+import { notify } from '../lib/notifications'
 import { ResultView, type ResultViewMode } from './result-view'
 import { Button } from './ui/button'
 
 function RequestMetrics({ request }: { request: SavedRequest }) {
   const primary = [
     ['Generation time', formatTime(request.generationTimeMs)],
-    ['Input', formatCount(request.inputTokens)],
-    ['Output', formatCount(request.outputTokens)],
+    ['Input tokens', formatCount(request.inputTokens)],
+    ['Output tokens', formatCount(request.outputTokens)],
     ['Cost', formatCost(request.costUsd)],
   ]
-  const secondary = [
+  const routing = [
     ['Requested model', request.requestedModel],
     ['Returned model', request.returnedModel],
     ['Provider', request.provider],
+    ['Routing strategy', request.routingStrategy],
+    ['Routing region', request.routingRegion],
+    ['Routing attempt', formatCount(request.routingAttempt)],
+    ['Bring your own key', request.isByok === null ? null : request.isByok ? 'Yes' : 'No'],
+  ]
+  const usage = [
     ['Total tokens', formatCount(request.totalTokens)],
     ['Reasoning tokens', formatCount(request.reasoningTokens)],
     ['Cache-read tokens', formatCount(request.cachedInputTokens)],
@@ -23,16 +30,15 @@ function RequestMetrics({ request }: { request: SavedRequest }) {
     ['Upstream cost', formatCost(request.upstreamInferenceCostUsd)],
     ['Upstream input cost', formatCost(request.upstreamPromptCostUsd)],
     ['Upstream output cost', formatCost(request.upstreamCompletionCostUsd)],
-    ['OpenRouter generation ID', request.openrouterGenerationId],
-    ['Finish reason', request.finishReason],
-    ['Routing strategy', request.routingStrategy],
-    ['Routing region', request.routingRegion],
-    ['Routing attempt', formatCount(request.routingAttempt)],
-    ['Bring your own key', request.isByok === null ? null : request.isByok ? 'Yes' : 'No'],
-    ['Prompt version', request.promptVersion],
+  ]
+  const diagnostics = [
     ['Started', formatDate(request.startedAt)],
     ['Ended', formatDate(request.endedAt)],
     ['App request time', formatTime(request.appRequestTimeMs)],
+    ['OpenRouter generation ID', request.openrouterGenerationId],
+    ['Finish reason', request.finishReason],
+    ['Prompt version', request.promptVersion],
+    ...(request.errorCode ? [['Error code', request.errorCode]] : []),
   ]
   return (
     <>
@@ -45,17 +51,33 @@ function RequestMetrics({ request }: { request: SavedRequest }) {
         ))}
       </dl>
       <details className="request-more">
-        <summary>Request details</summary>
-        <dl className="request-facts">
-          {secondary.map(([label, value]) => (
-            <div key={label}>
-              <dt>{label}</dt>
-              <dd>{value ?? 'Unavailable'}</dd>
-            </div>
+        <summary>
+          Request details
+          <span className="disclosure-sign" aria-hidden="true" />
+        </summary>
+        <div className="detail-groups">
+          {[
+            { title: 'Model & routing', facts: routing },
+            { title: 'Usage & cost', facts: usage },
+            { title: 'Timing & diagnostics', facts: diagnostics },
+          ].map(({ title, facts }) => (
+            <section key={title} aria-label={title}>
+              <h3>{title}</h3>
+              <dl className="request-facts">
+                {facts.map(([label, value]) => (
+                  <div key={label}>
+                    <dt>{label}</dt>
+                    <dd>{value ?? 'Unavailable'}</dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
           ))}
-        </dl>
-        <h3>Sent parameters</h3>
-        <pre className="request-parameters">{JSON.stringify(request.parameters, null, 2)}</pre>
+          <section className="parameters-section" aria-label="Sent parameters">
+            <h3>Sent parameters</h3>
+            <pre className="request-parameters">{JSON.stringify(request.parameters, null, 2)}</pre>
+          </section>
+        </div>
       </details>
     </>
   )
@@ -63,9 +85,7 @@ function RequestMetrics({ request }: { request: SavedRequest }) {
 
 export function HistoryRequest({ request, original }: { request: SavedRequest; original: string }) {
   const labelId = useId()
-  const feedbackId = useId()
   const [view, setView] = useState<ResultViewMode>('changes')
-  const [feedback, setFeedback] = useState('')
   const [copying, setCopying] = useState(false)
   const writing = useRef(false)
   const success = request.status === 'succeeded' && request.correctedText !== null
@@ -74,11 +94,10 @@ export function HistoryRequest({ request, original }: { request: SavedRequest; o
     if (!success || writing.current) return
     writing.current = true
     setCopying(true)
-    setFeedback('')
     try {
       const outcome = await writeClipboardText(request.correctedText!)
       if (!outcome.success) setView('text')
-      setFeedback(outcome.message)
+      notify(outcome.message, outcome.success)
     } finally {
       writing.current = false
       setCopying(false)
@@ -93,7 +112,6 @@ export function HistoryRequest({ request, original }: { request: SavedRequest; o
           view={view}
           onViewChange={setView}
           labelId={labelId}
-          feedbackId={feedbackId}
           title={modelName(request.requestedModel)}
         />
       ) : (
@@ -103,25 +121,21 @@ export function HistoryRequest({ request, original }: { request: SavedRequest; o
           </div>
           <p className="history-status">{request.status === 'pending' ? 'Pending' : 'Failed'}</p>
           {request.errorMessage && <p className="history-error">{request.errorMessage}</p>}
-          {request.errorCode && <p className="clipboard-feedback">{request.errorCode}</p>}
         </>
       )}
       {success && original === request.correctedText && (
         <p className="clipboard-feedback">No changes.</p>
       )}
-      <RequestMetrics request={request} />
       {success && (
         <>
-          <p id={feedbackId} className="clipboard-feedback" role="status" aria-atomic="true">
-            {feedback}
-          </p>
-          <div className="editor-actions">
-            <Button type="button" disabled={copying} onClick={copy} aria-describedby={feedbackId}>
-              {copying ? 'Copying...' : 'Copy'}
+          <div className="result-actions">
+            <Button type="button" disabled={copying} onClick={copy}>
+              {copying ? 'Copying...' : 'Copy text'}
             </Button>
           </div>
         </>
       )}
+      <RequestMetrics request={request} />
     </section>
   )
 }

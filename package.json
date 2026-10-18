@@ -8,7 +8,9 @@
   },
   "scripts": {
     "dev:server": "npm run dev -w apps/server",
-    "dev:web": "npm run dev -w apps/web"
+    "dev:web": "npm run dev -w apps/web",
+    "format": "npm run format -w apps/web && npm run format -w apps/server",
+    "lint": "npm run lint -w apps/web && npm run lint -w apps/server"
   },
   "keywords": [],
   "author": "",

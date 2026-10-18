@@ -3,26 +3,19 @@ import type { useCorrection } from '../use-correction'
 import { Button } from './ui/button'
 import { Textarea } from './ui/textarea'
 import { ResultView } from './result-view'
-import { modelName } from '../lib/history-format'
 
 type Draft = ReturnType<typeof useCorrectionDraft>
 type Correction = ReturnType<typeof useCorrection>
 
 function OriginalEditor({ draft, correction }: { draft: Draft; correction: Correction }) {
-  const { text, edit, paste, pending, feedback, inputRef } = draft
+  const { text, edit, paste, pending, inputRef } = draft
   return (
     <section className="editor" aria-labelledby="original-title">
       <div className="editor-heading">
         <h2 id="original-title">
           <label htmlFor="original">Original</label>
         </h2>
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={paste}
-          disabled={pending}
-          aria-describedby="clipboard-feedback"
-        >
+        <Button type="button" variant="secondary" onClick={paste} disabled={pending}>
           {pending ? 'Pasting...' : 'Paste'}
         </Button>
       </div>
@@ -33,14 +26,11 @@ function OriginalEditor({ draft, correction }: { draft: Draft; correction: Corre
         onChange={(event) => edit(event.target.value)}
         ref={inputRef}
         placeholder="Type or paste your text"
-        aria-describedby="clipboard-feedback input-feedback"
+        aria-describedby="input-feedback"
         aria-invalid={Boolean(correction.validationMessage)}
         lang="ru"
         spellCheck={false}
       />
-      <p id="clipboard-feedback" className="clipboard-feedback" role="status" aria-atomic="true">
-        {feedback}
-      </p>
       <p id="input-feedback" className="clipboard-feedback" role="status">
         {correction.validationMessage}
       </p>
@@ -139,32 +129,18 @@ export function CorrectionWorkspace({
             </>
           )}
           <p id="correction-status" className="clipboard-feedback" role="status" aria-atomic="true">
-            {correction.availability ||
-              (correction.pending
-                ? 'Correcting...'
-                : correction.visibleResult
-                  ? `${modelName(correction.visibleResult.modelId)}: ${
-                      correction.visibleResult.originalText ===
-                      correction.visibleResult.correctedText
-                        ? 'No changes.'
-                        : 'Correction ready.'
-                    }`
-                  : '')}
+            {correction.availability || (correction.pending ? 'Correcting...' : '')}
           </p>
           {correction.error && (
             <p className="clipboard-feedback" role="alert">
               {correction.error}
             </p>
           )}
-          <p id="copy-feedback" className="clipboard-feedback" role="status" aria-atomic="true">
-            {correction.copyFeedback}
-          </p>
           <div className="editor-actions">
             <Button
               type="button"
               disabled={!correction.visibleResult || correction.copying}
               onClick={correction.copy}
-              aria-describedby="copy-feedback"
             >
               {correction.copying ? 'Copying...' : 'Copy'}
             </Button>

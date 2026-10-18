@@ -7,6 +7,7 @@
   font-display: swap;
   src: url('/fonts/roboto-400.ttf') format('truetype');
 }
+
 @font-face {
   font-family: Roboto;
   font-style: normal;
@@ -115,4 +116,11 @@
     outline: var(--focus-width) solid var(--accent);
     outline-offset: var(--space-1);
   }
+}
+
+.shell input:not([type='radio']):focus,
+.shell select:focus,
+.shell textarea:focus {
+  outline: none;
+  border-color: var(--accent);
 }

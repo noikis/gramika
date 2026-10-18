@@ -211,7 +211,12 @@ test('History works without a key or upstream calls; orders summaries and all re
     },
   })
   t.after(() => app.close())
-  assert.deepEqual((await app.inject('/api/history')).json(), { items: [] })
+  assert.deepEqual((await app.inject('/api/history')).json(), {
+    items: [],
+    total: 0,
+    page: 1,
+    models: [],
+  })
   const original = '👩‍💻'.repeat(121) + '\n<script>fictional</script>'
   const older = begin(db, original)
   db.finish(older.requestId, {

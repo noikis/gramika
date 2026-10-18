@@ -10,18 +10,10 @@ type Props = {
   view: ResultViewMode
   onViewChange: (view: ResultViewMode) => void
   labelId: string
-  feedbackId?: string
   title?: string
 }
 
-export function ResultView({
-  result,
-  view,
-  onViewChange,
-  labelId,
-  feedbackId = 'copy-feedback',
-  title = 'Result',
-}: Props) {
+export function ResultView({ result, view, onViewChange, labelId, title = 'Result' }: Props) {
   const groupName = useId()
   const segments = useMemo(
     () => diffText(result.originalText, result.correctedText),
@@ -55,7 +47,6 @@ export function ResultView({
           className="editor-input result-text"
           readOnly
           aria-labelledby={labelId}
-          aria-describedby={feedbackId}
           value={result.correctedText}
           lang="ru"
           spellCheck={false}

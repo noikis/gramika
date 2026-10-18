@@ -20,6 +20,7 @@ apps/server/data/
 *.sqlite-wal
 *.sqlite-shm
 *.sqlite-journal
+.playwright-mcp/
 
 # Blueprint generated local state
 blueprint/.state/

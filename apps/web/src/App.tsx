@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Toaster } from 'sonner'
 import { Button } from './components/ui/button'
 import { CorrectionWorkspace } from './components/correction-workspace'
 import { useCorrectionDraft } from './use-correction-draft'
@@ -41,6 +42,24 @@ function App() {
           <HistoryPage />
         )}
       </main>
+      <Toaster
+        position="bottom-center"
+        theme="dark"
+        visibleToasts={1}
+        toastOptions={{
+          style: {
+            background: 'var(--surface-raised)',
+            color: 'var(--text)',
+            border: 'var(--border-width) solid var(--border)',
+            borderRadius: 'var(--radius-sm)',
+            boxShadow: 'none',
+            fontFamily: 'var(--font-sans)',
+            fontSize: 'var(--text-sm)',
+            fontWeight: 400,
+            padding: 'var(--space-3) var(--space-4)',
+          },
+        }}
+      />
     </div>
   )
 }

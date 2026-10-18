@@ -1,7 +1,14 @@
 import { DatabaseSync } from 'node:sqlite'
 import { mkdirSync } from 'node:fs'
 import { dirname } from 'node:path'
-import { HistoryDetail, HistoryList, MODEL_ID, type ModelId } from '@gramota/contracts'
+import {
+  HISTORY_PAGE_SIZE,
+  HistoryDetail,
+  HistoryList,
+  HistorySearchQuery,
+  MODEL_ID,
+  type ModelId,
+} from '@gramota/contracts'
 
 export class InvalidCorrectionReference extends Error {}
 
@@ -102,6 +109,13 @@ export class CorrectionDatabase {
     this.db = new DatabaseSync(path)
     try {
       this.db.exec('PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;')
+      this.db.function('history_contains', { deterministic: true }, (text, phrase) =>
+        typeof text === 'string' &&
+        typeof phrase === 'string' &&
+        text.toLowerCase().includes(phrase.toLowerCase())
+          ? 1
+          : 0,
+      )
       this.migrate()
       this.db
         .prepare(
@@ -266,24 +280,50 @@ export class CorrectionDatabase {
       })
   }
 
-  listHistory() {
+  listHistory(query: HistorySearchQuery = HistorySearchQuery.parse({})) {
     const segmenter = new Intl.Segmenter('ru', { granularity: 'grapheme' })
-    const requests = this.db
-      .prepare('SELECT correction_id, requested_model FROM model_requests ORDER BY started_at, id')
-      .all()
-    const models = new Map<string, string[]>()
-    for (const row of requests) {
-      const key = String(row.correction_id)
-      const values = models.get(key) ?? []
-      if (!values.includes(String(row.requested_model))) values.push(String(row.requested_model))
-      models.set(key, values)
+    const where = `(:search = '' OR history_contains(c.original_text, :search) OR EXISTS (
+      SELECT 1 FROM model_requests s WHERE s.correction_id = c.id AND s.status = 'succeeded'
+      AND history_contains(s.corrected_text, :search)))
+      AND ((:model = '' AND :result = 'all') OR EXISTS (
+        SELECT 1 FROM model_requests r WHERE r.correction_id = c.id
+        AND (:model = '' OR r.requested_model = :model)
+        AND (:result = 'all'
+          OR (:result = 'corrected' AND r.status = 'succeeded' AND r.corrected_text <> c.original_text)
+          OR (:result = 'unchanged' AND r.status = 'succeeded' AND r.corrected_text = c.original_text)
+          OR (:result = 'failed' AND r.status = 'failed')
+          OR (:result = 'pending' AND r.status = 'pending'))))
+      AND (:from IS NULL OR c.created_at >= :from)
+      AND (:to IS NULL OR c.created_at < :to)`
+    const parameters = {
+      search: query.search,
+      model: query.model,
+      result: query.result,
+      from: query.from,
+      to: query.to,
     }
+    const total = Number(
+      this.db.prepare(`SELECT count(*) AS total FROM corrections c WHERE ${where}`).get(parameters)!
+        .total,
+    )
+    const page = Math.min(query.page, Math.max(1, Math.ceil(total / HISTORY_PAGE_SIZE)))
+    const direction = query.sort === 'oldest' ? 'ASC' : 'DESC'
     const rows = this.db
       .prepare(
-        'SELECT id, created_at, original_text FROM corrections ORDER BY created_at DESC, id DESC',
+        `SELECT c.id, c.created_at, c.original_text FROM corrections c WHERE ${where}
+        ORDER BY c.created_at ${direction}, c.id ${direction} LIMIT ${HISTORY_PAGE_SIZE} OFFSET :offset`,
       )
-      .all()
+      .all({ ...parameters, offset: (page - 1) * HISTORY_PAGE_SIZE })
+    const requestModels = this.db.prepare(
+      'SELECT requested_model FROM model_requests WHERE correction_id = ? ORDER BY started_at, id',
+    )
     return HistoryList.parse({
+      total,
+      page,
+      models: this.db
+        .prepare('SELECT DISTINCT requested_model FROM model_requests ORDER BY requested_model')
+        .all()
+        .map((row) => row.requested_model),
       items: rows.map((row) => {
         let preview = '',
           count = 0
@@ -295,7 +335,9 @@ export class CorrectionDatabase {
           id: row.id,
           createdAt: row.created_at,
           preview,
-          models: models.get(String(row.id)) ?? [],
+          models: [
+            ...new Set(requestModels.all(row.id!).map((request) => request.requested_model)),
+          ],
         }
       }),
     })
