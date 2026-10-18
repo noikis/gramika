@@ -15,17 +15,18 @@ for optional tool settings.
 
 Gramota is a personal writing assistant for correcting short messages and letters,
 with Russian quality, minimal edits, and mobile use as priorities. The repository
-currently contains npm workspace scaffolds, not implemented product features.
+implements correction, local diff, searchable history and persistent model
+selection. Original roadmap features 1-5 are complete; Home Lab packaging,
+deployment health checks and backup/restore remain in Feature 6.
 
 Read the relevant product context before planning or changing behavior:
 
 - `docs/product.md`: requirements and UX.
 - `docs/decisions.md`: agreed decisions and open questions.
-- `docs/architecture.md`: planned architecture, distinct from the scaffold.
+- `docs/architecture.md`: implemented architecture and remaining deployment work.
 - `docs/llm.md`: correction, model evaluation, and prompts.
 - `docs/environments.md`: environment, secrets, and mandatory VPN behavior.
-- `docs/status.md`: earlier planning status; its claims that code and commands
-  are absent predate the current scaffold.
+- `docs/status.md`: current delivery status and verification boundaries.
 
 MVP is Strict correction only. OpenRouter calls belong on the server, history
 must not be sent with correction requests, and diff is computed locally.
@@ -34,10 +35,16 @@ On Home Lab, use the configured mandatory proxy and never fall back to direct
 OpenRouter access. Auth and external access are deferred.
 
 Use npm workspaces, React/Vite, Fastify, TypeScript, and public Zod contracts.
-SQLite, Tailwind CSS, shadcn/ui, and the Undici OpenRouter client are planned,
-but are not yet implemented. Do not assume Next.js, Prisma, or Clerk.
-Do not impose `strict: true` as a user requirement; TypeScript settings remain
-an open decision in `docs/architecture.md`.
+SQLite uses Node's built-in node:sqlite with transactional migrations. Tailwind
+CSS, local shadcn-style UI components, Sonner notifications and the Undici
+OpenRouter transport are implemented. Preserve existing TypeScript settings.
+Do not assume Next.js, Prisma, or Clerk.
+
+Gemma 4 26B A4B is the default; Gemini 3.1 Flash Lite is the only alternative.
+The shared registry in packages/contracts/src/index.ts controls both the app and
+benchmark choices. Use the existing strict-v3 prompt for all styles. Requests ask
+for disabled reasoning; application corrections reject reasoning-bearing results,
+while manual benchmarks accept valid outputs and retain reported usage.
 
 ## Manual benchmarks
 
@@ -110,6 +117,10 @@ and installed dependencies before adding machinery.
 
 ## Read these when relevant
 
+- `docs/ideas.md` - unreviewed suggestions from another agent, retained for future
+  discussion. These are not approved requirements, priorities, architecture or
+  roadmap items. Consult when exploring improvements; obtain the user's decision
+  before promoting an idea into the plans or implementation.
 - `blueprint/config.json` - deterministic project workflow settings
 - `blueprint/context/project-overview.md` - the project's source of truth
 - `blueprint/context/coding-standards.md` - read before changing code
@@ -388,6 +399,7 @@ Run from the repository root with npm and the root package-lock.json.
 - API dev server: `npm run dev:server` (Fastify).
 - Web build: `npm run build -w apps/web` (TypeScript check and Vite build).
 - Server build: `npm run build:ts -w apps/server`.
+- Contracts build: `npm run build -w packages/contracts` (also run by app builds).
 - Web preview: `npm run preview -w apps/web`.
 - Server start: `npm run start -w apps/server` (builds before starting).
 - Web lint: `npm run lint -w apps/web`.
@@ -401,9 +413,8 @@ Run from the repository root with npm and the root package-lock.json.
 
 The server test gate is configured for server logic. Web and contracts have no
 test command yet. No standalone typecheck, root build/test, combined
-Verify command, or Browser tests command is configured. Contracts has no build
-script yet. Do not use a blanket workspace build that assumes all packages have
-one. Do not silently install testing tools during feature work.
+Verify command, or Browser tests command is configured. Use the documented
+workspace commands; do not silently install testing tools during feature work.
 
 No GitHub Actions checks are present. Run `/ci` or `$ci` for optional automatic
 checks; CI is not required for planning or the Blueprint build loop.

@@ -20,8 +20,9 @@ migrations and records interrupted pending requests without resubmitting them.
 On the development computer, use the system VPN and leave OPENROUTER_PROXY_URL
 unset. Home Lab requires GRAMOTA_ENV=homelab and
 OPENROUTER_PROXY_URL=http://10.201.0.2:8888. Missing configuration prevents calls;
-proxy failures never trigger a direct retry. Infrastructure VPN behavior still
-requires separate verification in Feature 6.
+proxy failures never trigger a direct retry. On 2026-10-19 the user reported that OpenRouter access is denied when the VPN
+is disconnected. This manual evidence does not verify future container packaging
+or storage durability.
 
 Start `npm run dev:server` and `npm run dev:web` in separate terminals. Fastify uses
 port 3000 and Vite proxies relative `/api` requests to it. Restart the server after
@@ -32,14 +33,17 @@ The development watcher follows only compiled files in `dist`, so database write
 do not restart the API. Storage failures log a safe stage (initialize/begin/finish)
 and driver codes, never exception messages, user text, keys or database paths.
 
-The fixed Qwen3.5 Flash model sends only the Strict instruction and current text,
+Gemma 4 26B A4B is the default; Gemini 3.1 Flash Lite is the only alternative.
+Both send only the strict-v3 instruction and current text,
 with reasoning disabled, no streaming, automatic retries or application caching.
-The maximum is 5,000 Unicode code points with a 30-second upstream deadline.
+The maximum is 5,000 Unicode code points with a 60-second upstream deadline.
 Copy always uses the complete clean output in both Text and Changes views.
 
 History reads saved corrections through GET /api/history and
 GET /api/history/:correctionId, without an OpenRouter key or upstream requests.
-Normal server startup migrates schema v1 to v2 transactionally. Existing records,
+Normal server startup applies transactional migrations through schema v3.
+Model preference is persisted; unsupported saved choices reset to Gemma when
+configuration is read. Existing records,
 originals, results and IDs are preserved. New metrics on older records remain
 unavailable; there is no network backfill or automatic replay.
 
@@ -55,3 +59,8 @@ and mocked upstream responses. It does not load the private environment file or
 make paid requests. Only the user may run real OpenRouter corrections. Browser
 checks by an agent must intercept correction traffic with local mocks before
 clicking Correct. Do not inspect personal persisted records for verification.
+
+The application rejects responses containing reasoning fields or positive
+reasoning token counts. Manual benchmarks bypass only this guard; the request
+still asks for disabled reasoning. Agents must never invoke the benchmark CLI,
+including preview. See [benchmark.md](../../docs/benchmark.md).

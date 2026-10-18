@@ -21,28 +21,28 @@
 ## Structure and rendering
 
 - apps/web/src contains the React entry point, App.tsx, and plain CSS.
-- apps/server/src contains app.ts, plugins/, and routes/; the scaffold currently
-  uses Fastify CLI and autoload.
+- apps/server/src contains app.ts, correction/history APIs, a correction service,
+  SQLite storage and Undici transport. Fastify CLI runs the app; Autoload loads
+  the root route.
 - apps/server/test contains node:test tests using Fastify inject.
-- packages/contracts currently contains a manifest with Zod, with no source yet.
-- docs/architecture.md describes the planned feature/module layout and explicit
-  plugin registration. It is a target, not evidence those modules exist.
+- packages/contracts/src/index.ts defines public Zod contracts, model choices
+  and shared limits. docs/architecture.md describes the implemented layout.
 - Use functional React components and hooks; keep components focused.
 
 ## Styling
 
-Current styling is plain CSS in App.css and index.css. Tailwind CSS and shadcn/ui
-are selected in the product documents but are not installed. Introduce them only
-as part of approved implementation; do not assume a theme or design is settled.
+Styling uses Tailwind CSS and local CSS in App.css, index.css and components/.
+Local shadcn-style UI components and Sonner are installed. Preserve the approved
+blue-black theme, green accents, local Roboto fonts and English interface.
 Preserve accessible controls, keyboard interaction, and mobile usability.
 
 ## Data, validation, and errors
 
 - OpenRouter is server-only. Keep keys and server dependencies out of web bundles.
-- Validate untrusted requests and upstream responses at runtime. Use the planned
-  shared Zod contracts for public boundaries when implemented.
-- SQLite is selected, but no driver, schema, migration command, or repository
-  exists yet. Do not prescribe Prisma or invent migration commands.
+- Validate untrusted requests and upstream responses at runtime. Use the shared
+  Zod contracts for public boundaries.
+- SQLite uses built-in node:sqlite. CorrectionDatabase owns transactional schema
+  migrations and queries; do not prescribe Prisma or invent migration commands.
 - Respect docs/environments.md: Home Lab requires its configured proxy, with no
   direct fallback. Development uses the user's system VPN configuration.
 - Preserve input on request failure. Never show truncated or failed responses as
@@ -50,8 +50,8 @@ Preserve accessible controls, keyboard interaction, and mobile usability.
 - Auth and external access are deferred. Do not introduce Clerk or ownership
   fields as if they were current requirements.
 
-> TODO: Choose SQLite access/migrations, API contracts, environment validation,
-> exact TypeScript settings, and approved UI design during relevant feature work.
+The current contracts, schema, environment validation and tsconfig files are the
+implementation reference. Preserve them unless the task requires a change.
 
 ## Testing
 

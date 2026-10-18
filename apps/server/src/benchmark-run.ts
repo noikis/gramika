@@ -1,7 +1,7 @@
 import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { z } from 'zod'
-import { MODELS, OriginalText, TIMEOUT_MS, type HistoryRequest } from '@gramota/contracts'
+import { ModelId, MODELS, OriginalText, TIMEOUT_MS, type HistoryRequest } from '@gramota/contracts'
 import {
   AttemptError,
   createCorrectionService,
@@ -16,7 +16,6 @@ import { renderBenchmarkReport } from './benchmark-report'
 export class BenchmarkInputError extends Error {}
 
 export const BENCHMARK_MODELS = MODELS
-const BenchmarkModelId = z.enum(BENCHMARK_MODELS.map((model) => model.id))
 
 export function assertBenchmarkPrompt(version: string) {
   if (version !== 'strict-v3')
@@ -37,7 +36,7 @@ export function prepareBenchmark(cases: unknown, models: unknown) {
       'Provide a nonempty cases array with unique IDs and valid correction texts.',
     )
   }
-  const parsedModels = z.array(BenchmarkModelId).min(1).safeParse(models)
+  const parsedModels = z.array(ModelId).min(1).safeParse(models)
   if (!parsedModels.success || new Set(parsedModels.data).size !== parsedModels.data.length) {
     throw new BenchmarkInputError(
       'Select one or more unique model IDs from the configured model list.',
@@ -139,7 +138,6 @@ export async function runBenchmark(options: Options) {
       transport: options.transport,
       available: true,
       timeoutMs: options.timeoutMs,
-      allowedModelIds: plan.models.map((model) => model.id),
       rejectReasoning: false,
     })
     let completed = 0

@@ -1,87 +1,23 @@
-# React + TypeScript + Vite
+# Gramota web
 
-## Formatting
+React/Vite client for Russian proofreading, local Text/Changes views, clipboard
+actions and searchable correction history. Model selection offers Gemma 4 as
+Standard and Gemini 3.1 Flash Lite as Higher cost. Gemini's helper text is shown
+only when selected; better quality has not been established by the user.
 
-From the repository root:
+Run from the repository root:
 
-- `npm run format -w apps/web`: format TypeScript, TSX, CSS, entry HTML and tooling config.
-- `npm run format:check -w apps/web`: check formatting without changing files.
-- `npm run lint -w apps/web`: check code quality with ESLint.
+- `npm run dev:web`: start Vite; run `npm run dev:server` in another terminal.
+- `npm run build -w apps/web`: build contracts, typecheck and bundle the client.
+- `npm run preview -w apps/web`: preview the built client; this does not start the API.
+- `npm run lint -w apps/web`: check code quality.
+- `npm run format:check -w apps/web`: check formatting.
+- `npm run format -w apps/web`: format source and configuration.
 
-Prettier matches the server settings: two spaces, single quotes, no semicolons
-and a 100-column target. Commands explicitly target source/config files and
-exclude env files, bundled fonts and generated output.
+Vite proxies relative `/api` requests to Fastify on port 3000. OpenRouter
+credentials are never included in the web bundle. Tailwind and local CSS provide
+the theme; Roboto and its license are bundled. Sonner provides transient feedback.
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
-
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
-```
-
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
-```
+No web test runner or browser test command is configured. Playwright MCP requires
+explicit user approval. Browser checks must mock correction traffic before an
+agent clicks Correct; paid requests and benchmark commands are human-only.

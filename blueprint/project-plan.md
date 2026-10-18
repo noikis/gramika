@@ -34,7 +34,10 @@ Typical input is a short message or several paragraphs of an email. Full documen
 - Show additions and deletions through a locally computed diff.
 - Copy the clean result with one button.
 - Automatically save correction history.
-- Allow switching between configured OpenRouter models.
+- Allow switching between Gemma 4 26B A4B (default) and Gemini 3.1 Flash Lite
+  (alternative). The user has not established that Gemini is better.
+- Use the shared strict-v3 prompt across styles; user testing has not shown a
+  need for separate style prompts.
 - Record and display useful metrics for each model request.
 - Retain each result when the same input is submitted to another model.
 
@@ -47,7 +50,8 @@ Names, numbers, links, emoji, paragraphs and meaningful line breaks should remai
 - Minimal and Stylistic modes.
 - Tone selection.
 - Error explanations and automated error classification.
-- Dedicated benchmarking screens, runs or database tables.
+- Dedicated application benchmarking screens or benchmark database tables.
+  A separate manual-only terminal tool with isolated local runs is implemented.
 - Automatic language detection.
 - Document uploads and direct messenger integrations.
 - Authentication, accounts and multi-user functionality.
@@ -89,11 +93,17 @@ Do not store credentials, full raw responses or reasoning text by default. Diff 
 
 ### Application settings
 
-Store the selected model, reasoning preference and language preference. API keys and proxy settings remain server environment configuration.
+Store the selected model. Reasoning is requested disabled and Russian/Strict
+are fixed in the current application; no reasoning or language preference UI is
+implemented. API keys and proxy settings remain server environment configuration.
 
 ### Testing models through ordinary use
 
-Testing a model or prompt uses the normal correction flow and normal request records. There is no separate benchmark entity or test-mode distinction.
+Ordinary comparisons can use correction history. A standalone manual benchmark
+also reuses the correction service and request schema in an isolated SQLite
+database per run, without new application screens or benchmark tables. Only the
+human may invoke its commands, including preview; agents use mocked transport.
+See [benchmark documentation](../docs/benchmark.md).
 
 The user can compare output quality, duration, tokens and cost from these records. Automated LLM judging and large paid test suites are not required.
 
@@ -258,3 +268,9 @@ Exact quality and latency thresholds will be established through a small set of 
 - Backup procedure and final Home Lab access configuration.
 
 These are explicit follow-up decisions. They are not permission to add speculative infrastructure.
+
+## Unreviewed ideas
+
+[docs/ideas.md](../docs/ideas.md) retains suggestions from another agent. They
+are not approved requirements, priorities or implementation instructions. Review
+with the user before adding any idea to this plan or the build roadmap.

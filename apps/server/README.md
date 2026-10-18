@@ -1,34 +1,22 @@
-# Getting Started with [Fastify-CLI](https://www.npmjs.com/package/fastify-cli)
-This project was bootstrapped with Fastify-CLI.
+# Gramota server
 
-## Available Scripts
+Fastify API for corrections, model preferences and searchable SQLite history.
+The OpenRouter transport and prompt remain server-only.
 
-Run these from the repository root:
+Run from the repository root after installing workspace dependencies:
 
-- `npm run lint -w apps/server`: check server source, tests and ESLint config.
-- `npm run lint:fix -w apps/server`: apply available ESLint fixes.
-- `npm run format -w apps/server`: format server source, tests and ESLint config
-  using Prettier (two spaces, single quotes, no semicolons, 100-column target).
-- `npm run format:check -w apps/server`: check formatting without changing files.
+- `npm run dev:server`: compile/watch and run the API on port 3000.
+- `npm run build:ts -w apps/server`: build contracts and server.
+- `npm run start -w apps/server`: build and start the API.
+- `npm test -w apps/server`: build, typecheck tests and run mocked tests with coverage.
+- `npm run lint -w apps/server`: check source, tests and ESLint configuration.
+- `npm run format:check -w apps/server`: check formatting.
+- `npm run format -w apps/server`: format source and tests.
 
-Lint checks code quality; format handles readability and line wrapping. These
-commands target code explicitly and do not read env files or saved database data.
+[Correction setup](CORRECTION.md) covers environment variables, storage and proxy
+policy. [Architecture](../../docs/architecture.md) lists the API and source layout.
+GET `/` is a simple server response, not a deployment readiness check.
 
-In the project directory, you can run:
-
-### `npm run dev`
-
-To start the app in dev mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
-
-### `npm start`
-
-For production mode
-
-### `npm run test`
-
-Run the test cases.
-
-## Learn More
-
-To learn Fastify, check out the [Fastify documentation](https://fastify.dev/docs/latest/).
+Only the human may invoke the separate benchmark CLI, including preview.
+See [manual benchmark instructions](../../docs/benchmark.md). Automated checks use
+mocked transport, never model requests or private cases.
