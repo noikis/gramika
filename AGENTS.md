@@ -382,10 +382,16 @@ Run from the repository root with npm and the root package-lock.json.
 - Web preview: `npm run preview -w apps/web`.
 - Server start: `npm run start -w apps/server` (builds before starting).
 - Web lint: `npm run lint -w apps/web`.
+- Web formatting: `npm run format -w apps/web`.
+- Web formatting check: `npm run format:check -w apps/web`.
+- Server lint: `npm run lint -w apps/server`.
+- Server lint fixes: `npm run lint:fix -w apps/server`.
+- Server formatting: `npm run format -w apps/server`.
+- Server formatting check: `npm run format:check -w apps/server`.
 - Server tests: `npm test -w apps/server` (build, test typecheck, node:test with c8).
 
 The server test gate is configured for server logic. Web and contracts have no
-test command yet. No standalone typecheck, format, root build/test, combined
+test command yet. No standalone typecheck, root build/test, combined
 Verify command, or Browser tests command is configured. Contracts has no build
 script yet. Do not use a blanket workspace build that assumes all packages have
 one. Do not silently install testing tools during feature work.

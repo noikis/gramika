@@ -7,6 +7,10 @@
     "test": "test"
   },
   "scripts": {
+    "lint": "eslint src test eslint.config.mjs",
+    "lint:fix": "npm run lint -- --fix",
+    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\" eslint.config.mjs",
+    "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\" eslint.config.mjs",
     "test": "npm run build:ts && tsc -p test/tsconfig.json && c8 node --test -r ts-node/register \"test/**/*.ts\"",
     "clean": "node -e \"require('fs').rmSync('dist', {recursive: true, force: true})\"",
     "start": "npm run build:ts && fastify start -l info dist/app.js",
@@ -20,20 +24,22 @@
   "license": "ISC",
   "dependencies": {
     "@fastify/autoload": "^6.0.0",
-    "@fastify/sensible": "^6.0.0",
     "@gramota/contracts": "^1.0.0",
-    "@openrouter/sdk": "^1.4.25",
     "fastify": "^5.0.0",
     "fastify-cli": "^8.0.3",
-    "fastify-plugin": "^6.0.0",
     "undici": "^8.12.2"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/node": "^26.0.0",
     "c8": "^12.0.0",
     "concurrently": "^10.0.1",
+    "eslint": "^10.10.0",
     "fastify-tsconfig": "^3.0.0",
+    "globals": "^17.12.0",
+    "prettier": "^3.6.2",
     "ts-node": "^10.4.0",
-    "typescript": "~6.0.2"
+    "typescript": "~6.0.2",
+    "typescript-eslint": "^8.69.0"
   }
 }

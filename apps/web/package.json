@@ -7,6 +7,8 @@
     "dev": "npm run build -w @gramota/contracts && vite",
     "build": "npm run build -w @gramota/contracts && tsc -b && vite build",
     "lint": "eslint .",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css}\" index.html vite.config.ts eslint.config.js",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\" index.html vite.config.ts eslint.config.js",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -30,6 +32,7 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.6",
     "globals": "^17.12.0",
+    "prettier": "^3.6.2",
     "tailwindcss": "^4.3.3",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.69.0",

@@ -1,5 +1,17 @@
 # React + TypeScript + Vite
 
+## Formatting
+
+From the repository root:
+
+- `npm run format -w apps/web`: format TypeScript, TSX, CSS, entry HTML and tooling config.
+- `npm run format:check -w apps/web`: check formatting without changing files.
+- `npm run lint -w apps/web`: check code quality with ESLint.
+
+Prettier matches the server settings: two spaces, single quotes, no semicolons
+and a 100-column target. Commands explicitly target source/config files and
+exclude env files, bundled fonts and generated output.
+
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
 Currently, two official plugins are available:

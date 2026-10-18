@@ -3,7 +3,9 @@ import type { ServerConfig } from './correction-config'
 import type { ErrorCode } from '@gramota/contracts'
 
 export class CorrectionError extends Error {
-  constructor(readonly code: ErrorCode) { super(code) }
+  constructor(readonly code: ErrorCode) {
+    super(code)
+  }
 }
 
 export type UpstreamReply = { status: number; data: unknown }
@@ -12,15 +14,26 @@ export interface CorrectionTransport {
   close(): Promise<void>
 }
 
-type DispatcherFactories = { direct(): Dispatcher; proxy(url: string): Dispatcher }
-const dispatchers: DispatcherFactories = { direct: () => new Agent(), proxy: url => new ProxyAgent(url) }
+type DispatcherFactories = {
+  direct(): Dispatcher
+  proxy(url: string): Dispatcher
+}
+const dispatchers: DispatcherFactories = {
+  direct: () => new Agent(),
+  proxy: (url) => new ProxyAgent(url),
+}
 
-export function createTransport(config: ServerConfig, factories: DispatcherFactories = dispatchers): CorrectionTransport {
+export function createTransport(
+  config: ServerConfig,
+  factories: DispatcherFactories = dispatchers,
+): CorrectionTransport {
   const dispatcher = config.proxyUrl ? factories.proxy(config.proxyUrl) : factories.direct()
   return {
     async send(body, signal) {
       const response = await request('https://openrouter.ai/api/v1/chat/completions', {
-        dispatcher, method: 'POST', signal,
+        dispatcher,
+        method: 'POST',
+        signal,
         headers: {
           authorization: `Bearer ${config.apiKey}`,
           'content-type': 'application/json',
@@ -39,10 +52,17 @@ export function createTransport(config: ServerConfig, factories: DispatcherFacto
         chunks.push(Buffer.from(chunk))
       }
       let data: unknown
-      try { data = JSON.parse(Buffer.concat(chunks).toString('utf8')) }
-      catch { throw new CorrectionError(response.statusCode === 200 ? 'INVALID_RESPONSE' : 'UPSTREAM_ERROR') }
+      try {
+        data = JSON.parse(Buffer.concat(chunks).toString('utf8'))
+      } catch {
+        throw new CorrectionError(
+          response.statusCode === 200 ? 'INVALID_RESPONSE' : 'UPSTREAM_ERROR',
+        )
+      }
       return { status: response.statusCode, data }
     },
-    async close() { await dispatcher.close() },
+    async close() {
+      await dispatcher.close()
+    },
   }
 }

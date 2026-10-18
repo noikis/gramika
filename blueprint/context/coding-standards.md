@@ -15,7 +15,8 @@
 - Preserve existing compiler settings; strict mode is not an agreed requirement.
 - Prefer inference where clear and explicit types at boundaries; avoid any.
 - Components and types use PascalCase; functions use camelCase.
-- Follow the surrounding file's formatting. No formatter is configured.
+- Follow the surrounding file's formatting. Both workspaces use Prettier via
+  `npm run format -w apps/server` and `npm run format -w apps/web` with matching settings.
 
 ## Structure and rendering
 

@@ -1,133 +1,124 @@
-import { DatabaseSync } from "node:sqlite";
-import { mkdirSync } from "node:fs";
-import { dirname } from "node:path";
-import {
-  HistoryDetail,
-  HistoryList,
-  MODEL_ID,
-  type ModelId,
-} from "@gramota/contracts";
+import { DatabaseSync } from 'node:sqlite'
+import { mkdirSync } from 'node:fs'
+import { dirname } from 'node:path'
+import { HistoryDetail, HistoryList, MODEL_ID, type ModelId } from '@gramota/contracts'
 
 export class InvalidCorrectionReference extends Error {}
 
-export type Attempt = { correctionId: string; requestId: string };
-export function storageDiagnostic(
-  error: unknown,
-  stage: "initialize" | "begin" | "finish",
-) {
+export type Attempt = { correctionId: string; requestId: string }
+export function storageDiagnostic(error: unknown, stage: 'initialize' | 'begin' | 'finish') {
   const allowed = [
-    "ERR_SQLITE_ERROR",
-    "ERR_INVALID_STATE",
-    "ERR_INVALID_ARG_TYPE",
-    "SQLITE_BUSY",
-    "SQLITE_LOCKED",
-    "EACCES",
-    "EPERM",
-    "ENOENT",
-    "ATTEMPT_NOT_PENDING",
-  ];
+    'ERR_SQLITE_ERROR',
+    'ERR_INVALID_STATE',
+    'ERR_INVALID_ARG_TYPE',
+    'SQLITE_BUSY',
+    'SQLITE_LOCKED',
+    'EACCES',
+    'EPERM',
+    'ENOENT',
+    'ATTEMPT_NOT_PENDING',
+  ]
   const code =
     error instanceof Error &&
-    "code" in error &&
-    typeof error.code === "string" &&
+    'code' in error &&
+    typeof error.code === 'string' &&
     allowed.includes(error.code)
       ? error.code
-      : "UNKNOWN_STORAGE_ERROR";
+      : 'UNKNOWN_STORAGE_ERROR'
   const sqliteCode =
     error instanceof Error &&
-    "errcode" in error &&
-    typeof error.errcode === "number" &&
+    'errcode' in error &&
+    typeof error.errcode === 'number' &&
     Number.isSafeInteger(error.errcode) &&
     error.errcode >= 0
       ? error.errcode
-      : undefined;
-  return { code: "STORAGE_ERROR", stage, driverCode: code, sqliteCode };
+      : undefined
+  return { code: 'STORAGE_ERROR', stage, driverCode: code, sqliteCode }
 }
 export type Outcome = {
-  status: "succeeded" | "failed";
-  correctedText: string | null;
-  endedAt: string;
-  durationMs: number;
-  errorCode: string | null;
-  errorMessage: string | null;
-  returnedModel?: string | null;
-  provider?: string | null;
-  openrouterGenerationId?: string | null;
-  inputTokens?: number | null;
-  outputTokens?: number | null;
-  reasoningTokens?: number | null;
-  cachedInputTokens?: number | null;
-  costUsd?: number | null;
-  finishReason?: string | null;
-  totalTokens?: number | null;
-  cacheWriteTokens?: number | null;
-  generationTimeMs?: number | null;
-  upstreamInferenceCostUsd?: number | null;
-  upstreamPromptCostUsd?: number | null;
-  upstreamCompletionCostUsd?: number | null;
-  routingStrategy?: string | null;
-  routingRegion?: string | null;
-  routingAttempt?: number | null;
-  isByok?: boolean | null;
-};
+  status: 'succeeded' | 'failed'
+  correctedText: string | null
+  endedAt: string
+  durationMs: number
+  errorCode: string | null
+  errorMessage: string | null
+  returnedModel?: string | null
+  provider?: string | null
+  openrouterGenerationId?: string | null
+  inputTokens?: number | null
+  outputTokens?: number | null
+  reasoningTokens?: number | null
+  cachedInputTokens?: number | null
+  costUsd?: number | null
+  finishReason?: string | null
+  totalTokens?: number | null
+  cacheWriteTokens?: number | null
+  generationTimeMs?: number | null
+  upstreamInferenceCostUsd?: number | null
+  upstreamPromptCostUsd?: number | null
+  upstreamCompletionCostUsd?: number | null
+  routingStrategy?: string | null
+  routingRegion?: string | null
+  routingAttempt?: number | null
+  isByok?: boolean | null
+}
 
 const requestColumns = {
-  id: "id",
-  requestedModel: "requested_model",
-  returnedModel: "returned_model",
-  provider: "provider",
-  openrouterGenerationId: "openrouter_generation_id",
-  promptVersion: "prompt_version",
-  correctedText: "corrected_text",
-  startedAt: "started_at",
-  endedAt: "ended_at",
-  appRequestTimeMs: "duration_ms",
-  inputTokens: "input_tokens",
-  outputTokens: "output_tokens",
-  totalTokens: "total_tokens",
-  reasoningTokens: "reasoning_tokens",
-  cachedInputTokens: "cached_input_tokens",
-  cacheWriteTokens: "cache_write_tokens",
-  costUsd: "cost_usd",
-  generationTimeMs: "generation_time_ms",
-  upstreamInferenceCostUsd: "upstream_inference_cost_usd",
-  upstreamPromptCostUsd: "upstream_prompt_cost_usd",
-  upstreamCompletionCostUsd: "upstream_completion_cost_usd",
-  routingStrategy: "routing_strategy",
-  routingRegion: "routing_region",
-  routingAttempt: "routing_attempt",
-  finishReason: "finish_reason",
-  status: "status",
-  errorCode: "error_code",
-  errorMessage: "error_message",
-} as const;
+  id: 'id',
+  requestedModel: 'requested_model',
+  returnedModel: 'returned_model',
+  provider: 'provider',
+  openrouterGenerationId: 'openrouter_generation_id',
+  promptVersion: 'prompt_version',
+  correctedText: 'corrected_text',
+  startedAt: 'started_at',
+  endedAt: 'ended_at',
+  appRequestTimeMs: 'duration_ms',
+  inputTokens: 'input_tokens',
+  outputTokens: 'output_tokens',
+  totalTokens: 'total_tokens',
+  reasoningTokens: 'reasoning_tokens',
+  cachedInputTokens: 'cached_input_tokens',
+  cacheWriteTokens: 'cache_write_tokens',
+  costUsd: 'cost_usd',
+  generationTimeMs: 'generation_time_ms',
+  upstreamInferenceCostUsd: 'upstream_inference_cost_usd',
+  upstreamPromptCostUsd: 'upstream_prompt_cost_usd',
+  upstreamCompletionCostUsd: 'upstream_completion_cost_usd',
+  routingStrategy: 'routing_strategy',
+  routingRegion: 'routing_region',
+  routingAttempt: 'routing_attempt',
+  finishReason: 'finish_reason',
+  status: 'status',
+  errorCode: 'error_code',
+  errorMessage: 'error_message',
+} as const
 
 export class CorrectionDatabase {
-  readonly db: DatabaseSync;
+  readonly db: DatabaseSync
 
   constructor(path: string, now = new Date().toISOString()) {
-    if (path !== ":memory:") mkdirSync(dirname(path), { recursive: true });
-    this.db = new DatabaseSync(path);
+    if (path !== ':memory:') mkdirSync(dirname(path), { recursive: true })
+    this.db = new DatabaseSync(path)
     try {
-      this.db.exec("PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;");
-      this.migrate();
+      this.db.exec('PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;')
+      this.migrate()
       this.db
         .prepare(
           `UPDATE model_requests SET status='failed', ended_at=?,
         error_code='INTERRUPTED', error_message='The server stopped before recording an outcome.'
         WHERE status='pending'`,
         )
-        .run(now);
+        .run(now)
     } catch (error) {
-      this.db.close();
-      throw error;
+      this.db.close()
+      throw error
     }
   }
 
   private migrate() {
-    const version = this.db.prepare("PRAGMA user_version").get()?.user_version;
-    if (typeof version !== "number" || version > 3)
-      throw new Error("Unsupported database version");
+    const version = this.db.prepare('PRAGMA user_version').get()?.user_version
+    if (typeof version !== 'number' || version > 3) throw new Error('Unsupported database version')
     if (version === 0)
       this.transaction(() =>
         this.db.exec(`
@@ -152,7 +143,7 @@ export class CorrectionDatabase {
       );
       PRAGMA user_version = 1;
     `),
-      );
+      )
     if (version < 2)
       this.transaction(() =>
         this.db.exec(`
@@ -169,42 +160,36 @@ export class CorrectionDatabase {
       ALTER TABLE model_requests ADD COLUMN is_byok INTEGER CHECK(is_byok IN (0,1));
       PRAGMA user_version = 2;
     `),
-      );
+      )
     if (version < 3)
       this.transaction(() => {
         this.db.exec(`CREATE TABLE model_preference (
         id INTEGER PRIMARY KEY CHECK(id=1), model_id TEXT NOT NULL
-      ); PRAGMA user_version = 3;`);
-        this.db
-          .prepare("INSERT INTO model_preference VALUES(1, ?)")
-          .run(MODEL_ID);
-      });
+      ); PRAGMA user_version = 3;`)
+        this.db.prepare('INSERT INTO model_preference VALUES(1, ?)').run(MODEL_ID)
+      })
   }
 
   private transaction(action: () => void) {
-    this.db.exec("BEGIN IMMEDIATE");
+    this.db.exec('BEGIN IMMEDIATE')
     try {
-      action();
-      this.db.exec("COMMIT");
+      action()
+      this.db.exec('COMMIT')
     } catch (error) {
-      this.db.exec("ROLLBACK");
-      throw error;
+      this.db.exec('ROLLBACK')
+      throw error
     }
   }
 
   getModelPreference() {
-    const row = this.db
-      .prepare("SELECT model_id FROM model_preference WHERE id=1")
-      .get();
-    if (!row) throw new Error("Missing model preference");
-    return String(row.model_id);
+    const row = this.db.prepare('SELECT model_id FROM model_preference WHERE id=1').get()
+    if (!row) throw new Error('Missing model preference')
+    return String(row.model_id)
   }
 
   setModelPreference(modelId: ModelId) {
-    const result = this.db
-      .prepare("UPDATE model_preference SET model_id=? WHERE id=1")
-      .run(modelId);
-    if (result.changes !== 1) throw new Error("Missing model preference");
+    const result = this.db.prepare('UPDATE model_preference SET model_id=? WHERE id=1').run(modelId)
+    if (result.changes !== 1) throw new Error('Missing model preference')
   }
 
   begin(
@@ -219,14 +204,13 @@ export class CorrectionDatabase {
     this.transaction(() => {
       if (repeat) {
         const row = this.db
-          .prepare("SELECT original_text FROM corrections WHERE id=?")
-          .get(ids.correctionId);
-        if (!row || row.original_text !== text)
-          throw new InvalidCorrectionReference();
+          .prepare('SELECT original_text FROM corrections WHERE id=?')
+          .get(ids.correctionId)
+        if (!row || row.original_text !== text) throw new InvalidCorrectionReference()
       } else {
         this.db
-          .prepare("INSERT INTO corrections VALUES (?, ?, ?, ?, ?)")
-          .run(ids.correctionId, startedAt, text, "ru", "strict");
+          .prepare('INSERT INTO corrections VALUES (?, ?, ?, ?, ?)')
+          .run(ids.correctionId, startedAt, text, 'ru', 'strict')
       }
       this.db
         .prepare(
@@ -234,15 +218,8 @@ export class CorrectionDatabase {
         (id, correction_id, requested_model, prompt_version, parameters_json, started_at, status)
         VALUES (?, ?, ?, ?, ?, ?, 'pending')`,
         )
-        .run(
-          ids.requestId,
-          ids.correctionId,
-          model,
-          prompt,
-          JSON.stringify(parameters),
-          startedAt,
-        );
-    });
+        .run(ids.requestId, ids.correctionId, model, prompt, JSON.stringify(parameters), startedAt)
+    })
   }
 
   finish(requestId: string, outcome: Outcome) {
@@ -282,61 +259,54 @@ export class CorrectionDatabase {
         outcome.routingAttempt ?? null,
         outcome.isByok == null ? null : Number(outcome.isByok),
         requestId,
-      );
+      )
     if (result.changes !== 1)
-      throw Object.assign(new Error("Attempt is not pending"), {
-        code: "ATTEMPT_NOT_PENDING",
-      });
+      throw Object.assign(new Error('Attempt is not pending'), {
+        code: 'ATTEMPT_NOT_PENDING',
+      })
   }
 
   listHistory() {
-    const segmenter = new Intl.Segmenter("ru", { granularity: "grapheme" });
+    const segmenter = new Intl.Segmenter('ru', { granularity: 'grapheme' })
     const requests = this.db
-      .prepare(
-        "SELECT correction_id, requested_model FROM model_requests ORDER BY started_at, id",
-      )
-      .all();
-    const models = new Map<string, string[]>();
+      .prepare('SELECT correction_id, requested_model FROM model_requests ORDER BY started_at, id')
+      .all()
+    const models = new Map<string, string[]>()
     for (const row of requests) {
-      const key = String(row.correction_id);
-      const values = models.get(key) ?? [];
-      if (!values.includes(String(row.requested_model)))
-        values.push(String(row.requested_model));
-      models.set(key, values);
+      const key = String(row.correction_id)
+      const values = models.get(key) ?? []
+      if (!values.includes(String(row.requested_model))) values.push(String(row.requested_model))
+      models.set(key, values)
     }
     const rows = this.db
       .prepare(
-        "SELECT id, created_at, original_text FROM corrections ORDER BY created_at DESC, id DESC",
+        'SELECT id, created_at, original_text FROM corrections ORDER BY created_at DESC, id DESC',
       )
-      .all();
+      .all()
     return HistoryList.parse({
       items: rows.map((row) => {
-        let preview = "",
-          count = 0;
+        let preview = '',
+          count = 0
         for (const part of segmenter.segment(String(row.original_text))) {
-          if (count++ === 120) break;
-          preview += part.segment;
+          if (count++ === 120) break
+          preview += part.segment
         }
         return {
           id: row.id,
           createdAt: row.created_at,
           preview,
           models: models.get(String(row.id)) ?? [],
-        };
+        }
       }),
-    });
+    })
   }
 
   getHistory(id: string) {
-    const correction = this.db
-      .prepare("SELECT * FROM corrections WHERE id=?")
-      .get(id);
-    if (!correction) return null;
+    const correction = this.db.prepare('SELECT * FROM corrections WHERE id=?').get(id)
+    if (!correction) return null
     const rows = this.db
-      .prepare(
-        "SELECT * FROM model_requests WHERE correction_id=? ORDER BY started_at, id",
-      )
-      .all(id);
+      .prepare('SELECT * FROM model_requests WHERE correction_id=? ORDER BY started_at, id')
+      .all(id)
     return HistoryDetail.parse({
       id: correction.id,
       createdAt: correction.created_at,
@@ -345,18 +315,15 @@ export class CorrectionDatabase {
       mode: correction.mode,
       requests: rows.map((row) => ({
         ...Object.fromEntries(
-          Object.entries(requestColumns).map(([field, column]) => [
-            field,
-            row[column] ?? null,
-          ]),
+          Object.entries(requestColumns).map(([field, column]) => [field, row[column] ?? null]),
         ),
         parameters: JSON.parse(String(row.parameters_json)),
         isByok: row.is_byok == null ? null : row.is_byok === 1,
       })),
-    });
+    })
   }
 
   close() {
-    this.db.close();
+    this.db.close()
   }
 }

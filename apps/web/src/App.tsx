@@ -16,16 +16,30 @@ function App() {
       <header className="app-header">
         <span className="brand">gramota</span>
         <nav aria-label="Main navigation">
-          <Button type="button" variant="ghost" aria-current={view === 'correction' ? 'page' : undefined} onClick={() => setView('correction')}>
+          <Button
+            type="button"
+            variant="ghost"
+            aria-current={view === 'correction' ? 'page' : undefined}
+            onClick={() => setView('correction')}
+          >
             Correction
           </Button>
-          <Button type="button" variant="ghost" aria-current={view === 'history' ? 'page' : undefined} onClick={() => setView('history')}>
+          <Button
+            type="button"
+            variant="ghost"
+            aria-current={view === 'history' ? 'page' : undefined}
+            onClick={() => setView('history')}
+          >
             History
           </Button>
         </nav>
       </header>
       <main>
-        {view === 'correction' ? <CorrectionWorkspace draft={draft} correction={correction} /> : <HistoryPage />}
+        {view === 'correction' ? (
+          <CorrectionWorkspace draft={draft} correction={correction} />
+        ) : (
+          <HistoryPage />
+        )}
       </main>
     </div>
   )
