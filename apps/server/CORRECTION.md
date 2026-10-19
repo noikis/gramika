@@ -34,6 +34,41 @@ The development watcher follows only compiled files in `dist`, so database write
 do not restart the API. Storage failures log a safe stage (initialize/begin/finish)
 and driver codes, never exception messages, user text, keys or database paths.
 
+## Diagnostic logs and health
+
+No additional logging package is needed. Fastify's existing Pino logger writes
+through the internal `src/logging/` module: `index.ts` exposes configuration and
+enums. Configuration is supplied when the Fastify instance is created; this
+module is not a Fastify plugin. Logs use
+JSON to stdout in production and readable output with the existing development
+command. Both commands load the exported application options with `--options`.
+Routine successful requests, corrections and health polls are not logged.
+Operational failures include safe codes, request IDs, HTTP method, route template
+and operation; correction failures also include duration and an attempt ID when
+one exists. Storage failures use the same request ID as their HTTP request.
+Exception messages and stack traces are omitted; there is no custom stack parser. Fastify
+response/stream/serialization failures remain visible; successful responses and
+404s stay quiet. Startup configuration warnings and resource shutdown are logged.
+Bodies, original/result text, search phrases, actual URL parameters, headers,
+secrets and arbitrary exception messages are excluded. The serializers protect
+structured request/error fields; never put private content into log messages or
+new arbitrary fields.
+
+GET `/health` returns `200 {"status":"ok"}` when required correction configuration
+is valid and the database can be read. Otherwise it returns `503` with
+`{"status":"unavailable","reason":"DATABASE_UNAVAILABLE"}` or `NOT_CONFIGURED`.
+Database unavailability takes precedence if both checks fail. Responses use
+`Cache-Control: no-store`. Checks reuse the startup configuration and read the
+model preference through the existing repository without changing saved data.
+No OpenRouter/proxy/VPN request is made; a healthy response does not establish
+upstream reachability. VPN monitoring is deferred for separate discussion.
+
+With the API already running, inspect health with `curl -i http://localhost:3000/health`.
+Inspect logs in the server terminal, or through `docker logs` once container
+packaging exists. Container log rotation will be configured with packaging.
+
+## Correction and history
+
 Gemma 4 26B A4B is the default; Gemini 3.1 Flash Lite is the only alternative.
 Both send only the strict-v3 instruction and current text,
 with reasoning disabled, no streaming, automatic retries or application caching.

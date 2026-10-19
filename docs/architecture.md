@@ -17,6 +17,7 @@ SQLite использует Drizzle ORM и `better-sqlite3`. Текущие на
 | Diff, clipboard и форматирование | `apps/web/src/lib/` |
 | Создание Fastify-приложения | `apps/server/src/app.ts` |
 | Создание и освобождение общих ресурсов | `apps/server/src/app-resources.ts` |
+| Структурированные диагностические логи | `apps/server/src/logging/`, публичный вход `index.ts` |
 | HTTP коррекции | `apps/server/src/routes/corrections.ts` |
 | HTTP настроек модели | `apps/server/src/routes/model-settings.ts` |
 | HTTP истории | `apps/server/src/routes/history.ts` |
@@ -62,6 +63,9 @@ OpenRouter возвращает разобранный результат с м�
 Ручные команды и локальный каталог benchmark-data сохраняются.
 
 ## API и поток данных
+
+- GET `/health`: локальная проверка конфигурации и чтения SQLite; без запросов
+  к OpenRouter/VPN. Возвращает 200 или 503 с безопасной причиной.
 
 - GET `/api/correction-config`: модели, сохранённый выбор, лимиты, доступность.
 - PUT `/api/model-preference`: сохранение выбранной модели.

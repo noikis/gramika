@@ -42,6 +42,10 @@ export class SqliteDatabase {
     this.db.close()
   }
 
+  checkHealth() {
+    this.modelPreferences.get()
+  }
+
   private openConnection(path: string) {
     if (path !== ':memory:') mkdirSync(dirname(path), { recursive: true })
 

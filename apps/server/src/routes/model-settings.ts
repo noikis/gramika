@@ -34,8 +34,8 @@ export async function modelSettingsRoutes(
           timeoutMs: TIMEOUT_MS,
           available,
         })
-      } catch {
-        return sendCorrectionFailure(reply, ErrorCode.enum.STORAGE_ERROR)
+      } catch (error) {
+        return sendCorrectionFailure(reply, ErrorCode.enum.STORAGE_ERROR, null, error)
       }
     })
 
@@ -48,8 +48,8 @@ export async function modelSettingsRoutes(
 
         preferences.set(parsed.data.modelId)
         return parsed.data
-      } catch {
-        return sendCorrectionFailure(reply, ErrorCode.enum.STORAGE_ERROR)
+      } catch (error) {
+        return sendCorrectionFailure(reply, ErrorCode.enum.STORAGE_ERROR, null, error)
       }
     })
   })

@@ -1,6 +1,6 @@
 # Gramota - Project Overview
 
-<!-- blueprint:source-hash c4983d85c2e4869a3375ad7768c44f5d1b5fa27a41d3e1aa25f8d26fb095eeef -->
+<!-- blueprint:source-hash eab216eec677fc6d43a23304152d38fdb680e8a86a81300d6dd749c8f5e4f50a -->
 
 Derived from [project-plan.md](../project-plan.md) and [build-plan.md](../build-plan.md).
 Updated 2026-10-19 to reflect completed work and user decisions. Implementation
@@ -27,9 +27,11 @@ with request recording, local diff, expandable history, model selection and
 repeated corrections. Search/filter/sort/pagination, Sonner notifications and
 manual V3 comparison tooling are completed follow-up work.
 
-Feature 6 remains: one container serving the API and frontend, persistent SQLite,
-deployment health checks, backup/restore and storage verification through
-container recreation. The user reported on 2026-10-19 that OpenRouter access is
+Feature 6 is split into 6a (minimal diagnostic logging and one local GET /health),
+6b (one container serving API/frontend, persistent SQLite and recreation checks),
+and 6c (backup/restore). Feature 6a is being implemented; VPN/proxy reachability
+monitoring remains a separate open question. Local health does not prove upstream
+availability. The user reported on 2026-10-19 that OpenRouter access is
 denied with VPN disconnected. This is manual user evidence, not verification of
 the future container or a new agent network test.
 

@@ -3,6 +3,7 @@ import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { HistoryErrorCode, HistoryFailure, HistorySearchQuery } from '@gramota/contracts'
 import type { HistoryRepository } from '../database'
+import { LogOperation } from '../logging'
 
 export async function historyRoutes(
   app: FastifyInstance,
@@ -25,7 +26,7 @@ export async function historyRoutes(
         },
       })
 
-    history.setErrorHandler((_error, _request, reply) => {
+    history.setErrorHandler((_error, request, reply) => {
       if (
         typeof _error === 'object' &&
         _error !== null &&
@@ -37,7 +38,15 @@ export async function historyRoutes(
         return reply.code(_error.statusCode).send(invalidQuery())
       }
 
-      history.log.error({ code: HistoryErrorCode.enum.HISTORY_UNAVAILABLE }, 'History read failed')
+      request.log.error(
+        {
+          req: request,
+          err: _error,
+          operation: LogOperation.enum['history-read'],
+          code: HistoryErrorCode.enum.HISTORY_UNAVAILABLE,
+        },
+        'History read failed',
+      )
       reply.code(HTTP_STATUS.SERVICE_UNAVAILABLE).send(unavailable())
     })
 

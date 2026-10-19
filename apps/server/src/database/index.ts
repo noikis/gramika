@@ -7,5 +7,5 @@ export type HistoryRepository = SqliteDatabase['history']
 export type ModelPreferenceRepository = SqliteDatabase['modelPreferences']
 export type Database = Pick<
   SqliteDatabase,
-  'corrections' | 'history' | 'modelPreferences' | 'close'
+  'corrections' | 'history' | 'modelPreferences' | 'close' | 'checkHealth'
 >

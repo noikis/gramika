@@ -1,9 +1,11 @@
-import { HTTP_STATUS } from '../http-status'
-import type { FastifyInstance, FastifyReply } from 'fastify'
+import { HTTP_STATUS, type HttpStatus } from '../http-status'
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 import { CorrectionFailure, ERROR_MESSAGES, ErrorCode } from '@gramota/contracts'
 import type { Attempt } from '../correction'
+import { databaseDiagnostic } from '../database'
+import { LogOperation } from '../logging'
 
-const statusCodes: Record<ErrorCode, number> = {
+const statusCodes: Record<ErrorCode, HttpStatus> = {
   [ErrorCode.enum.INVALID_INPUT]: HTTP_STATUS.BAD_REQUEST,
   [ErrorCode.enum.PAYLOAD_TOO_LARGE]: HTTP_STATUS.PAYLOAD_TOO_LARGE,
   [ErrorCode.enum.NOT_CONFIGURED]: HTTP_STATUS.SERVICE_UNAVAILABLE,
@@ -14,11 +16,39 @@ const statusCodes: Record<ErrorCode, number> = {
   [ErrorCode.enum.TIMEOUT]: HTTP_STATUS.GATEWAY_TIMEOUT,
 }
 
+export function createCorrectionStorageFailureLogger(request: FastifyRequest) {
+  return (error: unknown, stage: Parameters<typeof databaseDiagnostic>[1]) => {
+    request.log.error(
+      {
+        req: request,
+        err: error,
+        operation: LogOperation.enum['correction-storage'],
+        ...databaseDiagnostic(error, stage),
+      },
+      'Correction repository operation failed',
+    )
+  }
+}
+
 export function sendCorrectionFailure(
   reply: FastifyReply,
   code: ErrorCode,
   ids: Attempt | null = null,
+  error?: unknown,
 ) {
+  if (statusCodes[code] >= HTTP_STATUS.INTERNAL_SERVER_ERROR)
+    reply.request.log.error(
+      {
+        req: reply.request,
+        err: error,
+        code,
+        operation: LogOperation.enum['correction-api'],
+        attemptId: ids?.requestId,
+        durationMs: reply.elapsedTime,
+      },
+      'Request failed',
+    )
+
   return reply.code(statusCodes[code]).send(
     CorrectionFailure.parse({
       error: { code, message: ERROR_MESSAGES[code] },
@@ -40,9 +70,6 @@ export function setCorrectionErrorHandler(api: FastifyInstance) {
             statusCode === HTTP_STATUS.UNSUPPORTED_MEDIA_TYPE
           ? ErrorCode.enum.INVALID_INPUT
           : ErrorCode.enum.UPSTREAM_ERROR
-    if (code === ErrorCode.enum.UPSTREAM_ERROR)
-      api.log.error({ code }, 'Unexpected correction error')
-
-    return sendCorrectionFailure(reply, code)
+    return sendCorrectionFailure(reply, code, null, error)
   })
 }

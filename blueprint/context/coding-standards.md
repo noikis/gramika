@@ -57,6 +57,7 @@
   migrations and repositories/ for correction writes, history queries and model
   preferences. correction/ defines the CorrectionRepository contract required by
   its business logic.
+  logging/ owns Pino options, failure logging control and logging enums.
   benchmark/ owns the manual CLI, mocked-testable runner and offline report.
 - These backend areas are internal modules, not workspace packages. Import their
   public index.ts from other modules; use direct file imports within a module.

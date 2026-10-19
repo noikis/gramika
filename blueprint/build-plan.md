@@ -27,6 +27,13 @@ intermediate and desktop widths rather than assuming the CSS proves usability.
 - [x] 4. **Expandable correction history and request details** - Implement the approved History screen using persisted records, with preview/date/model summaries and expanded originals, individual results, Text/Changes views, Copy and request metrics; handle empty history, failed requests and unavailable metrics without fabricated values.
 - [x] 5. **Model selection and repeated corrections** - Activate the model selector with Gemma 4 as default and Gemini 3.1 Flash Lite as the alternative, persist the selected preference, and retain separate request results and metrics when the same original is corrected again with the same or another model.
 - [ ] 6. **Production operation and persistent storage** - Package the API and built frontend for one container with persistent SQLite storage, validated mandatory proxy configuration, health checks and documented backup/restore; verify restart persistence and absence of direct OpenRouter fallback without introducing authentication or external-access infrastructure.
+  - [x] 6a. **Diagnostic logging and health** - Minimal privacy-safe failure logs using the existing Fastify logger and one local GET /health endpoint; no VPN probes or success-request logs.
+  - [ ] 6b. **Single-container packaging and persistent SQLite** - Serve the built frontend and API together, ship migrations, configure a persistent volume and verify persistence through recreation and the mandatory proxy policy.
+  - [ ] 6c. **Backup and restore** - Document and verify backup/restore using disposable data before deployment.
+
+The single health endpoint is owned by 6a, not a separate liveness/readiness feature.
+VPN/proxy reachability monitoring remains an open question for a later discussion;
+local health does not establish upstream availability. Container log rotation belongs to 6b.
 
 ## Feature boundaries and verification
 

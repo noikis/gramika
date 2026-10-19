@@ -47,6 +47,7 @@ export function createCorrectionService(deps: Dependencies) {
     text: string,
     modelId: string = DEFAULT_MODEL_ID,
     correctionId?: string,
+    onRepositoryFailure = deps.onRepositoryFailure,
   ) {
     const input = CorrectionInput.safeParse({ text, modelId, correctionId })
     if (!input.success) throw new AttemptError(ErrorCode.enum.INVALID_INPUT, null)
@@ -78,7 +79,7 @@ export function createCorrectionService(deps: Dependencies) {
     } catch (error) {
       if (error instanceof InvalidCorrectionReference)
         throw new AttemptError(ErrorCode.enum.INVALID_INPUT, null)
-      deps.onRepositoryFailure?.(error, 'begin')
+      onRepositoryFailure?.(error, 'begin')
       throw new AttemptError(ErrorCode.enum.STORAGE_ERROR, null)
     }
 
@@ -139,7 +140,7 @@ export function createCorrectionService(deps: Dependencies) {
         errorMessage: errorCode ? ERROR_MESSAGES[errorCode] : null,
       })
     } catch (error) {
-      deps.onRepositoryFailure?.(error, 'finish')
+      onRepositoryFailure?.(error, 'finish')
       throw new AttemptError(ErrorCode.enum.STORAGE_ERROR, ids)
     }
 

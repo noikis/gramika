@@ -15,11 +15,11 @@
     "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\" eslint.config.mjs",
     "test": "npm run build:ts && tsc -p test/tsconfig.json && c8 node --test -r ts-node/register \"test/**/*.ts\"",
     "clean": "node -e \"require('fs').rmSync('dist', {recursive: true, force: true})\"",
-    "start": "npm run build:ts && fastify start -l info dist/app.js",
+    "start": "npm run build:ts && fastify start --options -l info dist/app.js",
     "build:ts": "npm run build -w @gramota/contracts && npm run clean && tsc",
     "watch:ts": "tsc -w",
     "dev": "npm run build:ts && concurrently -k -p \"[{name}]\" -n \"TypeScript,App\" -c \"yellow.bold,cyan.bold\" \"npm:watch:ts\" \"npm:dev:start\"",
-    "dev:start": "fastify start --follow-watch=dist -w -l info -P dist/app.js"
+    "dev:start": "fastify start --options --follow-watch=dist -w -l info -P dist/app.js"
   },
   "keywords": [],
   "author": "",

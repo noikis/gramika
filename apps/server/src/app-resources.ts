@@ -3,6 +3,7 @@ import { parseConfig, readEnvironment, type Environment } from './correction-con
 import { SqliteDatabase, databaseDiagnostic, type Database } from './database'
 import { createTransport } from './openrouter'
 import { type CorrectionTransport } from './correction'
+import { LogOperation } from './logging'
 
 export type AppResourcesOptions = {
   environment?: Environment
@@ -15,6 +16,9 @@ export type AppResourcesOptions = {
 export function createAppResources(app: FastifyInstance, options: AppResourcesOptions = {}) {
   const config = parseConfig(options.environment ?? readEnvironment())
 
+  if (!config.available)
+    app.log.warn({ code: 'NOT_CONFIGURED' }, 'Correction configuration is unavailable')
+
   let database: Database | null = null
 
   try {
@@ -23,7 +27,14 @@ export function createAppResources(app: FastifyInstance, options: AppResourcesOp
         ? options.database
         : new SqliteDatabase(options.databasePath ?? config.databasePath)
   } catch (error) {
-    app.log.error(databaseDiagnostic(error, 'initialize'), 'Correction database is unavailable')
+    app.log.error(
+      {
+        ...databaseDiagnostic(error, 'initialize'),
+        err: error,
+        operation: LogOperation.enum['database-initialize'],
+      },
+      'Correction database is unavailable',
+    )
   }
 
   const transport = options.transport ?? (config.available ? createTransport(config) : null)
@@ -34,6 +45,7 @@ export function createAppResources(app: FastifyInstance, options: AppResourcesOp
     } finally {
       database?.close()
     }
+    app.log.info('Application resources closed')
   })
 
   return { config, database, transport }
