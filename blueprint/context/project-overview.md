@@ -1,6 +1,6 @@
 # Gramota - Project Overview
 
-<!-- blueprint:source-hash eab216eec677fc6d43a23304152d38fdb680e8a86a81300d6dd749c8f5e4f50a -->
+<!-- blueprint:source-hash 0667e10094e61b8cbc54d97e620d00865d3575b741ec5a5149c5b9794e016e01 -->
 
 Derived from [project-plan.md](../project-plan.md) and [build-plan.md](../build-plan.md).
 Updated 2026-10-19 to reflect completed work and user decisions. Implementation
@@ -22,6 +22,9 @@ are not approved requirements, priorities or instructions to implement features.
 
 ## Progress
 
+Product decisions live in project-plan.md; setup and deployment instructions live
+in docs/container.md. Build-plan.md tracks progress; history retains completed work.
+
 Original roadmap features 1-5 are complete: responsive editor, Strict correction
 with request recording, local diff, expandable history, model selection and
 repeated corrections. Search/filter/sort/pagination, Sonner notifications and
@@ -29,7 +32,8 @@ manual V3 comparison tooling are completed follow-up work.
 
 Feature 6 is split into 6a (minimal diagnostic logging and one local GET /health),
 6b (one container serving API/frontend, persistent SQLite and recreation checks),
-and 6c (backup/restore). Feature 6a is being implemented; VPN/proxy reachability
+and 6c (backup/restore). Features 6a and 6b are complete, including disposable
+recreation checks. Backup/restore remains in 6c. VPN/proxy reachability
 monitoring remains a separate open question. Local health does not prove upstream
 availability. The user reported on 2026-10-19 that OpenRouter access is
 denied with VPN disconnected. This is manual user evidence, not verification of
@@ -41,9 +45,10 @@ the future container or a new agent network test.
 - React/Vite/TypeScript, Tailwind CSS, local shadcn-style components, Sonner.
   App.tsx, components/, use-correction*.ts, use-history.ts and lib/ own the UI.
 - Fastify CLI loads app.ts, which composes resources and explicitly registers
-  routes/root.ts, corrections.ts, history.ts and model-settings.ts. GET / returns
-  a simple root response, not a complete deployment health check. Built frontend
-  serving remains unfinished. app-resources.ts owns initialization and cleanup.
+  routes/root.ts, corrections.ts, history.ts, model-settings.ts and health.ts.
+  Production GET / and assets serve the Vite build through @fastify/static;
+  development retains the simple root response. GET /health checks local
+  configuration and SQLite. app-resources.ts owns initialization and cleanup.
 - correction/ owns attempts, strict-v3, request defaults and small recording and
   transport contracts. openrouter/ owns Undici, response validation and metadata.
   correction-config.ts validates environment and proxy; benchmark/ contains the
@@ -103,7 +108,9 @@ Desktop has side-by-side editors; mobile stacks them. Model selection matches th
 original editor width, with its label above. Labels: Gemma 4 · Standard and
 Gemini 3.1 Flash Lite · Higher cost. Quality helper text appears only for Gemini.
 
-Text/Changes defaults to Changes. Copy always uses clean output and confirms only
+Submitted text trims leading/trailing whitespace while preserving internal
+whitespace; the editor retains the untrimmed draft. Text/Changes defaults to Changes.
+Copy always uses clean output and confirms only
 actual clipboard success. Preserve input on failures; allow manual clipboard
 fallback. Sonner provides transient feedback. Metrics belong in expanded history.
 The current React UI supersedes older static prototypes; history-v2 is the newer
@@ -123,8 +130,15 @@ when code is unchanged and keep completion bookkeeping lightweight.
 
 ## Environment and remaining work
 
-Development uses system VPN. Production requires GRAMOTA_ENV=production and
+One private root .env serves local development and Compose; no web env file is
+needed. Development uses NODE_ENV=development and system VPN. The Docker image
+sets NODE_ENV=production independently of the root file. Production requires
 a valid HTTP(S) OPENROUTER_PROXY_URL from private environment configuration,
 with no direct fallback. Missing or invalid configuration prevents correction. Credentials remain server-only.
-Persistent volumes, backup/restore and secure phone access are not established by
-local development behavior. See docs/environments.md and docs/status.md.
+Container SQLite retains server-relative data/gramota.sqlite, using a named volume
+mounted at /app/apps/server/data without a SQLITE_PATH override. Synthetic history and
+model preference survive local container recreation. GRAMOTA_PORT changes the
+loopback host port, default 3000; container logs rotate and restart policy is
+unless-stopped. Backup/restore, actual
+container VPN routing and secure phone access remain unverified. See
+docs/container.md.

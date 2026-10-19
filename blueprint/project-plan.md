@@ -39,7 +39,8 @@ Typical input is a short message or several paragraphs of an email. Full documen
 - Use the shared strict-v3 prompt across styles; user testing has not shown a
   need for separate style prompts.
 - Record and display useful metrics for each model request.
-- Retain each result when the same input is submitted to another model.
+- Retain each result when unchanged input is submitted again with the same or
+  another model; editing the input starts a new correction.
 
 Strict mode fixes objective errors only. It does not change tone or replace valid wording merely because another phrasing sounds better.
 
@@ -89,6 +90,13 @@ Store:
 
 Failed attempts remain measurable because they may incur charges. Missing metrics are unknown, not zero. Token breakdowns must not be counted twice.
 
+Use UUID identifiers and ISO timestamps. Costs are USD and application durations
+are milliseconds. Provider generation time remains separate from local request
+time. Record only validated reported metrics; do not estimate missing values or
+backfill them through network calls. Interrupted attempts are marked failed at
+startup without being replayed. Historical model identifiers remain readable;
+unsupported saved model preferences reset to Gemma when configuration is read.
+
 Do not store credentials, full raw responses or reasoning text by default. Diff is derived from the original and corrected text.
 
 ### Application settings
@@ -113,9 +121,10 @@ The user can compare output quality, duration, tokens and cost from these record
 - Fastify and Node.js with TypeScript.
 - shadcn/ui and Tailwind CSS for the interface.
 - Zod for shared public request/response schemas and runtime validation.
-- SQLite for persistent storage.
+- Stable Drizzle ORM with better-sqlite3 for SQLite, transactional SQL migrations
+  and Drizzle Kit for migration generation.
 - OpenRouter for model access.
-- A dedicated server-side HTTP client supporting the configured proxy.
+- Undici for server-only OpenRouter requests and the configured proxy.
 - npm workspaces with web, server and contracts packages.
 
 Do not introduce pnpm, Lerna, Turborepo or additional services without a concrete need.
@@ -128,19 +137,39 @@ Keep the architecture small:
 - Database access and OpenRouter communication remain separate from route handlers.
 - Public contracts contain no database implementation, secrets or server resources.
 
-The current scaffold uses Fastify CLI and autoload. Changes to those conventions should serve a concrete feature requirement rather than trigger an automatic rewrite.
+Fastify CLI loads app.ts, which explicitly registers route groups. Internal
+correction, OpenRouter and database modules expose public index.ts entry points;
+business logic depends on repository and transport contracts. This is a React/Vite
+application, not Next.js, Prisma or Clerk. The implemented source map and API are
+summarized in [the overview](context/project-overview.md).
 
 Preserve existing TypeScript settings unless deliberately changed. TypeScript is required; changing strictness is not a separate product requirement.
 
 ### LLM configuration
 
-The user's proposed initial default is **Qwen 3.5 Flash**. Reasoning must be fully disabled for every model. This replaces the earlier low-thinking preference. Verify the exact OpenRouter identifier and support for disabling reasoning before configuring a model. Do not silently substitute another model or enable reasoning.
+Gemma 4 26B A4B (`google/gemma-4-26b-a4b-it`) is the default; Gemini 3.1 Flash Lite
+(`google/gemini-3.1-flash-lite`) is the only alternative. The user selected these
+after manual comparisons on 2026-10-19. Gemini is considered more expensive,
+without an established quality advantage. Earlier Qwen and DeepSeek proposals
+are superseded. Use the shared registry in packages/contracts for both the app
+and manual benchmark.
+
+Use the shared strict-v3 prompt for every style. User checks across several
+phrases and styles did not establish a need for separate prompts. Requests set
+reasoning.enabled=false, stream=false, max_tokens=8192,
+provider.require_parameters=true and provider.allow_fallbacks=false. Application
+corrections reject reasoning fields or positive reasoning token counts; the
+manual benchmark accepts otherwise valid outputs and records reported usage.
+No automatic retry, fallback model, second-model verification or result cache.
+Limit input to 5,000 Unicode code points and each upstream request to 60 seconds.
 
 Each correction sends a compact instruction and the current text. Do not include correction history or ask the model to generate explanations, diff markup or duplicated originals.
 
 Treat text being corrected as data, including any instructions embedded in it.
 
-Prompt versions must be identifiable in request history. The initial prompt is a baseline to improve through limited, deliberate use, not a proven optimum.
+Prompt versions must be identifiable in request history. Changes to models,
+request policy or paid evaluation require a deliberate user decision. Numerical
+quality/latency thresholds and future evaluation budgets remain undecided.
 
 Ordinary automated tests use mocked LLM responses and make no paid calls.
 
@@ -167,7 +196,7 @@ Use readable text, comfortable touch targets and clear loading, success and erro
 Approved UI prototypes (user approval: 2026-10-17):
 
 - [Correction](../prototypes/correction.html)
-- [History](../prototypes/history.html)
+- [History](../prototypes/history-v2.html)
 - [Design decisions and implementation handoff](../prototypes/README.md)
 
 Use these approved designs for build planning and UI feature specifications.
@@ -186,6 +215,20 @@ Approved layout and interactions:
 - History rows show text preview, date and model; results and request metrics
   appear inside expanded entries.
 
+Trim only leading/trailing whitespace when submitting; preserve internal spaces
+and line breaks, and use that submitted text for validation, history and diff.
+The editor retains the untrimmed draft. Desktop editors sit side by side;
+mobile editors stack. Model selection matches the original editor width, with
+its label above. The prototype breakpoint is 720px; verify phone, intermediate
+and desktop layouts. Copy always uses clean text regardless of Text/Changes view.
+There is no automatic copy after correction. Announce clipboard failure and keep
+manual selection available; secure phone clipboard access depends on deployment.
+
+History supports case-insensitive phrase search across originals/results,
+filters, newest/oldest sorting and pages of 10 records. It preserves separate
+attempts and their metrics without displaying metrics on the correction screen.
+Sonner notifications are transient. History deletion is not implemented.
+
 Do not show mode or tone selectors in the Strict-only MVP.
 
 Do not run paid correction requests on every keystroke. Preserve input after a failure. Prevent accidental duplicate submissions while a request is active.
@@ -201,7 +244,10 @@ behavior verification remain separate work; see the prototype handoff above.
 
 Target: production with persistent storage for SQLite.
 
-The intended deployment is one application container serving the API and built frontend, with the database stored on a persistent volume.
+One application container serves the API and built frontend, with the database
+stored on a persistent volume. Packaging and local health checks are complete
+(6a-6b); backup/restore remains in 6c. Operational commands and storage precautions
+live only in [the setup and deployment guide](../docs/container.md).
 
 ### Network requirements
 
@@ -227,7 +273,15 @@ The proxy's own behaviour when VPN connectivity fails needs infrastructure verif
 
 Domain, external access, authentication and TLS decisions are intentionally deferred. Browser clipboard requirements must be considered when configuring phone access.
 
-Production build/start commands, environment names beyond the agreed proxy variable and the health-check route will be finalized during deployment work.
+One private root .env supplies local development and Docker Compose; the frontend
+needs no env file. NODE_ENV selects development or production. The Docker image
+sets production independently of the local file. GET /health checks local
+configuration and SQLite reads, without calling OpenRouter or the VPN.
+
+On 2026-10-19 the user reported OpenRouter denial with the VPN disconnected.
+This is manual evidence, not verification of the container's actual VPN route.
+Local synthetic checks proved SQLite persistence through container recreation.
+Actual production routing and secure phone access still need verification.
 
 ## 9. Usage Model and Constraints
 
@@ -240,7 +294,9 @@ Production build/start commands, environment names beyond the agreed proxy varia
 - No separate benchmark infrastructure.
 - Prefer simple solutions that meet current requirements.
 
-The historical documents in `docs/`, including `old_agents.md`, provide background. This plan records the current product direction; superseded proposals must not be reintroduced from older documents.
+This plan is the product authority. Build progress lives in build-plan.md;
+completed work and historical decisions remain in blueprint/history and Git.
+Do not reintroduce superseded proposals from historical records.
 
 ## 10. Success Criteria
 
@@ -258,17 +314,19 @@ The MVP is useful when:
 
 Exact quality and latency thresholds will be established through a small set of representative examples and ordinary usage.
 
-## 11. Decisions Deferred to Feature Planning
+## 11. Remaining Decisions
 
-- Verified model identifier and support for fully disabling reasoning.
-- Initial prompt and representative acceptance examples.
-- SQLite driver, migrations and exact API contracts.
-- Maximum input length, timeouts and cancellation behaviour.
-- Streaming, retry and caching policies.
-- Implementation details and responsive verification of the approved UI prototypes.
-- Backup procedure and final production access configuration.
+- Backup/restore procedure (feature 6c).
+- Authentication, TLS, domain and external access; no current authorization to
+  introduce accounts, ownership fields or external-access infrastructure.
+- English/French support, future evaluation budgets, numerical quality/latency
+  thresholds and whether caching is useful. These are not approved features.
 
-These are explicit follow-up decisions. They are not permission to add speculative infrastructure.
+Models, strict-v3, SQLite/Drizzle, contracts, input limits, timeout, disabled
+streaming and no automatic retries/fallback are settled above. Do not reopen
+them as missing decisions or add speculative infrastructure. Stable dependencies
+are the default; any necessary prerelease exception requires explicit user
+approval and its reason recorded in this plan.
 
 ## Unreviewed ideas
 

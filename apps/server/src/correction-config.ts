@@ -1,6 +1,10 @@
 import { loadEnvFile } from 'node:process'
 import { resolve } from 'node:path'
 
+const SERVER_DIRECTORY = resolve(__dirname, '..')
+const PROJECT_DIRECTORY = resolve(SERVER_DIRECTORY, '../..')
+const DEFAULT_SQLITE_PATH = 'data/gramota.sqlite'
+
 export type Environment = Record<string, string | undefined>
 export type ServerConfig = {
   available: boolean
@@ -11,7 +15,7 @@ export type ServerConfig = {
 
 export function readEnvironment(): Environment {
   try {
-    loadEnvFile(resolve(__dirname, '../.env'))
+    loadEnvFile(resolve(PROJECT_DIRECTORY, '.env'))
   } catch (error) {
     if (!(error instanceof Error) || !('code' in error) || error.code !== 'ENOENT') {
       return {}
@@ -21,8 +25,8 @@ export function readEnvironment(): Environment {
 }
 
 export function parseConfig(env: Environment): ServerConfig {
-  const isDevelopment = env.GRAMOTA_ENV === 'development'
-  const isProduction = env.GRAMOTA_ENV === 'production'
+  const isDevelopment = env.NODE_ENV === 'development'
+  const isProduction = env.NODE_ENV === 'production'
   const proxyUrl = isProduction ? parseProxyUrl(env.OPENROUTER_PROXY_URL) : undefined
   const apiKey = env.OPENROUTER_API_KEY?.trim() ?? ''
 
@@ -30,9 +34,7 @@ export function parseConfig(env: Environment): ServerConfig {
     available: Boolean(apiKey) && (isDevelopment || (isProduction && Boolean(proxyUrl))),
     apiKey,
     proxyUrl,
-    databasePath: env.SQLITE_PATH
-      ? resolve(env.SQLITE_PATH)
-      : resolve(__dirname, '../data/gramota.sqlite'),
+    databasePath: resolve(SERVER_DIRECTORY, env.SQLITE_PATH || DEFAULT_SQLITE_PATH),
   }
 }
 

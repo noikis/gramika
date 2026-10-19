@@ -7,6 +7,7 @@ import { OriginalText, DEFAULT_MODEL_ID, MODELS } from '@gramota/contracts'
 import { SqliteDatabase, databaseDiagnostic } from '../src/database'
 import application from '../src/app'
 import { parseConfig } from '../src/correction-config'
+import { resolve } from 'node:path'
 import {
   createCorrectionService,
   AttemptError,
@@ -16,7 +17,7 @@ import {
 
 import { createTransport } from '../src/openrouter'
 
-const environment = { GRAMOTA_ENV: 'development', OPENROUTER_API_KEY: 'fictional-test-key' }
+const environment = { NODE_ENV: 'development', OPENROUTER_API_KEY: 'fictional-test-key' }
 function output(content = 'Привет, мир!') {
   return {
     id: 'generation-test',
@@ -58,8 +59,10 @@ test('environment policy requires an explicit environment and valid production p
 
   for (const env of [
     {},
-    { ...environment, GRAMOTA_ENV: 'unknown' },
-    { GRAMOTA_ENV: 'production', OPENROUTER_PROXY_URL: 'http://proxy.example:8888' },
+    { OPENROUTER_API_KEY: environment.OPENROUTER_API_KEY },
+    { ...environment, NODE_ENV: 'test' },
+    { ...environment, NODE_ENV: 'unknown' },
+    { NODE_ENV: 'production', OPENROUTER_PROXY_URL: 'http://proxy.example:8888' },
   ]) {
     assert.equal(parseConfig(env).available, false)
   }
@@ -74,7 +77,7 @@ test('environment policy requires an explicit environment and valid production p
   ]) {
     const config = parseConfig({
       ...environment,
-      GRAMOTA_ENV: 'production',
+      NODE_ENV: 'production',
       OPENROUTER_PROXY_URL: proxyUrl,
     })
 
@@ -85,13 +88,25 @@ test('environment policy requires an explicit environment and valid production p
   for (const proxyUrl of ['http://proxy.example:8888', 'https://other-proxy.example:8443']) {
     const config = parseConfig({
       ...environment,
-      GRAMOTA_ENV: 'production',
+      NODE_ENV: 'production',
       OPENROUTER_PROXY_URL: '  ' + proxyUrl + '  ',
     })
 
     assert.equal(config.available, true)
     assert.equal(config.proxyUrl, proxyUrl)
   }
+})
+
+test('database paths are server-relative by default and support explicit overrides', () => {
+  const serverDirectory = resolve(__dirname, '..')
+  assert.equal(parseConfig({}).databasePath, resolve(serverDirectory, 'data/gramota.sqlite'))
+  assert.equal(parseConfig({ SQLITE_PATH: '' }).databasePath, parseConfig({}).databasePath)
+  assert.equal(
+    parseConfig({ SQLITE_PATH: 'data/another.sqlite' }).databasePath,
+    resolve(serverDirectory, 'data/another.sqlite'),
+  )
+  const absolutePath = resolve(serverDirectory, '../isolated-test.sqlite')
+  assert.equal(parseConfig({ SQLITE_PATH: absolutePath }).databasePath, absolutePath)
 })
 
 test('invalid production proxy configuration prevents correction transport calls', async (t) => {
@@ -102,7 +117,7 @@ test('invalid production proxy configuration prevents correction transport calls
     correction: {
       environment: {
         ...environment,
-        GRAMOTA_ENV: 'production',
+        NODE_ENV: 'production',
         OPENROUTER_PROXY_URL: 'not-a-url',
       },
       databasePath: ':memory:',
@@ -501,7 +516,7 @@ test('failed mandatory proxy does not select direct dispatch or retry', async (t
   const client = createTransport(
     parseConfig({
       ...environment,
-      GRAMOTA_ENV: 'production',
+      NODE_ENV: 'production',
       OPENROUTER_PROXY_URL: 'http://proxy.example:8888',
     }),
     {

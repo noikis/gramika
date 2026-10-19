@@ -1,0 +1,19 @@
+services:
+  gramota:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${GRAMOTA_PORT:-3000}:3000"
+    environment:
+      - OPENROUTER_API_KEY
+      - OPENROUTER_PROXY_URL
+    volumes:
+      - gramota-data:/app/apps/server/data
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  gramota-data:

@@ -58,7 +58,7 @@ and two models. Piped confirmation and automatic approval flags are unsupported.
 No actual run is authorized merely by implementing or reviewing this tool.
 
 Execution uses the existing server environment configuration from
-`apps/server/.env` and environment variables. Development uses the system VPN;
+the root `.env` and environment variables. Development uses the system VPN;
 production retains the mandatory proxy with no direct fallback. Invalid or missing
 configuration prevents execution. Never print or paste credentials into a report.
 
@@ -122,3 +122,9 @@ Judge quality manually: necessary corrections, missed errors, unnecessary change
 and preservation of meaning and tone. There is no reference-answer requirement,
 automatic quality score, judge model or winner. A single observation is not a
 statistical latency benchmark.
+
+Choose synthetic or anonymized cases covering already-correct text, objective
+errors, ambiguous phrasing, formal and conversational styles, names, links,
+numbers, emoji, whitespace and embedded instructions. Accept valid alternative
+corrections rather than requiring one exact reference answer. Compare quality
+alongside reported cost and timing before deciding whether a model helps.

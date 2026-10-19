@@ -20,7 +20,7 @@
 - A prerelease is an exception only when a concrete requirement cannot reasonably
   be met by a stable release. Explain the need, stable alternatives, and risks,
   and obtain explicit user approval before recommending installation or changing
-  dependencies. Record an approved exception and its reason in docs/decisions.md.
+  dependencies. Record an approved exception and its reason in blueprint/project-plan.md.
 
 ## TypeScript and naming
 
@@ -66,7 +66,7 @@
 - apps/server/test contains node:test tests using Fastify inject.
 - packages/contracts/src contains models.ts, correction.ts and history.ts for
   public Zod contracts, model choices and shared limits. index.ts re-exports the
-  public API. docs/architecture.md describes the implemented layout.
+  public API. blueprint/context/project-overview.md summarizes the implemented layout.
 - Use functional React components and hooks; keep components focused.
 
 ## Repository pattern and database naming
@@ -108,7 +108,7 @@ Preserve accessible controls, keyboard interaction, and mobile usability.
   transactionally. Existing tables require one-time baseline registration outside
   the application. Preserve existing data; do not
   use drizzle-kit push against saved databases or enable query/parameter logging.
-- Respect docs/environments.md: production requires its configured proxy, with no
+- Respect docs/container.md: production requires its configured proxy, with no
   direct fallback. Development uses the user's system VPN configuration.
 - Preserve input on request failure. Never show truncated or failed responses as
   successful, or report copying before the clipboard operation succeeds.

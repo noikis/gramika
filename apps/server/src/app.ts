@@ -1,7 +1,7 @@
 import type { FastifyPluginAsync, FastifyServerOptions } from 'fastify'
 import { createAppResources, type AppResourcesOptions } from './app-resources'
 import { createCorrectionService } from './correction'
-import rootRoutes from './routes/root'
+import rootRoutes, { type RootOptions } from './routes/root'
 import { correctionRoutes } from './routes/corrections'
 import { historyRoutes } from './routes/history'
 import { modelSettingsRoutes } from './routes/model-settings'
@@ -9,7 +9,7 @@ import { healthRoutes } from './routes/health'
 import { LogOperation, loggingOptions } from './logging'
 import { HTTP_STATUS } from './http-status'
 
-export interface AppOptions extends FastifyServerOptions {
+export interface AppOptions extends FastifyServerOptions, RootOptions {
   correction?: AppResourcesOptions
 }
 
@@ -38,7 +38,7 @@ const app: FastifyPluginAsync<AppOptions> = async (fastify, opts): Promise<void>
     timeoutMs: opts.correction?.timeoutMs,
   })
 
-  fastify.register(rootRoutes)
+  fastify.register(rootRoutes, { frontendRoot: opts.frontendRoot })
   await healthRoutes(fastify, database, config.available)
   await correctionRoutes(fastify, correct)
   await historyRoutes(fastify, database?.history ?? null)

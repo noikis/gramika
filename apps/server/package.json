@@ -25,6 +25,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@fastify/static": "^10.1.6",
     "@gramota/contracts": "^1.0.0",
     "better-sqlite3": "^13.0.3",
     "drizzle-orm": "^0.45.4",

@@ -6,7 +6,7 @@ import { DEFAULT_MODEL_ID, HealthResponse } from '@gramota/contracts'
 import application, { options } from '../src/app'
 import { SqliteDatabase } from '../src/database'
 
-const environment = { GRAMOTA_ENV: 'development', OPENROUTER_API_KEY: 'synthetic-secret-key' }
+const environment = { NODE_ENV: 'development', OPENROUTER_API_KEY: 'synthetic-secret-key' }
 const unusedTransport = {
   async send(): Promise<never> {
     throw new Error('Unexpected network call')
@@ -34,7 +34,7 @@ test('health checks local database/configuration without upstream calls or polli
     correction: {
       environment: {
         ...environment,
-        GRAMOTA_ENV: 'production',
+        NODE_ENV: 'production',
         OPENROUTER_PROXY_URL: 'http://synthetic-user:synthetic-secret-proxy@proxy.example:8888',
       },
       database,
@@ -76,10 +76,10 @@ test('health reports missing database and invalid configuration using safe reaso
   for (const [env, isDatabasePresent, reason] of [
     [environment, false, 'DATABASE_UNAVAILABLE'],
     [{}, true, 'NOT_CONFIGURED'],
-    [{ ...environment, GRAMOTA_ENV: 'unknown' }, true, 'NOT_CONFIGURED'],
-    [{ ...environment, GRAMOTA_ENV: 'production' }, true, 'NOT_CONFIGURED'],
+    [{ ...environment, NODE_ENV: 'unknown' }, true, 'NOT_CONFIGURED'],
+    [{ ...environment, NODE_ENV: 'production' }, true, 'NOT_CONFIGURED'],
     [
-      { ...environment, GRAMOTA_ENV: 'production', OPENROUTER_PROXY_URL: 'invalid' },
+      { ...environment, NODE_ENV: 'production', OPENROUTER_PROXY_URL: 'invalid' },
       true,
       'NOT_CONFIGURED',
     ],

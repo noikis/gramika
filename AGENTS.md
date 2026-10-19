@@ -16,17 +16,15 @@ for optional tool settings.
 Gramota is a personal writing assistant for correcting short messages and letters,
 with Russian quality, minimal edits, and mobile use as priorities. The repository
 implements correction, local diff, searchable history and persistent model
-selection. Original roadmap features 1-5 are complete; production packaging,
-deployment health checks and backup/restore remain in Feature 6.
+selection. Original roadmap features 1-5 and production packaging/health (6a-6b)
+are complete; backup/restore remains in Feature 6c.
 
 Read the relevant product context before planning or changing behavior:
 
-- `docs/product.md`: requirements and UX.
-- `docs/decisions.md`: agreed decisions and open questions.
-- `docs/architecture.md`: implemented architecture and remaining deployment work.
-- `docs/llm.md`: correction, model evaluation, and prompts.
-- `docs/environments.md`: environment, secrets, and mandatory VPN behavior.
-- `docs/status.md`: current delivery status and verification boundaries.
+- `blueprint/project-plan.md`: product requirements, UX, agreed decisions and constraints.
+- `blueprint/build-plan.md`: delivery progress and remaining work.
+- `docs/container.md`: local setup, environment, proxy, deployment and storage operations.
+- `docs/benchmark.md`: human-only model comparison workflow.
 
 MVP is Strict correction only. OpenRouter calls belong on the server, history
 must not be sent with correction requests, and diff is computed locally.
@@ -410,6 +408,9 @@ Run from the repository root with npm and the root package-lock.json.
 - Server formatting: `npm run format -w apps/server`.
 - Server formatting check: `npm run format:check -w apps/server`.
 - Server tests: `npm test -w apps/server` (build, test typecheck, node:test with c8).
+- Local production container: `docker compose up -d --build`; set `GRAMOTA_PORT`
+  to change the loopback host port (default 3000). See `docs/container.md` for
+  private runtime configuration, storage retention and recreation commands.
 - Generate SQLite migrations: `npm run db:generate -w apps/server -- --name=<change>`.
   Review and commit the generated SQL and metadata in `apps/server/drizzle/`.
   Server startup applies migrations; ship that directory alongside `dist/`.

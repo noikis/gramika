@@ -17,7 +17,7 @@ import { SqliteDatabase } from '../src/database'
 import application from '../src/app'
 import { createCorrectionService, AttemptError, STRICT_PROMPT } from '../src/correction'
 
-const environment = { GRAMOTA_ENV: 'development', OPENROUTER_API_KEY: 'fictional-test-key' }
+const environment = { NODE_ENV: 'development', OPENROUTER_API_KEY: 'fictional-test-key' }
 const date = '2026-10-18T00:00:00.000Z'
 function output(model: string, content = 'Привет, мир!') {
   return {
