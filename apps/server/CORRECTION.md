@@ -41,12 +41,30 @@ The maximum is 5,000 Unicode code points with a 60-second upstream deadline.
 Copy always uses the complete clean output in both Text and Changes views.
 
 History reads saved corrections through GET /api/history and
-GET /api/history/:correctionId, without an OpenRouter key or upstream requests.
-Normal server startup applies transactional migrations through schema v3.
+GET /api/history/:correctionId; POST /api/history/search accepts search, filters,
+sorting and pagination. None of these routes needs an OpenRouter key or upstream requests.
+Storage uses stable Drizzle ORM with better-sqlite3. Normal server startup applies
+committed SQL migrations from `apps/server/drizzle/`. An existing database with
+the current tables needs its baseline registered once outside the application,
+without recreating those tables. Startup only runs Drizzle's migrator; it does
+not upgrade earlier schema versions or automatically register existing tables.
+Migrations are tracked in __drizzle_migrations.
+The user's existing `apps/server/database.sqlite` was registered once on
+2026-10-19, with a local backup and no changes to application records. Keep using
+the configured path to that file to retain the existing history.
 Model preference is persisted; unsupported saved choices reset to Gemma when
 configuration is read. Existing records,
 originals, results and IDs are preserved. New metrics on older records remain
 unavailable; there is no network backfill or automatic replay.
+
+After editing `src/database/schema.ts`, run
+`npm run db:generate -w apps/server -- --name=<change>` from the repository root.
+Review the generated SQL and commit the SQL and metadata together. Do not edit
+already applied migrations or use `drizzle-kit push` against saved history.
+The initial baseline includes the original model-preference seed; future model
+changes must not rewrite that baseline. Runtime packaging must include the
+`apps/server/drizzle/` directory alongside `apps/server/dist/`. Application startup
+uses the ORM migrator and does not require Drizzle Kit in production.
 
 Requests opt in with X-OpenRouter-Metadata: enabled. The server records validated
 reported token totals, cache reads/writes, charged cost, upstream cost breakdown,

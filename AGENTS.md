@@ -35,7 +35,7 @@ In production, use the configured mandatory proxy and never fall back to direct
 OpenRouter access. Auth and external access are deferred.
 
 Use npm workspaces, React/Vite, Fastify, TypeScript, and public Zod contracts.
-SQLite uses Node's built-in node:sqlite with transactional migrations. Tailwind
+SQLite uses Drizzle ORM and better-sqlite3 with transactional migrations. Tailwind
 CSS, local shadcn-style UI components, Sonner notifications and the Undici
 OpenRouter transport are implemented. Preserve existing TypeScript settings.
 Do not assume Next.js, Prisma, or Clerk.
@@ -410,6 +410,9 @@ Run from the repository root with npm and the root package-lock.json.
 - Server formatting: `npm run format -w apps/server`.
 - Server formatting check: `npm run format:check -w apps/server`.
 - Server tests: `npm test -w apps/server` (build, test typecheck, node:test with c8).
+- Generate SQLite migrations: `npm run db:generate -w apps/server -- --name=<change>`.
+  Review and commit the generated SQL and metadata in `apps/server/drizzle/`.
+  Server startup applies migrations; ship that directory alongside `dist/`.
 
 The server test gate is configured for server logic. Web and contracts have no
 test command yet. No standalone typecheck, root build/test, combined

@@ -1,20 +1,4 @@
-import type { DatabaseSync } from 'node:sqlite'
-import { DEFAULT_MODEL_ID } from '@gramota/contracts'
-import { withTransaction } from './sqlite'
-
-const METRICS_SCHEMA_VERSION = 2
-const MODEL_PREFERENCE_SCHEMA_VERSION = 3
-const SCHEMA_VERSION = MODEL_PREFERENCE_SCHEMA_VERSION
-
-export function migrateDatabase(db: DatabaseSync) {
-  const version = db.prepare('PRAGMA user_version').get()?.user_version
-  if (typeof version !== 'number' || version > SCHEMA_VERSION)
-    throw new Error('Unsupported database version')
-
-  if (version === 0)
-    withTransaction(db, () =>
-      db.exec(`
-      CREATE TABLE corrections (
+CREATE TABLE corrections (
         id TEXT PRIMARY KEY NOT NULL,
         created_at TEXT NOT NULL,
         original_text TEXT NOT NULL,
@@ -58,13 +42,7 @@ export function migrateDatabase(db: DatabaseSync) {
         )
       );
       PRAGMA user_version = 1;
-    `),
-    )
-
-  if (version < METRICS_SCHEMA_VERSION)
-    withTransaction(db, () =>
-      db.exec(`
-      ALTER TABLE model_requests RENAME COLUMN provider_request_id TO openrouter_generation_id;
+ALTER TABLE model_requests RENAME COLUMN provider_request_id TO openrouter_generation_id;
       ALTER TABLE model_requests ADD COLUMN total_tokens INTEGER CHECK(total_tokens>=0);
       ALTER TABLE model_requests ADD COLUMN cache_write_tokens INTEGER CHECK(cache_write_tokens>=0);
       ALTER TABLE model_requests ADD COLUMN generation_time_ms REAL CHECK(generation_time_ms>=0);
@@ -76,14 +54,6 @@ export function migrateDatabase(db: DatabaseSync) {
       ALTER TABLE model_requests ADD COLUMN routing_attempt INTEGER CHECK(routing_attempt>=0);
       ALTER TABLE model_requests ADD COLUMN is_byok INTEGER CHECK(is_byok IN (0,1));
       PRAGMA user_version = 2;
-    `),
-    )
-
-  if (version < MODEL_PREFERENCE_SCHEMA_VERSION)
-    withTransaction(db, () => {
-      db.exec(`CREATE TABLE model_preference (
+CREATE TABLE model_preference (
         id INTEGER PRIMARY KEY CHECK(id=1), model_id TEXT NOT NULL
-      ); PRAGMA user_version = 3;`)
-      db.prepare('INSERT INTO model_preference VALUES(1, ?)').run(DEFAULT_MODEL_ID)
-    })
-}
+      ); PRAGMA user_version = 3;

@@ -79,8 +79,10 @@ export function useCorrection(text: string) {
     }
   }
 
-  const validation = OriginalText.safeParse(text)
-  const visibleResult = result?.originalText === text ? result : null
+  const original = text.trim()
+  const validation = OriginalText.safeParse(original)
+  const visibleResult = result?.originalText === original ? result : null
+
   const canCorrect =
     config?.available === true &&
     config.modelId !== null &&
@@ -90,7 +92,6 @@ export function useCorrection(text: string) {
 
   async function correct() {
     if (sending.current || saving.current || !canCorrect || !config?.modelId) return
-    const original = text
     const modelId = config.modelId
     const correctionId =
       association.current?.original === original ? association.current.correctionId : undefined
@@ -186,7 +187,7 @@ export function useCorrection(text: string) {
     copying,
     availability,
     validationMessage,
-    error: error?.original === text ? error.message : '',
+    error: error?.original === original ? error.message : '',
     draftChanged: result !== null && visibleResult === null,
   }
 }

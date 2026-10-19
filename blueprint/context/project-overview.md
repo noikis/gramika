@@ -46,11 +46,17 @@ the future container or a new agent network test.
   transport contracts. openrouter/ owns Undici, response validation and metadata.
   correction-config.ts validates environment and proxy; benchmark/ contains the
   manual CLI, reusable runner and offline reports. CLI is never imported at startup.
-- storage/ owns built-in node:sqlite, transactional migrations through version 3,
-  correction writes, history queries and model preferences. SqliteStorage opens
+- database/ owns stable Drizzle ORM with better-sqlite3, transactional SQL migrations,
+  correction writes, history queries and model preferences. SqliteDatabase opens
   one connection, explicitly migrates and recovers interrupted attempts, then
   exposes corrections, history and modelPreferences. Cross-module imports use
   public index.ts entry points; these are internal modules, not new packages.
+  schema.ts defines typed tables; apps/server/drizzle/ holds generated SQL and
+  metadata. Existing current-schema tables require one-time baseline registration
+  outside the application; startup runs only Drizzle migrations. Drizzle's journal
+  tracks future migrations. Ship drizzle/ alongside dist/.
+  database/repositories/ contains correction-repository.ts, history-repository.ts
+  and model-preference-repository.ts; correction/ defines CorrectionRepository.
   Public Zod contracts live in contracts/src/models.ts,
   correction.ts and history.ts; index.ts re-exports the public API.
 - Preserve existing tsconfig settings; no Next.js, Prisma, Clerk or extra services.

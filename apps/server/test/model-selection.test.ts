@@ -13,7 +13,7 @@ import {
   CorrectionSuccess,
   ModelPreference,
 } from '@gramota/contracts'
-import { SqliteStorage } from '../src/storage'
+import { SqliteDatabase } from '../src/database'
 import application from '../src/app'
 import { createCorrectionService, AttemptError, STRICT_PROMPT } from '../src/correction'
 
@@ -33,11 +33,11 @@ function output(model: string, content = 'Привет, мир!') {
   }
 }
 
-test('model preference migrates v2 history and persists after reopening', (t) => {
+test('model preference and history persist after reopening', (t) => {
   const directory = mkdtempSync(join(tmpdir(), 'gramota-models-'))
   const file = join(directory, 'test.sqlite')
   t.after(() => rmSync(directory, { recursive: true, force: true }))
-  let database = new SqliteStorage(file)
+  let database = new SqliteDatabase(file)
   const ids = { correctionId: randomUUID(), requestId: randomUUID() }
   database.corrections.beginAttempt({
     ids: ids,
@@ -55,17 +55,20 @@ test('model preference migrates v2 history and persists after reopening', (t) =>
     errorCode: null,
     errorMessage: null,
   })
-  database.db.exec('DROP TABLE model_preference; PRAGMA user_version=2;')
   database.close()
-  database = new SqliteStorage(file)
+  database = new SqliteDatabase(file)
   assert.equal(database.modelPreferences.get(), DEFAULT_MODEL_ID)
   assert.equal(database.history.get(ids.correctionId)?.originalText, '  Fictional text 👋\n')
   database.modelPreferences.set(MODELS[0].id)
   database.close()
-  database = new SqliteStorage(file)
+  database = new SqliteDatabase(file)
   try {
     assert.equal(database.modelPreferences.get(), MODELS[0].id)
-    assert.equal(database.db.prepare('PRAGMA user_version').get()?.user_version, 3)
+    assert.equal(
+      database.db.prepare<unknown[], Record<string, unknown>>('PRAGMA user_version').get()
+        ?.user_version,
+      3,
+    )
     assert.equal(
       database.history.get(ids.correctionId)?.requests[0].correctedText,
       '  Fictional text 👋\n',
@@ -76,13 +79,13 @@ test('model preference migrates v2 history and persists after reopening', (t) =>
 })
 
 test('preference routes validate, reset unsupported selection to Gemma and handle save failure without inference', async (t) => {
-  const database = new SqliteStorage(':memory:')
+  const database = new SqliteDatabase(':memory:')
   const app = Fastify()
   let calls = 0
   await application(app, {
     correction: {
       environment: {},
-      storage: database,
+      database: database,
       transport: mockOpenRouterTransport({
         async send() {
           calls++
@@ -110,13 +113,15 @@ test('preference routes validate, reset unsupported selection to Gemma and handl
     assert.equal((await save(payload)).statusCode, 400)
     assert.equal(database.modelPreferences.get(), MODELS[1].id)
   }
-  database.db.prepare('UPDATE model_preference SET model_id=?').run('qwen/qwen3.5-flash-02-23')
+  database.db
+    .prepare<unknown[], Record<string, unknown>>('UPDATE model_preference SET model_id=?')
+    .run('qwen/qwen3.5-flash-02-23')
   config = CorrectionConfig.parse((await app.inject('/api/correction-config')).json())
   assert.equal(config.modelId, DEFAULT_MODEL_ID)
   assert.equal(database.modelPreferences.get(), DEFAULT_MODEL_ID)
   assert.equal((await save({ modelId: DEFAULT_MODEL_ID })).statusCode, 200)
   database.db.exec(`CREATE TRIGGER deny_preference BEFORE UPDATE ON model_preference
-    BEGIN SELECT RAISE(ABORT, 'private storage detail'); END;`)
+    BEGIN SELECT RAISE(ABORT, 'private repository detail'); END;`)
   const failed = await save({ modelId: MODELS[0].id })
   assert.equal(failed.statusCode, 503)
   assert.equal(failed.json().error.code, 'STORAGE_ERROR')
@@ -125,9 +130,9 @@ test('preference routes validate, reset unsupported selection to Gemma and handl
   assert.equal(calls, 0)
 })
 
-test('config and preference writes fail safely without storage', async (t) => {
+test('config and preference writes fail safely without repositories', async (t) => {
   const app = Fastify()
-  await application(app, { correction: { environment: {}, storage: null } })
+  await application(app, { correction: { environment: {}, database: null } })
   t.after(() => app.close())
   assert.equal((await app.inject('/api/correction-config')).statusCode, 503)
   assert.equal(
@@ -144,14 +149,14 @@ test('config and preference writes fail safely without storage', async (t) => {
 })
 
 test('all models repeat one original with independent immutable outcomes and no reasoning', async (t) => {
-  const database = new SqliteStorage(':memory:')
+  const database = new SqliteDatabase(':memory:')
   const app = Fastify()
   const original = '  Привет мир! 👋\n'
   let calls = 0
   await application(app, {
     correction: {
       environment,
-      storage: database,
+      database: database,
       transport: mockOpenRouterTransport({
         async send(body) {
           const value = body as {
@@ -214,13 +219,13 @@ test('all models repeat one original with independent immutable outcomes and no 
 })
 
 test('invalid models and repeat references make no paid calls or new records; changed text starts fresh', async (t) => {
-  const database = new SqliteStorage(':memory:')
+  const database = new SqliteDatabase(':memory:')
   const app = Fastify()
   let calls = 0
   await application(app, {
     correction: {
       environment,
-      storage: database,
+      database: database,
       transport: mockOpenRouterTransport({
         async send() {
           calls++
@@ -252,12 +257,12 @@ test('invalid models and repeat references make no paid calls or new records; ch
 })
 
 test('concurrent models keep their own parameters even when preference changes', async (t) => {
-  const database = new SqliteStorage(':memory:')
+  const database = new SqliteDatabase(':memory:')
   t.after(() => database.close())
   const sent: { model: string; reasoning: { enabled: boolean } }[] = []
   const releases: (() => void)[] = []
   const correct = createCorrectionService({
-    store: database.corrections,
+    repository: database.corrections,
     isAvailable: true,
     transport: mockOpenRouterTransport({
       async send(body) {

@@ -2,9 +2,12 @@ import { HTTP_STATUS } from '../http-status'
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { HistoryErrorCode, HistoryFailure, HistorySearchQuery } from '@gramota/contracts'
-import type { HistoryStore } from '../storage'
+import type { HistoryRepository } from '../database'
 
-export async function historyRoutes(app: FastifyInstance, historyStore: HistoryStore | null) {
+export async function historyRoutes(
+  app: FastifyInstance,
+  historyRepository: HistoryRepository | null,
+) {
   const unavailable = () =>
     HistoryFailure.parse({
       error: {
@@ -39,15 +42,15 @@ export async function historyRoutes(app: FastifyInstance, historyStore: HistoryS
     })
 
     history.get('/api/history', async (_request, reply) => {
-      if (!historyStore) return reply.code(HTTP_STATUS.SERVICE_UNAVAILABLE).send(unavailable())
-      return historyStore.list()
+      if (!historyRepository) return reply.code(HTTP_STATUS.SERVICE_UNAVAILABLE).send(unavailable())
+      return historyRepository.list()
     })
 
     history.post('/api/history/search', async (request, reply) => {
       const parsed = HistorySearchQuery.safeParse(request.body)
       if (!parsed.success) return reply.code(HTTP_STATUS.BAD_REQUEST).send(invalidQuery())
-      if (!historyStore) return reply.code(HTTP_STATUS.SERVICE_UNAVAILABLE).send(unavailable())
-      return historyStore.list(parsed.data)
+      if (!historyRepository) return reply.code(HTTP_STATUS.SERVICE_UNAVAILABLE).send(unavailable())
+      return historyRepository.list(parsed.data)
     })
 
     history.get<{ Params: { correctionId: string } }>(
@@ -65,8 +68,9 @@ export async function historyRoutes(app: FastifyInstance, historyStore: HistoryS
             }),
           )
 
-        if (!historyStore) return reply.code(HTTP_STATUS.SERVICE_UNAVAILABLE).send(unavailable())
-        const detail = historyStore.get(parsed.data)
+        if (!historyRepository)
+          return reply.code(HTTP_STATUS.SERVICE_UNAVAILABLE).send(unavailable())
+        const detail = historyRepository.get(parsed.data)
         if (!detail)
           return reply.code(HTTP_STATUS.NOT_FOUND).send(
             HistoryFailure.parse({

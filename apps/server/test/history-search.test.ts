@@ -3,12 +3,12 @@ import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import Fastify from 'fastify'
 import { HistorySearchQuery, HistoryList, HistoryDetail } from '@gramota/contracts'
-import { SqliteStorage } from '../src/storage'
+import { SqliteDatabase } from '../src/database'
 import { historyRoutes } from '../src/routes/history'
 
 const at = '2026-10-18T01:00:00.000Z'
 function record(
-  db: SqliteStorage,
+  db: SqliteDatabase,
   original: string,
   options: {
     model?: string
@@ -41,12 +41,12 @@ function record(
     })
   return correctionId
 }
-function search(db: SqliteStorage, criteria: object = {}) {
+function search(db: SqliteDatabase, criteria: object = {}) {
   return db.history.list(HistorySearchQuery.parse(criteria))
 }
 
 test('phrase search covers full originals and successful results with Russian case folding and literal wildcards', () => {
-  const db = new SqliteStorage(':memory:')
+  const db = new SqliteDatabase(':memory:')
   try {
     const originalMatch = record(db, 'Начало '.repeat(30) + 'ПРИВЕТ МИР!')
     const resultMatch = record(db, 'Другая фраза', { result: 'Привет мир!' })
@@ -78,7 +78,7 @@ test('phrase search covers full originals and successful results with Russian ca
 })
 
 test('model and result filters must match one attempt, retain all details, and never duplicate corrections', () => {
-  const db = new SqliteStorage(':memory:')
+  const db = new SqliteDatabase(':memory:')
   try {
     const original = 'Привет мир!'
     const id = record(db, original, { model: 'fictional/model-a' })
@@ -123,7 +123,7 @@ test('model and result filters must match one attempt, retain all details, and n
 })
 
 test('creation boundaries include the entire local day and exclude the next day, regardless of request dates', () => {
-  const db = new SqliteStorage(':memory:')
+  const db = new SqliteDatabase(':memory:')
   try {
     record(db, 'Перед началом', { createdAt: '2026-10-17T16:59:59.999Z' })
     const first = record(db, 'Начало', { createdAt: '2026-10-17T17:00:00.000Z' })
@@ -151,7 +151,7 @@ test('creation boundaries include the entire local day and exclude the next day,
 })
 
 test('server pages have stable timestamp/ID ordering, matching totals, and full-history model choices', () => {
-  const db = new SqliteStorage(':memory:')
+  const db = new SqliteDatabase(':memory:')
   try {
     const ids = Array.from({ length: 24 }, (_, index) =>
       record(db, `Пример ${index}`, { model: index === 0 ? 'fictional/rare' : 'fictional/common' }),
@@ -195,7 +195,7 @@ test('search API validates criteria, returns safe errors, and does not log searc
       },
     },
   })
-  const db = new SqliteStorage(':memory:')
+  const db = new SqliteDatabase(':memory:')
   await historyRoutes(app, db.history)
   t.after(async () => {
     await app.close()

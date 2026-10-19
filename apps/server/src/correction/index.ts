@@ -3,7 +3,7 @@ export type {
   Attempt,
   Outcome,
   StartAttempt,
-  CorrectionStore,
+  CorrectionRepository,
   CorrectionTransport,
   CorrectionReply,
 } from './types'

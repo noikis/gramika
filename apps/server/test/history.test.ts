@@ -2,18 +2,14 @@ import { mockOpenRouterTransport } from './mock-transport'
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
-import { mkdtempSync, rmSync } from 'node:fs'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
-import { DatabaseSync } from 'node:sqlite'
 import Fastify from 'fastify'
 import { HistoryDetail, HistoryList } from '@gramota/contracts'
-import { SqliteStorage } from '../src/storage'
+import { SqliteDatabase } from '../src/database'
 import { createCorrectionService } from '../src/correction'
 import application from '../src/app'
 
 const date = '2026-10-18T01:00:00.000Z'
-function begin(db: SqliteStorage, text = 'Привет мир!', at = date) {
+function begin(db: SqliteDatabase, text = 'Привет мир!', at = date) {
   const ids = { correctionId: randomUUID(), requestId: randomUUID() }
   db.corrections.beginAttempt({
     ids: ids,
@@ -26,74 +22,11 @@ function begin(db: SqliteStorage, text = 'Привет мир!', at = date) {
   return ids
 }
 
-test('v1 migration preserves saved text, outcomes and generation IDs; new metrics stay null', () => {
-  const directory = mkdtempSync(join(tmpdir(), 'gramota-history-'))
-  const file = join(directory, 'v1.sqlite')
-  const raw = new DatabaseSync(file)
-  const correctionId = randomUUID(),
-    requestId = randomUUID()
-  raw.exec(`CREATE TABLE corrections (id TEXT PRIMARY KEY, created_at TEXT, original_text TEXT, language TEXT, mode TEXT);
-    CREATE TABLE model_requests (id TEXT PRIMARY KEY, correction_id TEXT, requested_model TEXT, returned_model TEXT,
-      provider TEXT, provider_request_id TEXT, prompt_version TEXT, parameters_json TEXT, corrected_text TEXT,
-      started_at TEXT, ended_at TEXT, duration_ms INTEGER, input_tokens INTEGER, output_tokens INTEGER,
-      reasoning_tokens INTEGER, cached_input_tokens INTEGER, cost_usd REAL, finish_reason TEXT,
-      status TEXT, error_code TEXT, error_message TEXT);
-    PRAGMA user_version=1;`)
-  raw
-    .prepare('INSERT INTO corrections VALUES(?,?,?,?,?)')
-    .run(correctionId, date, '  Старый текст 👋\n', 'ru', 'strict')
-  raw
-    .prepare('INSERT INTO model_requests VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)')
-    .run(
-      requestId,
-      correctionId,
-      'fictional/model-a',
-      'fictional/model-a',
-      'Reported provider',
-      'gen-old',
-      'strict-v1',
-      '{}',
-      '  Старый текст 👋\n',
-      date,
-      date,
-      100,
-      12,
-      4,
-      0,
-      null,
-      0.00001,
-      'stop',
-      'succeeded',
-      null,
-      null,
-    )
-  raw.close()
-  let db: SqliteStorage | undefined
-  try {
-    db = new SqliteStorage(file)
-    const detail = db.history.get(correctionId)!
-    assert.equal(detail.originalText, '  Старый текст 👋\n')
-    assert.equal(detail.requests[0].openrouterGenerationId, 'gen-old')
-    assert.equal(detail.requests[0].correctedText, detail.originalText)
-    assert.equal(detail.requests[0].totalTokens, null)
-    assert.equal(detail.requests[0].generationTimeMs, null)
-    assert.equal(detail.requests[0].appRequestTimeMs, 100)
-    db.close()
-    db = undefined
-    db = new SqliteStorage(file)
-    assert.equal(db.db.prepare('PRAGMA user_version').get()?.user_version, 3)
-    assert.equal(db.history.get(correctionId)?.requests.length, 1)
-  } finally {
-    db?.close()
-    rmSync(directory, { recursive: true, force: true })
-  }
-})
-
 test('reported metrics survive exactly, without deriving totals or rounding generation time', async () => {
-  const db = new SqliteStorage(':memory:')
+  const db = new SqliteDatabase(':memory:')
   try {
     const result = await createCorrectionService({
-      store: db.corrections,
+      repository: db.corrections,
       isAvailable: true,
       transport: mockOpenRouterTransport({
         async send() {
@@ -155,7 +88,7 @@ test('reported metrics survive exactly, without deriving totals or rounding gene
 })
 
 test('metadata on failed attempts and ambiguous selected providers remain truthful', async () => {
-  const db = new SqliteStorage(':memory:')
+  const db = new SqliteDatabase(':memory:')
   try {
     for (const endpoints of [
       {
@@ -169,7 +102,7 @@ test('metadata on failed attempts and ambiguous selected providers remain truthf
     ]) {
       await assert.rejects(
         createCorrectionService({
-          store: db.corrections,
+          repository: db.corrections,
           isAvailable: true,
           transport: mockOpenRouterTransport({
             async send() {
@@ -204,13 +137,13 @@ test('metadata on failed attempts and ambiguous selected providers remain truthf
 })
 
 test('History works without a key or upstream calls; orders summaries and all requests', async (t) => {
-  const db = new SqliteStorage(':memory:')
+  const db = new SqliteDatabase(':memory:')
   const app = Fastify()
   let calls = 0
   await application(app, {
     correction: {
       environment: {},
-      storage: db,
+      database: db,
       transport: mockOpenRouterTransport({
         async send() {
           calls++
@@ -272,10 +205,10 @@ test('History works without a key or upstream calls; orders summaries and all re
   assert.equal(calls, 0)
 })
 
-test('missing or failed storage returns safe History errors', async (t) => {
-  for (const database of [null, new SqliteStorage(':memory:')]) {
+test('missing or failed repository returns safe History errors', async (t) => {
+  for (const database of [null, new SqliteDatabase(':memory:')]) {
     const app = Fastify()
-    await application(app, { correction: { environment: {}, storage: database } })
+    await application(app, { correction: { environment: {}, database: database } })
     await app.ready()
     const id = database ? begin(database).correctionId : randomUUID()
     if (database) database.db.exec('DROP TABLE model_requests')

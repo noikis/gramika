@@ -10,6 +10,18 @@
 - Reuse existing code and dependencies. Keep changes limited to the active task.
 - Commands and available verification gates are listed in AGENTS.md.
 
+## Dependency stability
+
+- Use stable, production-ready dependency releases by default. Prefer maintained
+  LTS versions where the package provides an LTS release line.
+- Do not recommend or install release candidates, alpha, beta, preview, canary,
+  nightly, or other prerelease versions by default, even when an upstream guide
+  uses them. Verify that required features exist in the chosen stable release.
+- A prerelease is an exception only when a concrete requirement cannot reasonably
+  be met by a stable release. Explain the need, stable alternatives, and risks,
+  and obtain explicit user approval before recommending installation or changing
+  dependencies. Record an approved exception and its reason in docs/decisions.md.
+
 ## TypeScript and naming
 
 - Preserve existing compiler settings; strict mode is not an agreed requirement.
@@ -40,19 +52,42 @@
 - apps/web/src contains the React entry point, App.tsx, and plain CSS.
 - apps/server/src/app.ts composes resources and explicitly registers routes/.
   app-resources.ts owns initialization and cleanup. Route modules own HTTP;
-  correction/ owns the workflow, prompt and small storage/transport contracts.
-  openrouter/ owns Undici and provider response parsing. storage/ owns SQLite,
-  migrations, correction writes, history queries and model preferences.
+  correction/ owns the workflow, prompt and small repository and transport contracts.
+  openrouter/ owns Undici and provider response parsing. database/ owns SQLite,
+  migrations and repositories/ for correction writes, history queries and model
+  preferences. correction/ defines the CorrectionRepository contract required by
+  its business logic.
   benchmark/ owns the manual CLI, mocked-testable runner and offline report.
 - These backend areas are internal modules, not workspace packages. Import their
   public index.ts from other modules; use direct file imports within a module.
-  Correction must not import SQLite, Undici, Fastify, storage/ or openrouter/.
+  Correction must not import SQLite, Undici, Fastify, database/ or openrouter/.
   Keep the benchmark CLI out of application startup and all public entry points.
 - apps/server/test contains node:test tests using Fastify inject.
 - packages/contracts/src contains models.ts, correction.ts and history.ts for
   public Zod contracts, model choices and shared limits. index.ts re-exports the
   public API. docs/architecture.md describes the implemented layout.
 - Use functional React components and hooks; keep components focused.
+
+## Repository pattern and database naming
+
+- Always use the repository pattern for database access. Business logic depends
+  on repository contracts; repository implementations own queries and transactions.
+- Keep connection setup, schema, migrations and database lifecycle in
+  apps/server/src/database/. Put repository implementations in its repositories/
+  subfolder. Do not name the entire database module repositories/.
+- Name repository files <domain>-repository.ts, such as correction-repository.ts,
+  history-repository.ts and model-preference-repository.ts. Use Repository rather
+  than Store for repository names.
+- Name interfaces CorrectionRepository, HistoryRepository and
+  ModelPreferenceRepository; name factories createCorrectionRepository(),
+  createHistoryRepository() and createModelPreferenceRepository(). Use repository
+  for a single injected dependency, or a domain-qualified name such as
+  historyRepository when needed to distinguish several repositories.
+- Use sqlite-database.ts and SqliteDatabase for initialization, repository
+  composition and cleanup. Keep openConnection() and createDrizzleClient() as
+  private methods of that class: the former opens and configures the SQLite
+  connection, and the latter wraps it with Drizzle. Define DatabaseClient beside
+  the class and use type-only imports in repositories and migrations.
 
 ## Styling
 
@@ -66,8 +101,12 @@ Preserve accessible controls, keyboard interaction, and mobile usability.
 - OpenRouter is server-only. Keep keys and server dependencies out of web bundles.
 - Validate untrusted requests and upstream responses at runtime. Use the shared
   Zod contracts for public boundaries.
-- SQLite uses built-in node:sqlite. storage/ owns transactional schema migrations
-  and queries; do not prescribe an ORM or invent migration commands.
+- SQLite uses stable Drizzle ORM with better-sqlite3. Keep the typed schema and
+  queries inside database/. Generate migrations with the documented db:generate
+  command, review the SQL, and commit SQL plus metadata. Startup applies migrations
+  transactionally. Existing tables require one-time baseline registration outside
+  the application. Preserve existing data; do not
+  use drizzle-kit push against saved databases or enable query/parameter logging.
 - Respect docs/environments.md: production requires its configured proxy, with no
   direct fallback. Development uses the user's system VPN configuration.
 - Preserve input on request failure. Never show truncated or failed responses as

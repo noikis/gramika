@@ -10,7 +10,7 @@ import {
   CorrectionError,
   InvalidCorrectionReference,
   MessageRole,
-  type CorrectionStore,
+  type CorrectionRepository,
   type CorrectionTransport,
   type Attempt,
   type Outcome,
@@ -27,14 +27,14 @@ export class AttemptError extends CorrectionError {
 }
 
 type Dependencies = {
-  store: CorrectionStore | null
+  repository: CorrectionRepository | null
   transport: CorrectionTransport | null
   isAvailable: boolean
   now?: () => string
   clock?: () => number
   uuid?: () => string
   timeoutMs?: number
-  onStorageFailure?: (error: unknown, stage: 'begin' | 'finish') => void
+  onRepositoryFailure?: (error: unknown, stage: 'begin' | 'finish') => void
   isRejectReasoning?: boolean
 }
 
@@ -52,7 +52,7 @@ export function createCorrectionService(deps: Dependencies) {
     if (!input.success) throw new AttemptError(ErrorCode.enum.INVALID_INPUT, null)
     if (!deps.isAvailable || !deps.transport)
       throw new AttemptError(ErrorCode.enum.NOT_CONFIGURED, null)
-    if (!deps.store) throw new AttemptError(ErrorCode.enum.STORAGE_ERROR, null)
+    if (!deps.repository) throw new AttemptError(ErrorCode.enum.STORAGE_ERROR, null)
 
     const ids = { correctionId: correctionId ?? uuid(), requestId: uuid() }
     const requestParameters = {
@@ -66,7 +66,7 @@ export function createCorrectionService(deps: Dependencies) {
 
     // Record the start of the correction attempt
     try {
-      deps.store.beginAttempt({
+      deps.repository.beginAttempt({
         ids,
         originalText: text,
         modelId,
@@ -78,7 +78,7 @@ export function createCorrectionService(deps: Dependencies) {
     } catch (error) {
       if (error instanceof InvalidCorrectionReference)
         throw new AttemptError(ErrorCode.enum.INVALID_INPUT, null)
-      deps.onStorageFailure?.(error, 'begin')
+      deps.onRepositoryFailure?.(error, 'begin')
       throw new AttemptError(ErrorCode.enum.STORAGE_ERROR, null)
     }
 
@@ -129,7 +129,7 @@ export function createCorrectionService(deps: Dependencies) {
 
     try {
       // Record the outcome of the correction attempt
-      deps.store.finishAttempt(ids.requestId, {
+      deps.repository.finishAttempt(ids.requestId, {
         ...responseDetails,
         status: errorCode ? 'failed' : 'succeeded',
         correctedText,
@@ -139,7 +139,7 @@ export function createCorrectionService(deps: Dependencies) {
         errorMessage: errorCode ? ERROR_MESSAGES[errorCode] : null,
       })
     } catch (error) {
-      deps.onStorageFailure?.(error, 'finish')
+      deps.onRepositoryFailure?.(error, 'finish')
       throw new AttemptError(ErrorCode.enum.STORAGE_ERROR, ids)
     }
 

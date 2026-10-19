@@ -7,6 +7,7 @@
     "test": "test"
   },
   "scripts": {
+    "db:generate": "drizzle-kit generate",
     "benchmark": "npm run build:ts && node dist/benchmark/cli.js",
     "lint": "eslint src test eslint.config.mjs",
     "lint:fix": "npm run lint -- --fix",
@@ -25,15 +26,19 @@
   "license": "ISC",
   "dependencies": {
     "@gramota/contracts": "^1.0.0",
+    "better-sqlite3": "^13.0.3",
+    "drizzle-orm": "^0.45.4",
     "fastify": "^5.0.0",
     "fastify-cli": "^8.0.3",
     "undici": "^8.12.2"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@types/better-sqlite3": "^9.6.0",
     "@types/node": "^26.0.0",
     "c8": "^12.0.0",
     "concurrently": "^10.0.1",
+    "drizzle-kit": "^0.31.11",
     "eslint": "^10.10.0",
     "fastify-tsconfig": "^3.0.0",
     "globals": "^17.12.0",

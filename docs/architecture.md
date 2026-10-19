@@ -5,7 +5,7 @@
 npm workspaces: `apps/web`, `apps/server`, `packages/contracts`, общий корневой
 lockfile. React/Vite/TypeScript, Tailwind CSS, локальные shadcn-style компоненты
 и Sonner на клиенте; Fastify/TypeScript и Undici на сервере; общие Zod-контракты.
-SQLite использует встроенный `node:sqlite`. Текущие настройки TypeScript находятся
+SQLite использует Drizzle ORM и `better-sqlite3`. Текущие настройки TypeScript находятся
 в tsconfig-файлах пакетов; не менять их без причины.
 
 ## Файлы и ответственность
@@ -25,11 +25,14 @@ SQLite использует встроенный `node:sqlite`. Текущие �
 | Проверка ответа и метаданных OpenRouter | `apps/server/src/openrouter/response.ts` |
 | ENV и proxy policy | `apps/server/src/correction-config.ts` |
 | OpenRouter через Undici | `apps/server/src/openrouter/transport.ts` |
-| Инициализация SQLite и восстановление попыток | `apps/server/src/storage/database.ts` |
-| Версионные транзакционные миграции | `apps/server/src/storage/migrations.ts` |
-| Запись попыток коррекции | `apps/server/src/storage/corrections.ts` |
-| Запросы и преобразование истории | `apps/server/src/storage/history.ts` |
-| Сохранённая модель | `apps/server/src/storage/model-preferences.ts` |
+| Инициализация SQLite и восстановление попыток | `apps/server/src/database/sqlite-database.ts` |
+| Открытие соединения и подключение Drizzle | Приватные методы `openConnection()` и `createDrizzleClient()` в `SqliteDatabase` |
+| Версионные транзакционные миграции | `apps/server/src/database/migrations.ts` |
+| Типизированная схема SQLite | `apps/server/src/database/schema.ts` |
+| SQL-миграции Drizzle и snapshots | `apps/server/drizzle/`, `apps/server/drizzle.config.ts` |
+| Запись попыток коррекции | `apps/server/src/database/repositories/correction-repository.ts` |
+| Запросы и преобразование истории | `apps/server/src/database/repositories/history-repository.ts` |
+| Сохранённая модель | `apps/server/src/database/repositories/model-preference-repository.ts` |
 | Публичные схемы и две модели | `packages/contracts/src/{models,correction,history}.ts`, экспорт через `index.ts` |
 | Ручной benchmark | `apps/server/src/benchmark/` |
 
@@ -39,20 +42,20 @@ Fastify CLI запускает приложение; `app.ts` явно реги�
 `app-resources.ts` создаёт общие ресурсы и освобождает соединения SQLite и HTTP
 через lifecycle приложения.
 
-`correction/`, `openrouter/`, `storage/` и `benchmark/` являются внутренними
+`correction/`, `openrouter/`, `database/` и `benchmark/` являются внутренними
 модулями server workspace. Между модулями используются публичные `index.ts`;
-внутри модуля допустимы прямые импорты файлов. Новые npm-пакеты не добавлены.
+внутри модуля допустимы прямые импорты файлов. Drizzle и SQLite-драйвер остаются
+внутри database/; correction и HTTP-слой не зависят от ORM.
 
 Correction зависит от небольших контрактов записи попыток и транспорта.
 OpenRouter возвращает разобранный результат с метриками или кодом ошибки,
 не передавая разбор ответа в correction. История и настройки модели получают
 только нужные им операции хранилища. SQLite остаётся реализацией этих контрактов.
 
-`storage/database.ts` открывает соединение, запускает миграции и явно помечает
-прерванные попытки, затем создаёт операции записи, истории и настроек. Версия
-схемы остаётся 3. Начало попытки принимает объект с именованными полями;
-SQL-запись использует именованные параметры. Схема и формат сохранённых данных
-не изменены.
+`database/sqlite-database.ts` открывает соединение, запускает миграции и явно помечает
+прерванные попытки, затем создаёт операции записи, истории и настроек. Запросы
+используют типизированные таблицы Drizzle; параметры привязываются без конкатенации
+пользовательского текста. Формат сохранённых данных и публичные контракты сохранены.
 
 `benchmark/cli.ts` остаётся отдельной точкой входа, доступной только человеку.
 Он не экспортируется публичным `index.ts` и не импортируется сервером или тестами.
@@ -63,7 +66,8 @@ SQL-запись использует именованные параметры.
 - GET `/api/correction-config`: модели, сохранённый выбор, лимиты, доступность.
 - PUT `/api/model-preference`: сохранение выбранной модели.
 - POST `/api/corrections`: текст, модель, необязательный correctionId для повтора.
-- GET `/api/history`: поиск, фильтры, сортировка, страница и доступные модели.
+- GET `/api/history`: первая страница истории с настройками по умолчанию.
+- POST `/api/history/search`: поиск, фильтры, сортировка, страница и доступные модели.
 - GET `/api/history/:correctionId`: исходник и все попытки с результатами/метриками.
 
 Удаление истории не реализовано. Точные схемы находятся в contracts.
@@ -75,7 +79,12 @@ SQL-запись использует именованные параметры.
 
 ## SQLite и сохранение
 
-Текущая версия схемы: 3. Миграции выполняются транзакционно при открытии базы.
+Миграции выполняются транзакционно при открытии базы. Новые базы создаются из
+SQL-миграций Drizzle. Для существующей базы текущей схемы baseline однократно
+регистрируется вне приложения в `__drizzle_migrations`, без пересоздания таблиц.
+В приложении нет обновления старых версий схемы или автоматической регистрации
+baseline. Историю миграций ведёт Drizzle. Выбор модели при повторном открытии
+не перезаписывается.
 `corrections` хранит UUID, время, точный исходник, язык `ru` и режим `strict`.
 `model_requests` хранит отдельные попытки, параметры, версию промпта, результат,
 статус, безопасную ошибку и доступные метрики. `model_preference` хранит выбор.
@@ -86,6 +95,12 @@ UUID и ISO timestamps используются в публичных запис
 чтение истории; неподдерживаемая настройка сбрасывается на Gemma при загрузке
 конфигурации. Незавершённые попытки отмечаются прерванными без повторных вызовов.
 Сырые ответы, секреты и текст reasoning не сохраняются.
+
+Для изменения схемы: `npm run db:generate -w apps/server -- --name=<change>`,
+затем проверка SQL и commit файлов из `apps/server/drizzle/`. Baseline содержит
+начальный выбор модели. `drizzle-kit push` для сохранённых баз
+не используется. При упаковке рядом с `dist/` нужен каталог `drizzle/` с SQL и
+metadata. Query logging выключен; диагностика не выводит SQL и параметры.
 
 ## Параметры модели
 

@@ -25,7 +25,7 @@ import {
   type CorrectionTransport,
 } from '../src/correction'
 
-import { SqliteStorage } from '../src/storage'
+import { SqliteDatabase } from '../src/database'
 
 const models = MODELS.slice(0, 2).map((model) => model.id)
 const cases = [
@@ -95,10 +95,10 @@ test('benchmarks accept reasoning-bearing outputs and retain usage while ordinar
     assert.equal(request.reasoningTokens, 3)
     assert.equal(request.costUsd, 0.0002)
   }
-  const database = new SqliteStorage(':memory:')
+  const database = new SqliteDatabase(':memory:')
   try {
     const ordinary = createCorrectionService({
-      store: database.corrections,
+      repository: database.corrections,
       transport,
       isAvailable: true,
     })
@@ -173,7 +173,7 @@ test('benchmark inputs validate every case/model, preserve exact texts, and refu
 
 test('mocked library run sends identical sentences in order, reuses production parameters and isolates records', async (t) => {
   const root = directory(t)
-  const ordinary = new SqliteStorage(join(root, 'ordinary.sqlite'))
+  const ordinary = new SqliteDatabase(join(root, 'ordinary.sqlite'))
   try {
     ordinary.modelPreferences.set(MODELS[1]!.id)
     const ordinaryId = randomUUID()
@@ -234,7 +234,7 @@ test('mocked library run sends identical sentences in order, reuses production p
     assert.ok(result.run.endedAt)
     assert.equal(result.run.prompt, STRICT_PROMPT)
     assert.deepEqual(result.run.parameters[models[1]!], { ...PARAMETERS, model: models[1] })
-    const local = new SqliteStorage(join(folder, 'records.sqlite'))
+    const local = new SqliteDatabase(join(folder, 'records.sqlite'))
     try {
       assert.equal(local.history.list().total, 2)
       for (let index = 0; index < cases.length; index++) {
@@ -405,7 +405,7 @@ test('report embeds text safely, preserves whitespace, and distinguishes zero, u
   assert.equal(readdirSync(root).length, 2)
 })
 
-test('invalid input and storage initialization/finalization failures prevent subsequent calls', async (t) => {
+test('invalid input and repository initialization/finalization failures prevent subsequent calls', async (t) => {
   const root = directory(t)
   let calls = 0
   const transport: CorrectionTransport = mockOpenRouterTransport({

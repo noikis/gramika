@@ -44,7 +44,7 @@ export type StartAttempt = {
   isRepeat?: boolean
 }
 
-export interface CorrectionStore {
+export interface CorrectionRepository {
   beginAttempt(input: StartAttempt): void
   finishAttempt(requestId: string, outcome: Outcome): void
 }

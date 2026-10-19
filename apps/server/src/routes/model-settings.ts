@@ -9,12 +9,12 @@ import {
   MAX_INPUT_CHARACTERS,
   TIMEOUT_MS,
 } from '@gramota/contracts'
-import type { ModelPreferenceStore } from '../storage'
+import type { ModelPreferenceRepository } from '../database'
 import { sendCorrectionFailure, setCorrectionErrorHandler } from './correction-errors'
 
 export async function modelSettingsRoutes(
   app: FastifyInstance,
-  preferences: ModelPreferenceStore | null,
+  preferences: ModelPreferenceRepository | null,
   available: boolean,
 ) {
   app.register(async (api) => {

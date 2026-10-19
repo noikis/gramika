@@ -18,7 +18,7 @@ import {
   type CorrectionTransport,
 } from '../correction'
 
-import { SqliteStorage } from '../storage'
+import { SqliteDatabase } from '../database'
 
 import { renderBenchmarkReport } from './report'
 
@@ -95,7 +95,7 @@ type Options = {
 
 // The CLI is user-only. Automated checks may call this helper with mocked transport.
 export async function runBenchmark(options: Options) {
-  let database: SqliteStorage | undefined
+  let database: SqliteDatabase | undefined
   try {
     const plan = prepareBenchmark(options.cases, options.models)
     mkdirSync(options.outputRoot, { recursive: true })
@@ -139,7 +139,7 @@ export async function runBenchmark(options: Options) {
 
     // Open the database for recording requests and corrections
     try {
-      database = new SqliteStorage(join(folder, 'records.sqlite'))
+      database = new SqliteDatabase(join(folder, 'records.sqlite'))
     } catch {
       run.status = 'failed'
       run.errorCode = ErrorCode.enum.STORAGE_ERROR
@@ -149,7 +149,7 @@ export async function runBenchmark(options: Options) {
     }
 
     const correct = createCorrectionService({
-      store: database.corrections,
+      repository: database.corrections,
       transport: options.transport,
       isAvailable: true,
       timeoutMs: options.timeoutMs,

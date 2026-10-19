@@ -3,13 +3,13 @@ import assert from 'node:assert/strict'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { SqliteStorage } from '../src/storage'
+import { SqliteDatabase } from '../src/database'
 import { DatabaseSync } from 'node:sqlite'
 
 test('records exact originals, final outcomes and interrupted attempts across reopen', (t) => {
   const directory = mkdtempSync(join(tmpdir(), 'gramota-'))
   const path = join(directory, 'test.sqlite')
-  const db = new SqliteStorage(path)
+  const db = new SqliteDatabase(path)
   const original = '  Привет 👋\n<script>text</script>\n'
   db.corrections.beginAttempt({
     ids: { correctionId: 'c', requestId: 'r' },
@@ -45,23 +45,37 @@ test('records exact originals, final outcomes and interrupted attempts across re
       startedAt: 'now',
     }),
   )
-  assert.equal(db.db.prepare("SELECT id FROM corrections WHERE id='c3'").get(), undefined)
+  assert.equal(
+    db.db
+      .prepare<unknown[], Record<string, unknown>>("SELECT id FROM corrections WHERE id='c3'")
+      .get(),
+    undefined,
+  )
   db.close()
-  const reopened = new SqliteStorage(path)
+  const reopened = new SqliteDatabase(path)
   t.after(() => {
     reopened.close()
     rmSync(directory, { recursive: true, force: true })
   })
   assert.equal(
-    reopened.db.prepare("SELECT original_text FROM corrections WHERE id='c'").get()?.original_text,
+    reopened.db
+      .prepare<unknown[], Record<string, unknown>>(
+        "SELECT original_text FROM corrections WHERE id='c'",
+      )
+      .get()?.original_text,
     original,
   )
   assert.equal(
-    reopened.db.prepare("SELECT corrected_text FROM model_requests WHERE id='r'").get()
-      ?.corrected_text,
+    reopened.db
+      .prepare<unknown[], Record<string, unknown>>(
+        "SELECT corrected_text FROM model_requests WHERE id='r'",
+      )
+      .get()?.corrected_text,
     original,
   )
-  const interrupted = reopened.db.prepare("SELECT * FROM model_requests WHERE id='r2'").get()
+  const interrupted = reopened.db
+    .prepare<unknown[], Record<string, unknown>>("SELECT * FROM model_requests WHERE id='r2'")
+    .get()
   assert.equal(interrupted?.error_code, 'INTERRUPTED')
   assert.equal(interrupted?.duration_ms, null)
   assert.equal(interrupted?.cost_usd, null)
@@ -77,17 +91,26 @@ test('records exact originals, final outcomes and interrupted attempts across re
   )
 })
 
-test('newer database version is rejected without replacing its contents', () => {
+test('existing application tables require explicit baseline registration', () => {
   const directory = mkdtempSync(join(tmpdir(), 'gramota-version-'))
   const path = join(directory, 'test.sqlite')
   const raw = new DatabaseSync(path)
-  raw.exec('PRAGMA user_version=4; CREATE TABLE existing(value TEXT);')
+  raw.exec(`PRAGMA user_version=3; CREATE TABLE corrections(value TEXT);
+    INSERT INTO corrections VALUES ('fictional saved value');`)
   raw.close()
   try {
-    assert.throws(() => new SqliteStorage(path), /Unsupported database version/)
+    assert.throws(() => new SqliteDatabase(path))
     const check = new DatabaseSync(path)
     try {
-      assert.equal(check.prepare('PRAGMA user_version').get()?.user_version, 4)
+      assert.equal(check.prepare('PRAGMA user_version').get()?.user_version, 3)
+      assert.equal(
+        check.prepare('SELECT value FROM corrections').get()?.value,
+        'fictional saved value',
+      )
+      assert.equal(
+        check.prepare('SELECT count(*) AS total FROM __drizzle_migrations').get()?.total,
+        0,
+      )
     } finally {
       check.close()
     }
@@ -96,7 +119,7 @@ test('newer database version is rejected without replacing its contents', () => 
   }
 })
 
-test('failed migration rolls back schema changes and preserves existing records', (t) => {
+test('a schema collision rolls back migration changes and preserves existing records', (t) => {
   const directory = mkdtempSync(join(tmpdir(), 'gramota-migration-'))
   const path = join(directory, 'test.sqlite')
   t.after(() => rmSync(directory, { recursive: true, force: true }))
@@ -113,7 +136,7 @@ test('failed migration rolls back schema changes and preserves existing records'
   `)
   raw.close()
 
-  assert.throws(() => new SqliteStorage(path), /duplicate column name/)
+  assert.throws(() => new SqliteDatabase(path))
 
   const reopened = new DatabaseSync(path)
   try {

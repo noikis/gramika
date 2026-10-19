@@ -3,13 +3,13 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import Fastify from 'fastify'
 import application from '../src/app'
-import { SqliteStorage } from '../src/storage'
+import { SqliteDatabase } from '../src/database'
 
 test('application registers every route group with separate public error contracts', async (t) => {
   const app = Fastify()
   t.after(() => app.close())
 
-  await application(app, { correction: { environment: {}, storage: null } })
+  await application(app, { correction: { environment: {}, database: null } })
 
   assert.deepEqual((await app.inject('/')).json(), { root: true })
 
@@ -47,7 +47,7 @@ test('application closes shared resources once even when transport shutdown fail
       const app = Fastify()
       t.after(() => app.close().catch(() => {}))
 
-      const database = new SqliteStorage(':memory:')
+      const database = new SqliteDatabase(':memory:')
       const closeDatabase = database.close.bind(database)
       let databaseCloses = 0
       let transportCloses = 0
@@ -60,7 +60,7 @@ test('application closes shared resources once even when transport shutdown fail
       await application(app, {
         correction: {
           environment: {},
-          storage: database,
+          database: database,
           transport: mockOpenRouterTransport({
             async send() {
               throw new Error('Unexpected upstream call')
