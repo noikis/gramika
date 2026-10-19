@@ -48,44 +48,44 @@ AGENTS.md. No push.
 ## Build steps
 
 - [x] 1. Establish shared contracts and persistent recording.
-  Add executable exports/build wiring for `packages/contracts`, retaining current
-  compiler settings. Use Node 24 `node:sqlite` DatabaseSync, prepared statements,
-  foreign keys and ordered transactional migrations via `PRAGMA user_version`.
-  Initialize through server startup and close through Fastify lifecycle hooks.
-  Keep database and service code outside autoloaded route/plugin directories.
-  Done when contracts are importable by both applications, migration is repeatable,
-  original strings round-trip exactly, and reopen/failure/interruption tests pass
-  through `npm test -w apps/server`. No network request is needed for this step.
+      Add executable exports/build wiring for `packages/contracts`, retaining current
+      compiler settings. Use Node 24 `node:sqlite` DatabaseSync, prepared statements,
+      foreign keys and ordered transactional migrations via `PRAGMA user_version`.
+      Initialize through server startup and close through Fastify lifecycle hooks.
+      Keep database and service code outside autoloaded route/plugin directories.
+      Done when contracts are importable by both applications, migration is repeatable,
+      original strings round-trip exactly, and reopen/failure/interruption tests pass
+      through `npm test -w apps/server`. No network request is needed for this step.
 
 - [x] 2. Implement the Strict service and OpenRouter transport.
-  Add the fixed prompt and validated environment configuration. Use one dedicated
-  Undici dispatcher, a mockable transport seam, a 30-second abort deadline covering
-  the upstream request and body read, and bounded response reading. Persist the
-  pending attempt before sending, then attempt to finalize success/failure before
-  replying; retain a valid result with an explicit warning if its final save fails.
-  Done when mocked tests prove exact request contents, disabled reasoning,
-  successful/unchanged output, metadata extraction, timeout, structurally invalid
-  or truncated responses, provider errors and mandatory-proxy failure without
-  direct fallback.
+      Add the fixed prompt and validated environment configuration. Use one dedicated
+      Undici dispatcher, a mockable transport seam, a 30-second abort deadline covering
+      the upstream request and body read, and bounded response reading. Persist the
+      pending attempt before sending, then attempt to finalize success/failure before
+      replying; retain a valid result with an explicit warning if its final save fails.
+      Done when mocked tests prove exact request contents, disabled reasoning,
+      successful/unchanged output, metadata extraction, timeout, structurally invalid
+      or truncated responses, provider errors and mandatory-proxy failure without
+      direct fallback.
 
 - [x] 3. Expose correction through Fastify.
-  Register `GET /api/correction-config` and `POST /api/corrections`, validating
-  public inputs and outputs. Add a Vite `/api` development proxy to the existing
-  local Fastify server; keep browser requests relative and avoid a broad CORS rule.
-  Done when Fastify inject tests prove the contracts, status mappings, invalid
-  input without upstream calls, saved failed attempts and usable unsaved results
-  without a false persistence claim. Existing server tests still pass.
+      Register `GET /api/correction-config` and `POST /api/corrections`, validating
+      public inputs and outputs. Add a Vite `/api` development proxy to the existing
+      local Fastify server; keep browser requests relative and avoid a broad CORS rule.
+      Done when Fastify inject tests prove the contracts, status mappings, invalid
+      input without upstream calls, saved failed attempts and usable unsaved results
+      without a false persistence claim. Existing server tests still pass.
 
 - [x] 4. Connect the existing workspace and clean Copy.
-  Keep request state above the navigable views, alongside the draft. Fetch the
-  configured model, enable Correct for valid text, prevent overlapping clicks,
-  render plain result text and add native Copy with manual selection fallback.
-  Done when input remains editable and survives failures/navigation, stale results
-  cannot masquerade as results for a changed draft, copy preserves exact output
-  even after a final-save failure with a visible persistence warning,
-  keyboard feedback is accessible, and web build/lint pass. Verify narrow phone,
-  intermediate and desktop layouts using a user-started server and permitted
-  browser access. Report any unavailable live evidence honestly.
+      Keep request state above the navigable views, alongside the draft. Fetch the
+      configured model, enable Correct for valid text, prevent overlapping clicks,
+      render plain result text and add native Copy with manual selection fallback.
+      Done when input remains editable and survives failures/navigation, stale results
+      cannot masquerade as results for a changed draft, copy preserves exact output
+      even after a final-save failure with a visible persistence warning,
+      keyboard feedback is accessible, and web build/lint pass. Verify narrow phone,
+      intermediate and desktop layouts using a user-started server and permitted
+      browser access. Report any unavailable live evidence honestly.
 
 ## Files / areas
 
@@ -106,7 +106,7 @@ These are proposed concrete contracts for approval with this spec.
 ### Public API
 
 - `GET /api/correction-config` returns `{modelId, modelName, maxInputCharacters,
-  timeoutMs, available}`. Model/limits are fixed as above; available is false when
+timeoutMs, available}`. Model/limits are fixed as above; available is false when
   required server configuration is missing. Never return secrets or proxy details.
 - `POST /api/corrections` accepts exactly `{text: string}`. Count Unicode code
   points consistently with `Array.from(text).length`. Reject blank/whitespace-only
@@ -114,7 +114,7 @@ These are proposed concrete contracts for approval with this spec.
   accepted text. Configure this route's JSON body limit to 128 KiB, sufficient for
   escaped valid inputs. Invalid payloads are not correction attempts.
 - Completed correction HTTP 200: `{correctionId, requestId, originalText,
-  correctedText, modelId, saved, warning}`. A committed result has `saved:true`
+correctedText, modelId, saved, warning}`. A committed result has `saved:true`
   and `warning:null`. If a structurally valid result cannot be saved, return the
   exact result with `saved:false` and
   `warning:{code:'STORAGE_ERROR', message:'Not saved to history'}`. The IDs refer
@@ -122,7 +122,7 @@ These are proposed concrete contracts for approval with this spec.
   Validate these two variants with Zod. IDs are server-generated UUID v4 strings;
   client output is runtime validated.
 - Failure: `{error: {code, message}, correctionId: string|null,
-  requestId: string|null}`. Codes are `INVALID_INPUT` (400), `PAYLOAD_TOO_LARGE`
+requestId: string|null}`. Codes are `INVALID_INPUT` (400), `PAYLOAD_TOO_LARGE`
   (413), `NOT_CONFIGURED` (503), `STORAGE_ERROR` (503), `UPSTREAM_ERROR` (502),
   `INVALID_RESPONSE` (502), `REASONING_NOT_DISABLED` (502), `TIMEOUT` (504).
   Messages are fixed safe English strings, never raw exception/provider text.
@@ -141,11 +141,11 @@ reasoning is represented in each request's sent parameters, not a user preferenc
 - `model_requests`: `id TEXT PRIMARY KEY`, `correction_id TEXT NOT NULL` referencing
   corrections, `requested_model TEXT NOT NULL`, `returned_model TEXT NULL`,
   `provider TEXT NULL`, `provider_request_id TEXT NULL`, `prompt_version TEXT NOT
-  NULL`, `parameters_json TEXT NOT NULL`, `corrected_text TEXT NULL`, `started_at
-  TEXT NOT NULL`, `ended_at TEXT NULL`, `duration_ms INTEGER NULL`, `input_tokens
-  INTEGER NULL`, `output_tokens INTEGER NULL`, `reasoning_tokens INTEGER NULL`,
+NULL`, `parameters_json TEXT NOT NULL`, `corrected_text TEXT NULL`, `started_at
+TEXT NOT NULL`, `ended_at TEXT NULL`, `duration_ms INTEGER NULL`, `input_tokens
+INTEGER NULL`, `output_tokens INTEGER NULL`, `reasoning_tokens INTEGER NULL`,
   `cached_input_tokens INTEGER NULL`, `cost_usd REAL NULL`, `finish_reason TEXT
-  NULL`, `status TEXT NOT NULL` constrained to pending/succeeded/failed,
+NULL`, `status TEXT NOT NULL` constrained to pending/succeeded/failed,
   `error_code TEXT NULL`, `error_message TEXT NULL`.
 - UUIDs use `crypto.randomUUID()`. Timestamps use UTC ISO 8601 with milliseconds.
   Duration uses an injected monotonic clock and nonnegative integer milliseconds.
@@ -173,13 +173,13 @@ reasoning is represented in each request's sent parameters, not a user preferenc
 
 ### Configuration and transport
 
-- Server-only `OPENROUTER_API_KEY`, `GRAMOTA_ENV=development|homelab`,
+- Server-only `OPENROUTER_API_KEY`, `GRAMOTA_ENV=development|production`,
   `SQLITE_PATH` and `OPENROUTER_PROXY_URL`. Require explicit GRAMOTA_ENV rather
   than inferring network policy from NODE_ENV. Default local database path is
   `data/gramota.sqlite` relative to the server workspace; document this and create
   its parent directory. Tests use isolated temporary databases.
-- Development uses the system VPN without the Home Lab proxy. Home Lab requires
-  `OPENROUTER_PROXY_URL=http://10.201.0.2:8888` and a dedicated Undici ProxyAgent.
+- Development uses the system VPN without the production proxy. production requires
+  `OPENROUTER_PROXY_URL=http://proxy.example:8888` and a dedicated Undici ProxyAgent.
   Missing/invalid environment, key or required proxy yields NOT_CONFIGURED without
   an upstream call. A failed proxy request is an upstream failure, never a direct
   fallback. All future OpenRouter operations must reuse this client.
@@ -203,6 +203,7 @@ reasoning is represented in each request's sent parameters, not a user preferenc
   through deliberate ordinary corrections, without an extra LLM judge call.
   If reasoning text or a positive reasoning-token count is reported,
   fail with REASONING_NOT_DISABLED and retain available usage/cost, not reasoning.
+
 - Persist provider metadata and usage only when valid. Never store/log prompts
   containing personal text, raw provider responses, credentials or reasoning text.
   Disable body/header logging and sanitize unexpected error logs to safe codes.

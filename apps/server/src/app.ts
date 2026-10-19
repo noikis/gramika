@@ -1,20 +1,34 @@
-import { join } from 'node:path'
-import AutoLoad, { AutoloadPluginOptions } from '@fastify/autoload'
-import { FastifyPluginAsync, FastifyServerOptions } from 'fastify'
-import { correctionApi, type CorrectionOptions } from './correction-api'
+import { storageDiagnostic } from './storage'
+import type { FastifyPluginAsync, FastifyServerOptions } from 'fastify'
+import { createAppResources, type AppResourcesOptions } from './app-resources'
+import { createCorrectionService } from './correction'
+import rootRoutes from './routes/root'
+import { correctionRoutes } from './routes/corrections'
+import { historyRoutes } from './routes/history'
+import { modelSettingsRoutes } from './routes/model-settings'
 
-export interface AppOptions extends FastifyServerOptions, Partial<AutoloadPluginOptions> {
-  correction?: CorrectionOptions
+export interface AppOptions extends FastifyServerOptions {
+  correction?: AppResourcesOptions
 }
+
 const options: AppOptions = {}
 
 const app: FastifyPluginAsync<AppOptions> = async (fastify, opts): Promise<void> => {
-  await correctionApi(fastify, opts.correction)
+  const { config, storage, transport } = createAppResources(fastify, opts.correction)
 
-  void fastify.register(AutoLoad, {
-    dir: join(__dirname, 'routes'),
-    options: opts,
+  const correct = createCorrectionService({
+    store: storage?.corrections ?? null,
+    transport,
+    isAvailable: config.available,
+    timeoutMs: opts.correction?.timeoutMs,
+    onStorageFailure: (error, stage) =>
+      fastify.log.error(storageDiagnostic(error, stage), 'Correction storage operation failed'),
   })
+
+  fastify.register(rootRoutes)
+  await correctionRoutes(fastify, correct)
+  await historyRoutes(fastify, storage?.history ?? null)
+  await modelSettingsRoutes(fastify, storage?.modelPreferences ?? null, config.available)
 }
 
 export default app

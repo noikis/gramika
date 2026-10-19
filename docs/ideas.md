@@ -1,212 +1,306 @@
-# Gramota — Product development plan
+# Gramota ideas
 
-Looking at your screenshots and everything we've learned from testing Gemma 4 and Gemini 3.1 Flash Lite, I think Gramota already has a solid foundation.
+A discussion backlog for improving everyday use. This is not the implementation
+roadmap. Items come from another LLM's original suggestions and subsequent
+conversation with the user. No item is authorized for implementation merely by
+appearing here. Section order and IDs do not indicate priority.
 
-You have a working correction interface, highlighted changes, history with search and filters, model selection, and an inexpensive default model that performs well on Russian grammar.
+## Contents
 
-The next stage shouldn't be about adding more models or redesigning the interface. It should be about making Gramota more useful, understandable, and trustworthy.
+- [Direction and status](#direction-and-status)
+- [Current baseline](#current-baseline)
+- [Everyday workflow](#everyday-workflow)
+- [Reviewing and controlling corrections](#reviewing-and-controlling-corrections)
+- [Optional explanations and learning](#optional-explanations-and-learning)
+- [Privacy and possible sharing](#privacy-and-possible-sharing)
+- [Quality observations and future evaluation](#quality-observations-and-future-evaluation)
+- [Ideas to leave aside for now](#ideas-to-leave-aside-for-now)
+- [How to review this backlog](#how-to-review-this-backlog)
 
-I would organize development into three priorities:
+## Direction and status
 
-1. Understanding corrections — explain why something was changed.
-2. Controlling corrections — let the user accept or reject changes and recover from mistakes.
-3. Learning from corrections — help users avoid repeating the same Russian mistakes.
+The app is for personal use first. It may later be shared with relatives, friends
+and a small invited circle with similar needs. Do not assume a public service,
+commercial product or large user base.
 
-## 1. The Explain feature — highest priority
+The user's focus is the experience of the complete everyday task, not just visual
+UI polish: bring text into Gramota, correct it, review it, copy it, and return to
+the original conversation or app with as little friction as possible.
 
-This is the most important addition I would make.
+Finish deployment and learn from daily use before committing to a large feature
+set. The remaining approved deployment work is recorded in the
+[build plan](../blueprint/build-plan.md); it is not a new idea in this backlog.
 
-At present, the user sees red and green highlights, but doesn't necessarily understand why the model changed something. That's especially problematic for advanced non-native speakers: the corrected version may look better without teaching them anything.
+| Status | Meaning |
+| --- | --- |
+| User-supported direction | The user expressed interest; details and implementation are not approved |
+| Suggestion | Proposed by an agent; the user has not decided whether to build it |
+| Conditional | Relevant only if the stated need appears |
+| Available foundation | Some underlying behavior already exists; the proposed convenience may not |
 
-### What should Explain do?
+The original LLM ranked explanations first. That ranking has not been adopted.
+The user explicitly said these ideas have no concrete order of importance.
 
-I recommend explaining individual corrections, with an option to explain the whole text.
+## Current baseline
 
-Proposed functionality
+Already implemented: paste/copy actions, Strict correction, local Text/Changes
+diff, persistent history, phrase search, filters, sorting, pagination, transient
+Sonner notifications, model switching and retained attempts for repeated input.
 
-## Understanding a correction
+Gemma 4 is the default and Gemini 3.1 Flash Lite the alternative. The user considers
+Gemini more expensive but has not established that it is substantially better.
+The current UI still uses a model selector; replacing it is an idea below.
 
-Example
+The user tested multiple phrases and styles and accepted the correction quality.
+Keep the common strict-v3 prompt; separate style prompts have no demonstrated need.
 
-Original
+## Everyday workflow
 
-Я заинтересовался о возможности сотрудничества.
+### UX-01: Preserve unfinished work
 
-Corrected
+**Status:** Suggestion.
 
-Я заинтересовался возможностью сотрудничества.
+Switching apps, refreshing or reopening Gramota should not unnecessarily lose a
+draft. First check what the current draft behavior already covers. Consider
+retention across reopening only if useful, with a clear way to discard locally
+retained text. Decide whether a result or only the original needs restoration.
 
-Explanation
+### UX-02: Recover from accidental changes
 
-The verb «заинтересоваться» requires the instrumental case without a preposition: заинтересоваться чем? — возможностью. That's why «о» was removed and «возможности» became «возможностью».
+**Status:** Suggestion.
 
-The explanation should contain the specific mistake, the correction, a concise reason, and an occasional short example when necessary.
+Offer a simple way to undo accidental clearing or replacement of the original.
+Make pasting over an existing draft predictable. Decide which actions need Undo
+from observed mistakes rather than adding confirmation dialogs everywhere.
 
-It should not generate a long grammar lesson every time.
+### UX-03: Start the next correction easily
 
-### How I would implement it
+**Status:** Suggestion.
 
-Use a separate LLM request only when the user clicks Explain.
+After copying, a New correction action could clear the workspace and focus the
+input. Keep it separate from Copy so copying does not unexpectedly erase work.
+Coordinate with draft retention and Undo.
 
-The normal correction pipeline stays unchanged:
+### UX-04: Reach the result and Copy comfortably on mobile
 
-Original text
+**Status:** Suggestion.
 
-Gemma 4 correction
+After a correction completes, make the result easy to reach without a jarring
+scroll jump. Keep Copy accessible for longer results. Observe the real phone
+workflow, including the on-screen keyboard, before choosing sticky controls or
+automatic scrolling.
 
-Result + highlighted changes
+### UX-05: Make unchanged results unmistakable
 
-No additional API call
+**Status:** Suggestion; verify current behavior before changing it.
 
-Explain (optional)
+Clearly communicate No changes needed while keeping Copy available. A user should
+not need to inspect the diff to distinguish an unchanged result from a request
+that has not finished.
 
-Separate API request on demand
+### UX-06: Light and dark themes
 
-This architecture has several benefits: ordinary corrections remain fast and inexpensive, explanations can use a different model if necessary, and you can improve explanations without changing the proofreading prompt.
+**Status:** User-supported direction.
 
-The explanation request should receive the original text, corrected text, and the specific change or passage being explained. It should not independently rewrite the whole message.
+Support comfortable use in different lighting conditions. A suggested approach
+is to follow the device preference initially and remember a manual override.
+The exact control and behavior remain to be designed.
 
-One important safeguard: the explanation model must be allowed to say that a change was unnecessary or questionable. Otherwise, it may confidently invent a grammatical justification for an LLM mistake.
+### UX-07: Make the app quick to open
 
-I would initially use Gemma 4 for explanations too, then test whether Gemini gives meaningfully clearer explanations. No need to add an expensive model before measuring its value.
+**Status:** Suggestion, after deployment.
 
-## 2. Other features I would add
+Consider a phone home-screen shortcut so opening Gramota takes little effort.
+Choose the smallest approach that works on the user's device; this does not
+implicitly require offline correction, notifications or a full PWA feature set.
 
-Here are my recommendations, ordered by value rather than technical complexity.
+### UX-08: Desktop keyboard shortcut
 
-A. Accept or reject individual corrections — High priority
+**Status:** Suggestion.
 
-At present, users can copy the entire corrected text. But what if Gemma changes something they disagree with?
+Consider Ctrl+Enter to correct, retaining the visible button. Resolve platform
+conventions and text-entry behavior when designing it.
 
-Each correction should eventually have Accept and Reject actions. Rejecting a change restores the original wording without discarding other corrections.
+### UX-09: Keep automation predictable
 
-This is particularly useful because LLM corrections aren't always right.
+**Status:** Suggested design principle, not a new feature.
 
-B. Classify correction types — Medium priority
+Keep copying and paid correction explicit. Do not automatically read the
+clipboard, submit pasted text, or copy results without a deliberate user decision.
+Saving a click is useful only when it does not introduce surprises.
 
-Classify changes into categories such as grammar, punctuation, spelling, awkward construction, and formatting.
+## Reviewing and controlling corrections
 
-This would make explanations more useful and help advanced learners identify recurring weaknesses.
+### REVIEW-01: Ask for another opinion
 
-Classifications should be generated on demand or alongside explanations, not through an extra LLM request for every ordinary correction.
+**Status:** User-supported direction; available foundation.
 
-C. Second opinion — High priority
+Replace the model selector with Gemma as the normal Correct action. After a
+result, offer Ask for another opinion using Gemini 3.1 Flash Lite when needed.
+The user expects Gemma to handle most everyday requests because of its lower cost.
 
-When someone isn't satisfied with Gemma's result, let them request another correction using Gemini 3.1 Flash Lite.
+Suggested behavior to discuss:
 
-Show both versions without replacing the first result. That makes the alternative model genuinely useful, without promising that it is always better.
+- Send the identical original text to Gemini only after an explicit action.
+- Keep both outputs and their recorded attempts; do not overwrite Gemma's result.
+- Make it clear which result is being viewed and copied.
+- Indicate the higher cost without implying higher quality.
+- Asking Gemini once should not change the next message's default model.
 
-D. Personal mistake notebook — Medium priority
+Model switching and grouped attempts already exist. The new work would concern
+the action, presentation and predictable default behavior, not a new model service.
 
-Allow users to save a useful correction and its explanation.
+### REVIEW-02: Edit the corrected result
 
-Later, they can review common mistakes such as verb government, case endings, or punctuation.
+**Status:** Suggestion.
 
-I would start with manually saved corrections rather than automatically generating a learning profile.
+Allow a small final adjustment before copying instead of forcing the user to
+repair the text in another app. Preserve the original model output and distinguish
+it from the edited final text. Decide whether edited text needs persistence.
+This may be a smaller first step than per-change accept/reject controls.
 
-E. Privacy and user separation — High priority before sharing
+### REVIEW-03: Group related diff changes
 
-If relatives use Gramota, they shouldn't see each other's correction histories.
+**Status:** Suggestion; use concrete examples to establish need.
 
-Each person should have separate history, access controls, and an option to delete their messages. The OpenRouter API key must remain server-side.
+Word-level or grouped changes may be easier to understand than separate character
+and space edits, especially around punctuation and date formatting. Improve
+readability without hiding actual differences or changing the copied text.
+Meaningful spans may also help future explanation or accept/reject interactions.
 
-Add basic rate limits or request quotas to prevent accidental or abusive API spending.
+### REVIEW-04: Accept or reject individual corrections
 
-## 3. A specific problem visible in your screenshots
+**Status:** Conditional on repeated need for finer control.
 
-Your example contains conversational language, unusual word order, and grammatical mistakes:
+Rejecting one change could restore the original wording while retaining other
+corrections. Related grammatical edits can depend on each other, so independent
+accept/reject behavior needs careful definition. Consider editable output first.
+Do not add stable edit IDs or a generalized edit system until the chosen behavior
+actually needs them.
 
-> Блять вообще не удобно. Я передвинул поездку в Морокко 12 ого. Чтобы с вами в Москве увидется. Ну поехать в Москву 5 ого и там всю неделю сидеть. Слишком дорого
+## Optional explanations and learning
 
-This is a particularly valuable real-world test because it's not polished university correspondence. The author is expressing frustration.
+### LEARN-01: Explain a correction on demand
 
-Gramota must preserve that frustration, including profanity, while correcting actual language mistakes.
+**Status:** Suggestion. Valuable if understanding mistakes becomes a recurring goal.
 
-I would test these cases explicitly: informal fragments, incomplete sentences, colloquial vocabulary, and ambiguous dates.
+A user explicitly asks why a correction was made. Ordinary correction remains a
+single proofreading request with no automatic explanations or extra model calls.
 
-There's also a practical issue with the Changes view: when individual characters and spaces are marked separately, corrections become difficult to understand. For example, changing a date like «12 ого» into «12-го» can produce several small highlighted regions.
+Possible starting scope: explain one complete correction, then support a selected
+passage if useful. A proposed request would receive the original, model output
+and relevant passage, and explain rather than rewrite the message.
 
-I would improve the diff engine's grouping behavior, not necessarily its visual design. It should recognize word-level changes and combine related insertions/deletions into understandable corrections.
+The explanation must be allowed to identify a questionable or unnecessary change,
+rather than inventing a rule to defend every model correction. Explanation
+quality must be evaluated separately from proofreading quality.
 
-That matters for the Explain feature too: explanations need meaningful text spans, not isolated character edits.
+The original suggestion was to try Gemma first and compare Gemini only if needed.
+That model choice is not yet decided or benchmarked for explanations.
 
-## 4. What the explanation system should store
+### LEARN-02: Explanation depth
 
-Because Gramota already has a SQLite-backed history, I would extend the existing records rather than build a separate explanation service with its own history.
+**Status:** Open design choice, dependent on LEARN-01.
 
-A correction could have zero or more explanation records:
+Options discussed: one or two sentences, a more detailed explanation with examples,
+or brief by default with an explicit Explain more action. The last option was
+suggested by the other LLM; the user has not selected one.
 
-| Field             | Purpose                            |
-| ----------------- | ---------------------------------- |
-| Correction ID     | Links to the original correction   |
-| Original passage  | What the user wrote                |
-| Corrected passage | What the model returned            |
-| Explanation       | Why the passage was changed        |
-| Category          | Grammar, spelling, syntax, etc.    |
-| Explanation model | Which LLM produced the explanation |
-| Prompt version    | Makes behavior reproducible        |
-| Tokens and cost   | Tracks API spending                |
+### LEARN-03: Save requested explanations
 
-Store explanations only after the user requests them. If the user opens the same explanation later, retrieve the saved result rather than spending tokens again.
+**Status:** Conditional design note, dependent on LEARN-01.
 
-A more advanced implementation can also store stable edit identifiers, so explanations and accept/reject actions stay associated with the correct text spans.
+Retrieve a saved explanation when reopened rather than paying for the same
+request again. The original proposal linked explanations to existing correction
+records instead of introducing a separate service.
 
-## 5. Development roadmap
+Candidate metadata, not an approved schema: correction/request reference,
+original and corrected passage, explanation, optional category, explanation
+model, prompt version, usage and reported cost. Whole-result explanations may
+not need passage identifiers. Define storage only after the user chooses scope.
 
-I wouldn't implement everything simultaneously. Here's a practical order.
+### LEARN-04: Classify correction types
 
-1
+**Status:** Conditional on useful explanations or mistake review.
 
-Milestone 1 — Explain corrections
+Possible categories: grammar, spelling, punctuation, awkward construction and
+formatting. Consider generating categories alongside an explicitly requested
+explanation, without an extra classification call for every ordinary correction.
 
-Add on-demand explanations, save them in SQLite, and support viewing them from History. Start with a whole-correction explanation if selecting individual edits would require too much rework.
+### LEARN-05: Saved-mistakes notebook
 
-2
+**Status:** Conditional on a desire to revisit corrections.
 
-Milestone 2 — Better correction control
+Start with manually saved corrections or bookmarks, optionally with explanations.
+Only consider recurring-mistake profiles, statistics or exercises if this simpler
+review habit proves useful. No automatic learning profile is approved.
 
-Group related changes, introduce accept/reject actions, and provide a Second Opinion using Gemini. Preserve both model results in history.
+## Privacy and possible sharing
 
-3
+### SHARE-01: Delete saved messages
 
-Milestone 3 — Learning tools
+**Status:** Suggestion for personal use; important before sharing private histories.
 
-Add correction categories and a saved-mistakes notebook. Only then consider more advanced features such as personalized exercises.
+Allow deliberate removal of sensitive history. Deletion scope and confirmation
+need design: one attempt, a whole correction, or all history are different actions.
+Do not assume automatic retention limits without a user decision.
 
-4
+### SHARE-02: Private access and separate histories
 
-Milestone 4 — Sharing with relatives
+**Status:** Conditional on inviting other people.
 
-Add separate user accounts or private access, history isolation, deletion controls, and spending safeguards before deploying it for multiple people.
+Before relatives or friends use the same instance, decide how access works and
+ensure one person's messages cannot be read by another. Keep OpenRouter keys
+server-side. Choose a proportionate solution for a small invited circle; public
+registration and account administration are not current requirements.
 
-## 6. What I would deliberately avoid
+### SHARE-03: Spending safeguards
 
-I wouldn't add a chatbot, automatic essays, rewriting modes, vocabulary exercises, or a complicated personal dashboard right now.
+**Status:** Conditional on sharing or observed accidental spending.
 
-Those could eventually be useful, but they would move Gramota away from its central purpose: correct my Russian accurately, preserve what I meant, and help me understand my mistakes.
+Consider simple request limits or budgets so additional users cannot unexpectedly
+consume the owner's API budget. The appropriate control depends on actual usage.
+Do not introduce billing, subscriptions or a quota service for hypothetical scale.
 
-Similarly, I wouldn't generate explanations automatically for every correction. Most users will simply want the corrected text, and forcing an explanation would increase cost, complexity, and visual clutter.
+## Quality observations and future evaluation
 
-## 7. One important design decision
+**Status:** Suggested observation areas, not an authorized benchmark run.
 
-Before implementing the first milestone, I'd like to settle how detailed explanations should be.
+- Collect examples of wrong, excessive or difficult-to-review corrections.
+- Check conversational fragments, colloquial vocabulary, profanity and incomplete
+  sentences: correction should preserve the speaker's tone and intent.
+- Inspect ambiguous dates and related word/space/punctuation changes for diff
+  readability; avoid assuming an ambiguity can always be resolved automatically.
+- Reconsider prompts or models when concrete examples justify another comparison.
+- Keep personal example texts in ignored local cases, not in this tracked backlog.
 
-## Explanation depth
+Only the human may invoke benchmark commands, including preview. No agent-run
+paid calls, automatic judge or reference-answer requirement is implied here.
+See [manual benchmark instructions](benchmark.md).
 
-Brief explanations (recommended)
+## Ideas to leave aside for now
 
-One or two sentences explaining the specific rule and correction. Suitable for everyday use.
+These were mentioned as possible later directions, not approved work:
 
-Detailed explanations
+- Chatbot interactions, automatic essays and broad rewriting modes.
+- More model choices or different prompts for every style without evidence.
+- Automatic explanations/classifications on every correction.
+- Exercises, vocabulary lessons, automatic learning profiles and elaborate dashboards.
+- Public signup, commercial features and infrastructure for hypothetical scale.
 
-Several sentences, with grammatical terminology and examples. More useful for deliberate learning.
+The useful distinction is between helping send a correct message and helping
+study language. Both can be valuable, but the second is an optional product goal.
 
-Brief by default, with “Explain more”
+## How to review this backlog
 
-Start with a short explanation. Let the user request additional detail when interested.
+Use the deployed app and record actual friction. When reviewing an item, ask:
 
-Continue planning&#x20;
+1. What recurring inconvenience or need does it address?
+2. Is current behavior already sufficient, or is there a smaller improvement?
+3. Does it add actions, visual noise, model cost or persistent personal data?
+4. What is the smallest behavior worth implementing and checking?
 
-My preference is brief by default, with an optional “Explain more”. That would make Gramota accessible to your relatives while still being useful to someone actively improving their Russian.
-
-Most importantly, I would build the underlying explanation system so it can later support individual corrections, saved mistakes, and more detailed lessons without requiring another major architectural change.
+Record the user's decision and unresolved details before promoting an item into
+[the project plan](../blueprint/project-plan.md),
+[the roadmap](../blueprint/build-plan.md), or a feature/fix specification.
+There is no scheduled implementation order in this file.

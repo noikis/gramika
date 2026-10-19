@@ -7,7 +7,7 @@
     "test": "test"
   },
   "scripts": {
-    "benchmark": "npm run build:ts && node dist/benchmark.js",
+    "benchmark": "npm run build:ts && node dist/benchmark/cli.js",
     "lint": "eslint src test eslint.config.mjs",
     "lint:fix": "npm run lint -- --fix",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\" eslint.config.mjs",
@@ -24,7 +24,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@fastify/autoload": "^6.0.0",
     "@gramota/contracts": "^1.0.0",
     "fastify": "^5.0.0",
     "fastify-cli": "^8.0.3",

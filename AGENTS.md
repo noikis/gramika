@@ -16,7 +16,7 @@ for optional tool settings.
 Gramota is a personal writing assistant for correcting short messages and letters,
 with Russian quality, minimal edits, and mobile use as priorities. The repository
 implements correction, local diff, searchable history and persistent model
-selection. Original roadmap features 1-5 are complete; Home Lab packaging,
+selection. Original roadmap features 1-5 are complete; production packaging,
 deployment health checks and backup/restore remain in Feature 6.
 
 Read the relevant product context before planning or changing behavior:
@@ -31,7 +31,7 @@ Read the relevant product context before planning or changing behavior:
 MVP is Strict correction only. OpenRouter calls belong on the server, history
 must not be sent with correction requests, and diff is computed locally.
 Never put secrets or real personal texts in code, logs, docs, or test fixtures.
-On Home Lab, use the configured mandatory proxy and never fall back to direct
+In production, use the configured mandatory proxy and never fall back to direct
 OpenRouter access. Auth and external access are deferred.
 
 Use npm workspaces, React/Vite, Fastify, TypeScript, and public Zod contracts.

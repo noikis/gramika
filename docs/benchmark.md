@@ -59,7 +59,7 @@ No actual run is authorized merely by implementing or reviewing this tool.
 
 Execution uses the existing server environment configuration from
 `apps/server/.env` and environment variables. Development uses the system VPN;
-Home Lab retains the mandatory proxy with no direct fallback. Invalid or missing
+production retains the mandatory proxy with no direct fallback. Invalid or missing
 configuration prevents execution. Never print or paste credentials into a report.
 
 The active prompt must still be `strict-v3`. The runner reuses the production

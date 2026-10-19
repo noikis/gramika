@@ -3,12 +3,12 @@ import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import Fastify from 'fastify'
 import { HistorySearchQuery, HistoryList, HistoryDetail } from '@gramota/contracts'
-import { CorrectionDatabase } from '../src/database'
-import { historyApi } from '../src/history-api'
+import { SqliteStorage } from '../src/storage'
+import { historyRoutes } from '../src/routes/history'
 
 const at = '2026-10-18T01:00:00.000Z'
 function record(
-  db: CorrectionDatabase,
+  db: SqliteStorage,
   original: string,
   options: {
     model?: string
@@ -21,17 +21,17 @@ function record(
   const correctionId = options.correctionId ?? randomUUID()
   const requestId = randomUUID()
   const status = options.status ?? 'succeeded'
-  db.begin(
-    { correctionId, requestId },
-    original,
-    options.model ?? 'fictional/model-a',
-    'strict-v2',
-    {},
-    options.createdAt ?? at,
-    Boolean(options.correctionId),
-  )
+  db.corrections.beginAttempt({
+    ids: { correctionId, requestId },
+    originalText: original,
+    modelId: options.model ?? 'fictional/model-a',
+    promptVersion: 'strict-v2',
+    parameters: {},
+    startedAt: options.createdAt ?? at,
+    isRepeat: Boolean(options.correctionId),
+  })
   if (status !== 'pending')
-    db.finish(requestId, {
+    db.corrections.finishAttempt(requestId, {
       status,
       correctedText: status === 'succeeded' ? (options.result ?? original) : null,
       endedAt: options.createdAt ?? at,
@@ -41,12 +41,12 @@ function record(
     })
   return correctionId
 }
-function search(db: CorrectionDatabase, criteria: object = {}) {
-  return db.listHistory(HistorySearchQuery.parse(criteria))
+function search(db: SqliteStorage, criteria: object = {}) {
+  return db.history.list(HistorySearchQuery.parse(criteria))
 }
 
 test('phrase search covers full originals and successful results with Russian case folding and literal wildcards', () => {
-  const db = new CorrectionDatabase(':memory:')
+  const db = new SqliteStorage(':memory:')
   try {
     const originalMatch = record(db, 'Начало '.repeat(30) + 'ПРИВЕТ МИР!')
     const resultMatch = record(db, 'Другая фраза', { result: 'Привет мир!' })
@@ -78,7 +78,7 @@ test('phrase search covers full originals and successful results with Russian ca
 })
 
 test('model and result filters must match one attempt, retain all details, and never duplicate corrections', () => {
-  const db = new CorrectionDatabase(':memory:')
+  const db = new SqliteStorage(':memory:')
   try {
     const original = 'Привет мир!'
     const id = record(db, original, { model: 'fictional/model-a' })
@@ -106,7 +106,7 @@ test('model and result filters must match one attempt, retain all details, and n
     assert.equal(search(db, { model: 'fictional/model-a', result: 'failed' }).total, 1)
     assert.equal(search(db, { model: 'fictional/model-c', result: 'pending' }).total, 1)
     assert.equal(search(db, { model: 'missing' }).total, 0)
-    const detail = HistoryDetail.parse(db.getHistory(id))
+    const detail = HistoryDetail.parse(db.history.get(id))
     assert.equal(detail.requests.length, 5)
     assert.deepEqual(search(db, { model: 'missing' }).models, [
       'fictional/model-a',
@@ -123,7 +123,7 @@ test('model and result filters must match one attempt, retain all details, and n
 })
 
 test('creation boundaries include the entire local day and exclude the next day, regardless of request dates', () => {
-  const db = new CorrectionDatabase(':memory:')
+  const db = new SqliteStorage(':memory:')
   try {
     record(db, 'Перед началом', { createdAt: '2026-10-17T16:59:59.999Z' })
     const first = record(db, 'Начало', { createdAt: '2026-10-17T17:00:00.000Z' })
@@ -151,7 +151,7 @@ test('creation boundaries include the entire local day and exclude the next day,
 })
 
 test('server pages have stable timestamp/ID ordering, matching totals, and full-history model choices', () => {
-  const db = new CorrectionDatabase(':memory:')
+  const db = new SqliteStorage(':memory:')
   try {
     const ids = Array.from({ length: 24 }, (_, index) =>
       record(db, `Пример ${index}`, { model: index === 0 ? 'fictional/rare' : 'fictional/common' }),
@@ -195,8 +195,8 @@ test('search API validates criteria, returns safe errors, and does not log searc
       },
     },
   })
-  const db = new CorrectionDatabase(':memory:')
-  await historyApi(app, db)
+  const db = new SqliteStorage(':memory:')
+  await historyRoutes(app, db.history)
   t.after(async () => {
     await app.close()
     db.close()

@@ -1,6 +1,6 @@
 # Gramota - Project Overview
 
-<!-- blueprint:source-hash 26fe54e1f9987a287ad402aa7ab7f67ae0b10b917bf4b57302fe00ea6f348897 -->
+<!-- blueprint:source-hash c4983d85c2e4869a3375ad7768c44f5d1b5fa27a41d3e1aa25f8d26fb095eeef -->
 
 Derived from [project-plan.md](../project-plan.md) and [build-plan.md](../build-plan.md).
 Updated 2026-10-19 to reflect completed work and user decisions. Implementation
@@ -13,7 +13,7 @@ objective grammar, spelling and punctuation with minimal changes, preserving
 meaning, voice, names, numbers, links, emoji and whitespace. Return only complete
 corrected text; already-correct input stays unchanged.
 
-One user, primarily on a phone, with Home Lab deployment planned. Strict is the
+One user, primarily on a phone, with production deployment planned. Strict is the
 only mode. English/French, explanations, tone controls, document uploads,
 authentication and external access remain deferred. There is no monetization.
 
@@ -38,13 +38,21 @@ the future container or a new agent network test.
 - npm workspaces: apps/web, apps/server, packages/contracts; root lockfile.
 - React/Vite/TypeScript, Tailwind CSS, local shadcn-style components, Sonner.
   App.tsx, components/, use-correction*.ts, use-history.ts and lib/ own the UI.
-- Fastify CLI loads app.ts; correction-api.ts and history-api.ts register APIs.
-  Autoload loads routes/root.ts. GET / returns a simple root response, not a
-  complete deployment health check. Built frontend serving remains unfinished.
-- correction-service.ts builds strict-v3 requests; openrouter.ts owns Undici.
-  correction-config.ts validates environment and proxy settings.
-- database.ts owns built-in node:sqlite storage and transactional migrations
-  through schema version 3. Public Zod contracts live in contracts/src/index.ts.
+- Fastify CLI loads app.ts, which composes resources and explicitly registers
+  routes/root.ts, corrections.ts, history.ts and model-settings.ts. GET / returns
+  a simple root response, not a complete deployment health check. Built frontend
+  serving remains unfinished. app-resources.ts owns initialization and cleanup.
+- correction/ owns attempts, strict-v3, request defaults and small recording and
+  transport contracts. openrouter/ owns Undici, response validation and metadata.
+  correction-config.ts validates environment and proxy; benchmark/ contains the
+  manual CLI, reusable runner and offline reports. CLI is never imported at startup.
+- storage/ owns built-in node:sqlite, transactional migrations through version 3,
+  correction writes, history queries and model preferences. SqliteStorage opens
+  one connection, explicitly migrates and recovers interrupted attempts, then
+  exposes corrections, history and modelPreferences. Cross-module imports use
+  public index.ts entry points; these are internal modules, not new packages.
+  Public Zod contracts live in contracts/src/models.ts,
+  correction.ts and history.ts; index.ts re-exports the public API.
 - Preserve existing tsconfig settings; no Next.js, Prisma, Clerk or extra services.
 
 ## Models and request policy
@@ -107,8 +115,8 @@ when code is unchanged and keep completion bookkeeping lightweight.
 
 ## Environment and remaining work
 
-Development uses system VPN. Home Lab requires GRAMOTA_ENV=homelab and
-OPENROUTER_PROXY_URL=http://10.201.0.2:8888, with no direct fallback. Missing or
-invalid configuration prevents correction. Credentials remain server-only.
+Development uses system VPN. Production requires GRAMOTA_ENV=production and
+a valid HTTP(S) OPENROUTER_PROXY_URL from private environment configuration,
+with no direct fallback. Missing or invalid configuration prevents correction. Credentials remain server-only.
 Persistent volumes, backup/restore and secure phone access are not established by
 local development behavior. See docs/environments.md and docs/status.md.

@@ -3,9 +3,9 @@ import { resolve } from 'node:path'
 import { parseArgs } from 'node:util'
 import { createInterface } from 'node:readline/promises'
 import { stdin, stdout } from 'node:process'
-import { BenchmarkInputError, prepareBenchmark, runBenchmark } from './benchmark-run'
-import { parseConfig, readEnvironment } from './correction-config'
-import { createTransport } from './openrouter'
+import { BenchmarkInputError, prepareBenchmark, runBenchmark } from './run'
+import { parseConfig, readEnvironment } from '../correction-config'
+import { createTransport } from '../openrouter'
 
 // Human-only entry point. Never import or invoke this command from checks or startup.
 async function main() {
@@ -81,7 +81,7 @@ async function main() {
     const result = await runBenchmark({
       cases,
       models,
-      outputRoot: resolve(__dirname, '../benchmark-data/runs'),
+      outputRoot: resolve(__dirname, '../../benchmark-data/runs'),
       transport: createTransport(config),
       shouldStop: () => stopping,
       onCreated: (folder) => console.log(`Local results: ${folder}`),

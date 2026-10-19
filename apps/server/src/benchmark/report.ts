@@ -1,5 +1,5 @@
 import type { HistoryRequest } from '@gramota/contracts'
-import type { BenchmarkRun } from './benchmark-run'
+import type { BenchmarkRun } from './run'
 
 export function benchmarkSummary(run: BenchmarkRun, requests: Record<string, HistoryRequest>) {
   return run.models.map((model) => {

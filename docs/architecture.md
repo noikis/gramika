@@ -16,19 +16,47 @@ SQLite использует встроенный `node:sqlite`. Текущие �
 | Состояние и запросы клиента | `apps/web/src/use-correction*.ts`, `use-history.ts` |
 | Diff, clipboard и форматирование | `apps/web/src/lib/` |
 | Создание Fastify-приложения | `apps/server/src/app.ts` |
-| HTTP коррекции, настройки и модели | `apps/server/src/correction-api.ts` |
-| HTTP истории | `apps/server/src/history-api.ts` |
-| Промпт strict-v3 и обработка попытки | `apps/server/src/correction-service.ts` |
+| Создание и освобождение общих ресурсов | `apps/server/src/app-resources.ts` |
+| HTTP коррекции | `apps/server/src/routes/corrections.ts` |
+| HTTP настроек модели | `apps/server/src/routes/model-settings.ts` |
+| HTTP истории | `apps/server/src/routes/history.ts` |
+| Обработка попытки и контракты зависимостей | `apps/server/src/correction/` |
+| Промпт strict-v3 и параметры запроса | `apps/server/src/correction/prompt.ts` |
+| Проверка ответа и метаданных OpenRouter | `apps/server/src/openrouter/response.ts` |
 | ENV и proxy policy | `apps/server/src/correction-config.ts` |
-| OpenRouter через Undici | `apps/server/src/openrouter.ts` |
-| SQLite, миграции и запросы | `apps/server/src/database.ts` |
-| Публичные схемы и две модели | `packages/contracts/src/index.ts` |
-| Ручной benchmark | `apps/server/src/benchmark*.ts` |
+| OpenRouter через Undici | `apps/server/src/openrouter/transport.ts` |
+| Инициализация SQLite и восстановление попыток | `apps/server/src/storage/database.ts` |
+| Версионные транзакционные миграции | `apps/server/src/storage/migrations.ts` |
+| Запись попыток коррекции | `apps/server/src/storage/corrections.ts` |
+| Запросы и преобразование истории | `apps/server/src/storage/history.ts` |
+| Сохранённая модель | `apps/server/src/storage/model-preferences.ts` |
+| Публичные схемы и две модели | `packages/contracts/src/{models,correction,history}.ts`, экспорт через `index.ts` |
+| Ручной benchmark | `apps/server/src/benchmark/` |
 
-Fastify CLI запускает приложение; `app.ts` явно регистрирует API коррекции и
-истории. Autoload подключает `routes/root.ts`: GET `/` возвращает `{root:true}`.
+Fastify CLI запускает приложение; `app.ts` явно регистрирует все группы из
+`routes/` и передаёт им зависимости. GET `/` возвращает `{root:true}`.
 Это простой ответ сервера, а не полноценная проверка готовности размещения.
-Соединения SQLite и HTTP освобождаются через lifecycle приложения.
+`app-resources.ts` создаёт общие ресурсы и освобождает соединения SQLite и HTTP
+через lifecycle приложения.
+
+`correction/`, `openrouter/`, `storage/` и `benchmark/` являются внутренними
+модулями server workspace. Между модулями используются публичные `index.ts`;
+внутри модуля допустимы прямые импорты файлов. Новые npm-пакеты не добавлены.
+
+Correction зависит от небольших контрактов записи попыток и транспорта.
+OpenRouter возвращает разобранный результат с метриками или кодом ошибки,
+не передавая разбор ответа в correction. История и настройки модели получают
+только нужные им операции хранилища. SQLite остаётся реализацией этих контрактов.
+
+`storage/database.ts` открывает соединение, запускает миграции и явно помечает
+прерванные попытки, затем создаёт операции записи, истории и настроек. Версия
+схемы остаётся 3. Начало попытки принимает объект с именованными полями;
+SQL-запись использует именованные параметры. Схема и формат сохранённых данных
+не изменены.
+
+`benchmark/cli.ts` остаётся отдельной точкой входа, доступной только человеку.
+Он не экспортируется публичным `index.ts` и не импортируется сервером или тестами.
+Ручные команды и локальный каталог benchmark-data сохраняются.
 
 ## API и поток данных
 

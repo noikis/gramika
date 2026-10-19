@@ -1,3 +1,4 @@
+import { mockOpenRouterTransport } from './mock-transport'
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
@@ -7,14 +8,21 @@ import { join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 import Fastify from 'fastify'
 import { HistoryDetail, HistoryList } from '@gramota/contracts'
-import { CorrectionDatabase } from '../src/database'
-import { createCorrectionService } from '../src/correction-service'
-import { correctionApi } from '../src/correction-api'
+import { SqliteStorage } from '../src/storage'
+import { createCorrectionService } from '../src/correction'
+import application from '../src/app'
 
 const date = '2026-10-18T01:00:00.000Z'
-function begin(db: CorrectionDatabase, text = 'Привет мир!', at = date) {
+function begin(db: SqliteStorage, text = 'Привет мир!', at = date) {
   const ids = { correctionId: randomUUID(), requestId: randomUUID() }
-  db.begin(ids, text, 'fictional/model-a', 'strict-v2', { reasoning: { enabled: false } }, at)
+  db.corrections.beginAttempt({
+    ids: ids,
+    originalText: text,
+    modelId: 'fictional/model-a',
+    promptVersion: 'strict-v2',
+    parameters: { reasoning: { enabled: false } },
+    startedAt: at,
+  })
   return ids
 }
 
@@ -60,10 +68,10 @@ test('v1 migration preserves saved text, outcomes and generation IDs; new metric
       null,
     )
   raw.close()
-  let db: CorrectionDatabase | undefined
+  let db: SqliteStorage | undefined
   try {
-    db = new CorrectionDatabase(file)
-    const detail = db.getHistory(correctionId)!
+    db = new SqliteStorage(file)
+    const detail = db.history.get(correctionId)!
     assert.equal(detail.originalText, '  Старый текст 👋\n')
     assert.equal(detail.requests[0].openrouterGenerationId, 'gen-old')
     assert.equal(detail.requests[0].correctedText, detail.originalText)
@@ -72,9 +80,9 @@ test('v1 migration preserves saved text, outcomes and generation IDs; new metric
     assert.equal(detail.requests[0].appRequestTimeMs, 100)
     db.close()
     db = undefined
-    db = new CorrectionDatabase(file)
+    db = new SqliteStorage(file)
     assert.equal(db.db.prepare('PRAGMA user_version').get()?.user_version, 3)
-    assert.equal(db.getHistory(correctionId)?.requests.length, 1)
+    assert.equal(db.history.get(correctionId)?.requests.length, 1)
   } finally {
     db?.close()
     rmSync(directory, { recursive: true, force: true })
@@ -82,12 +90,12 @@ test('v1 migration preserves saved text, outcomes and generation IDs; new metric
 })
 
 test('reported metrics survive exactly, without deriving totals or rounding generation time', async () => {
-  const db = new CorrectionDatabase(':memory:')
+  const db = new SqliteStorage(':memory:')
   try {
     const result = await createCorrectionService({
-      database: db,
-      available: true,
-      transport: {
+      store: db.corrections,
+      isAvailable: true,
+      transport: mockOpenRouterTransport({
         async send() {
           return {
             status: 200,
@@ -127,9 +135,9 @@ test('reported metrics survive exactly, without deriving totals or rounding gene
           }
         },
         async close() {},
-      },
+      }),
     })('Привет мир!')
-    const request = db.getHistory(result.correctionId)!.requests[0]
+    const request = db.history.get(result.correctionId)!.requests[0]
     assert.equal(request.provider, 'Selected provider')
     assert.equal(request.openrouterGenerationId, 'gen-reported')
     assert.equal(request.totalTokens, 99)
@@ -147,7 +155,7 @@ test('reported metrics survive exactly, without deriving totals or rounding gene
 })
 
 test('metadata on failed attempts and ambiguous selected providers remain truthful', async () => {
-  const db = new CorrectionDatabase(':memory:')
+  const db = new SqliteStorage(':memory:')
   try {
     for (const endpoints of [
       {
@@ -161,9 +169,9 @@ test('metadata on failed attempts and ambiguous selected providers remain truthf
     ]) {
       await assert.rejects(
         createCorrectionService({
-          database: db,
-          available: true,
-          transport: {
+          store: db.corrections,
+          isAvailable: true,
+          transport: mockOpenRouterTransport({
             async send() {
               return {
                 status: 502,
@@ -175,12 +183,12 @@ test('metadata on failed attempts and ambiguous selected providers remain truthf
               }
             },
             async close() {},
-          },
+          }),
         })('fictional text'),
       )
     }
-    for (const item of db.listHistory().items) {
-      const request = db.getHistory(item.id)!.requests[0]
+    for (const item of db.history.list().items) {
+      const request = db.history.get(item.id)!.requests[0]
       assert.equal(request.status, 'failed')
       assert.equal(request.provider, null)
       assert.equal(request.totalTokens, null)
@@ -196,18 +204,20 @@ test('metadata on failed attempts and ambiguous selected providers remain truthf
 })
 
 test('History works without a key or upstream calls; orders summaries and all requests', async (t) => {
-  const db = new CorrectionDatabase(':memory:')
+  const db = new SqliteStorage(':memory:')
   const app = Fastify()
   let calls = 0
-  await correctionApi(app, {
-    environment: {},
-    database: db,
-    transport: {
-      async send() {
-        calls++
-        throw Error('No upstream calls allowed')
-      },
-      async close() {},
+  await application(app, {
+    correction: {
+      environment: {},
+      storage: db,
+      transport: mockOpenRouterTransport({
+        async send() {
+          calls++
+          throw Error('No upstream calls allowed')
+        },
+        async close() {},
+      }),
     },
   })
   t.after(() => app.close())
@@ -219,7 +229,7 @@ test('History works without a key or upstream calls; orders summaries and all re
   })
   const original = '👩‍💻'.repeat(121) + '\n<script>fictional</script>'
   const older = begin(db, original)
-  db.finish(older.requestId, {
+  db.corrections.finishAttempt(older.requestId, {
     status: 'succeeded',
     correctedText: original,
     endedAt: date,
@@ -235,7 +245,7 @@ test('History works without a key or upstream calls; orders summaries and all re
     )
     .run(nextId, older.correctionId, 'fictional/model-b', '2026-10-18T02:00:00.000Z')
   const newer = begin(db, 'newer', '2026-10-18T03:00:00.000Z')
-  db.finish(newer.requestId, {
+  db.corrections.finishAttempt(newer.requestId, {
     status: 'failed',
     correctedText: null,
     endedAt: '2026-10-18T03:00:01.000Z',
@@ -263,9 +273,9 @@ test('History works without a key or upstream calls; orders summaries and all re
 })
 
 test('missing or failed storage returns safe History errors', async (t) => {
-  for (const database of [null, new CorrectionDatabase(':memory:')]) {
+  for (const database of [null, new SqliteStorage(':memory:')]) {
     const app = Fastify()
-    await correctionApi(app, { environment: {}, database })
+    await application(app, { correction: { environment: {}, storage: database } })
     await app.ready()
     const id = database ? begin(database).correctionId : randomUUID()
     if (database) database.db.exec('DROP TABLE model_requests')

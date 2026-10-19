@@ -1,17 +1,26 @@
 import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { z } from 'zod'
-import { ModelId, MODELS, OriginalText, TIMEOUT_MS, type HistoryRequest } from '@gramota/contracts'
+import {
+  ErrorCode,
+  ModelId,
+  MODELS,
+  OriginalText,
+  TIMEOUT_MS,
+  type HistoryRequest,
+} from '@gramota/contracts'
 import {
   AttemptError,
   createCorrectionService,
   PARAMETERS,
   PROMPT_VERSION,
   STRICT_PROMPT,
-} from './correction-service'
-import { CorrectionDatabase } from './database'
-import type { CorrectionTransport } from './openrouter'
-import { renderBenchmarkReport } from './benchmark-report'
+  type CorrectionTransport,
+} from '../correction'
+
+import { SqliteStorage } from '../storage'
+
+import { renderBenchmarkReport } from './report'
 
 export class BenchmarkInputError extends Error {}
 
@@ -86,7 +95,7 @@ type Options = {
 
 // The CLI is user-only. Automated checks may call this helper with mocked transport.
 export async function runBenchmark(options: Options) {
-  let database: CorrectionDatabase | undefined
+  let database: SqliteStorage | undefined
   try {
     const plan = prepareBenchmark(options.cases, options.models)
     mkdirSync(options.outputRoot, { recursive: true })
@@ -94,6 +103,8 @@ export async function runBenchmark(options: Options) {
       join(options.outputRoot, new Date().toISOString().replace(/[:.]/g, '-') + '-'),
     )
     options.onCreated?.(folder)
+
+    // Initialize the benchmark run state and report
     const run: BenchmarkRun = {
       ...plan,
       schemaVersion: 1,
@@ -119,27 +130,33 @@ export async function runBenchmark(options: Options) {
       ),
     }
     const requests: Record<string, HistoryRequest> = {}
+    // Save the initial run state and report
     function save() {
       writeFileSync(join(folder, 'run.json'), JSON.stringify(run, null, 2) + '\n', 'utf8')
       writeFileSync(join(folder, 'report.html'), renderBenchmarkReport(run, requests), 'utf8')
     }
     save()
+
+    // Open the database for recording requests and corrections
     try {
-      database = new CorrectionDatabase(join(folder, 'records.sqlite'))
+      database = new SqliteStorage(join(folder, 'records.sqlite'))
     } catch {
       run.status = 'failed'
-      run.errorCode = 'STORAGE_ERROR'
+      run.errorCode = ErrorCode.enum.STORAGE_ERROR
       run.endedAt = new Date().toISOString()
       save()
       return { folder, run }
     }
+
     const correct = createCorrectionService({
-      database,
+      store: database.corrections,
       transport: options.transport,
-      available: true,
+      isAvailable: true,
       timeoutMs: options.timeoutMs,
-      rejectReasoning: false,
+      isRejectReasoning: false,
     })
+
+    // Run the benchmark cases for each model
     let completed = 0
     for (const item of plan.cases) {
       let correctionId: string | undefined
@@ -166,16 +183,16 @@ export async function runBenchmark(options: Options) {
         correctionId = attempt.correctionId ?? correctionId
         if (attempt.correctionId && attempt.requestId) {
           try {
-            const request = database
-              .getHistory(attempt.correctionId)
+            const request = database.history
+              .get(attempt.correctionId)
               ?.requests.find((value) => value.id === attempt.requestId)
             if (!request) throw new Error('Missing recorded attempt')
             requests[request.id] = request
           } catch {
             attempt.status = 'failed'
-            attempt.errorCode = 'STORAGE_ERROR'
+            attempt.errorCode = ErrorCode.enum.STORAGE_ERROR
             run.status = 'failed'
-            run.errorCode = 'STORAGE_ERROR'
+            run.errorCode = ErrorCode.enum.STORAGE_ERROR
           }
         }
         completed++
@@ -185,6 +202,8 @@ export async function runBenchmark(options: Options) {
       }
       if (run.status !== 'running') break
     }
+
+    // Finalize the run status and save the report
     if (run.status === 'running') run.status = options.shouldStop?.() ? 'interrupted' : 'completed'
     run.endedAt = new Date().toISOString()
     save()

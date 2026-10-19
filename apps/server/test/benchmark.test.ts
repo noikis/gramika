@@ -1,3 +1,4 @@
+import { mockOpenRouterTransport } from './mock-transport'
 import { test, type TestContext } from 'node:test'
 import assert from 'node:assert/strict'
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, existsSync, readdirSync } from 'node:fs'
@@ -13,16 +14,18 @@ import {
   prepareBenchmark,
   runBenchmark,
   type BenchmarkRun,
-} from '../src/benchmark-run'
-import { benchmarkSummary } from '../src/benchmark-report'
+  benchmarkSummary,
+} from '../src/benchmark'
+
 import {
   AttemptError,
   createCorrectionService,
   PARAMETERS,
   STRICT_PROMPT,
-} from '../src/correction-service'
-import { CorrectionDatabase } from '../src/database'
-import type { CorrectionTransport } from '../src/openrouter'
+  type CorrectionTransport,
+} from '../src/correction'
+
+import { SqliteStorage } from '../src/storage'
 
 const models = MODELS.slice(0, 2).map((model) => model.id)
 const cases = [
@@ -51,7 +54,7 @@ test('only the selected Gemma and Gemini models are available to benchmarks and 
 
 test('benchmarks accept reasoning-bearing outputs and retain usage while ordinary corrections reject them', async (t) => {
   let calls = 0
-  const transport: CorrectionTransport = {
+  const transport: CorrectionTransport = mockOpenRouterTransport({
     async send(body) {
       calls++
       assert.deepEqual((body as { reasoning: unknown }).reasoning, { enabled: false })
@@ -81,7 +84,7 @@ test('benchmarks accept reasoning-bearing outputs and retain usage while ordinar
       }
     },
     async close() {},
-  }
+  })
   const result = await runBenchmark({ cases, models, outputRoot: directory(t), transport })
   assert.equal(result.run.status, 'completed')
   assert.equal(calls, cases.length * models.length)
@@ -92,9 +95,13 @@ test('benchmarks accept reasoning-bearing outputs and retain usage while ordinar
     assert.equal(request.reasoningTokens, 3)
     assert.equal(request.costUsd, 0.0002)
   }
-  const database = new CorrectionDatabase(':memory:')
+  const database = new SqliteStorage(':memory:')
   try {
-    const ordinary = createCorrectionService({ database, transport, available: true })
+    const ordinary = createCorrectionService({
+      store: database.corrections,
+      transport,
+      isAvailable: true,
+    })
     await assert.rejects(
       ordinary(cases[0]!.text, models[0]),
       (error: unknown) => error instanceof AttemptError && error.code === 'REASONING_NOT_DISABLED',
@@ -166,22 +173,22 @@ test('benchmark inputs validate every case/model, preserve exact texts, and refu
 
 test('mocked library run sends identical sentences in order, reuses production parameters and isolates records', async (t) => {
   const root = directory(t)
-  const ordinary = new CorrectionDatabase(join(root, 'ordinary.sqlite'))
+  const ordinary = new SqliteStorage(join(root, 'ordinary.sqlite'))
   try {
-    ordinary.setModelPreference(MODELS[1]!.id)
+    ordinary.modelPreferences.set(MODELS[1]!.id)
     const ordinaryId = randomUUID()
-    ordinary.begin(
-      { correctionId: ordinaryId, requestId: randomUUID() },
-      'Обычная запись',
-      MODELS[1]!.id,
-      'strict-v3',
-      {},
-      new Date().toISOString(),
-    )
+    ordinary.corrections.beginAttempt({
+      ids: { correctionId: ordinaryId, requestId: randomUUID() },
+      originalText: 'Обычная запись',
+      modelId: MODELS[1]!.id,
+      promptVersion: 'strict-v3',
+      parameters: {},
+      startedAt: new Date().toISOString(),
+    })
     const bodies: { model: string; messages: { role: string; content: string }[] }[] = []
     let closed = false
     let folder = ''
-    const transport: CorrectionTransport = {
+    const transport: CorrectionTransport = mockOpenRouterTransport({
       async send(body) {
         const request = body as (typeof bodies)[number]
         bodies.push(request)
@@ -191,7 +198,7 @@ test('mocked library run sends identical sentences in order, reuses production p
       async close() {
         closed = true
       },
-    }
+    })
     const result = await runBenchmark({
       cases,
       models,
@@ -227,21 +234,21 @@ test('mocked library run sends identical sentences in order, reuses production p
     assert.ok(result.run.endedAt)
     assert.equal(result.run.prompt, STRICT_PROMPT)
     assert.deepEqual(result.run.parameters[models[1]!], { ...PARAMETERS, model: models[1] })
-    const local = new CorrectionDatabase(join(folder, 'records.sqlite'))
+    const local = new SqliteStorage(join(folder, 'records.sqlite'))
     try {
-      assert.equal(local.listHistory().total, 2)
+      assert.equal(local.history.list().total, 2)
       for (let index = 0; index < cases.length; index++) {
         const attempts = result.run.attempts.slice(index * 2, index * 2 + 2)
         assert.equal(attempts[0]!.correctionId, attempts[1]!.correctionId)
-        const detail = local.getHistory(attempts[0]!.correctionId!)!
+        const detail = local.history.get(attempts[0]!.correctionId!)!
         assert.equal(detail.originalText, cases[index]!.text)
         assert.equal(detail.requests.length, 2)
       }
     } finally {
       local.close()
     }
-    assert.equal(ordinary.listHistory().total, 1)
-    assert.equal(ordinary.getModelPreference(), MODELS[1]!.id)
+    assert.equal(ordinary.history.list().total, 1)
+    assert.equal(ordinary.modelPreferences.get(), MODELS[1]!.id)
     const data = reportData(folder)
     assert.ok(
       data.data.summary.every((item) => item.succeeded === 2 && item.knownCostUsd === 0.0004),
@@ -259,7 +266,7 @@ test('first failed request stops every remaining comparison and preserves partia
     cases,
     models,
     outputRoot: directory(t),
-    transport: {
+    transport: mockOpenRouterTransport({
       async send() {
         calls++
         return calls === 1
@@ -270,7 +277,7 @@ test('first failed request stops every remaining comparison and preserves partia
             }
       },
       async close() {},
-    },
+    }),
   })
   assert.equal(calls, 2)
   assert.equal(result.run.status, 'failed')
@@ -297,7 +304,7 @@ test('timeout aborts exactly one mocked call and stops all later comparisons', a
     models,
     outputRoot: directory(t),
     timeoutMs: 10,
-    transport: {
+    transport: mockOpenRouterTransport({
       send(_body, signal) {
         calls++
         return new Promise((_resolve, reject) =>
@@ -312,7 +319,7 @@ test('timeout aborts exactly one mocked call and stops all later comparisons', a
         )
       },
       async close() {},
-    },
+    }),
   })
   assert.equal(calls, 1)
   assert.equal(aborted, true)
@@ -333,14 +340,14 @@ test('stop signal waits for the current mocked request to be saved then prevents
     models,
     outputRoot: directory(t),
     shouldStop: () => stopping,
-    transport: {
+    transport: mockOpenRouterTransport({
       async send() {
         calls++
         stopping = true
         return reply('Привет, мир!')
       },
       async close() {},
-    },
+    }),
   })
   assert.equal(calls, 1)
   assert.equal(result.run.status, 'interrupted')
@@ -358,13 +365,13 @@ test('report embeds text safely, preserves whitespace, and distinguishes zero, u
     cases: [{ id: '</script>case', text }],
     models,
     outputRoot: root,
-    transport: {
+    transport: mockOpenRouterTransport({
       async send() {
         calls++
         return reply(text, calls === 1 ? 0 : null)
       },
       async close() {},
-    },
+    }),
   })
   const report = reportData(result.folder)
   assert.ok(!report.encoded.includes('<'))
@@ -385,12 +392,12 @@ test('report embeds text safely, preserves whitespace, and distinguishes zero, u
     models: [models[0]],
     outputRoot: root,
     shouldStop: () => true,
-    transport: {
+    transport: mockOpenRouterTransport({
       async send() {
         throw Error('No calls permitted')
       },
       async close() {},
-    },
+    }),
   })
   assert.notEqual(next.folder, result.folder)
   assert.deepEqual(saved(result.folder).cases, [{ id: '</script>case', text }])
@@ -401,13 +408,13 @@ test('report embeds text safely, preserves whitespace, and distinguishes zero, u
 test('invalid input and storage initialization/finalization failures prevent subsequent calls', async (t) => {
   const root = directory(t)
   let calls = 0
-  const transport: CorrectionTransport = {
+  const transport: CorrectionTransport = mockOpenRouterTransport({
     async send() {
       calls++
       return reply('fictional')
     },
     async close() {},
-  }
+  })
   await assert.rejects(
     runBenchmark({ cases: [], models, outputRoot: join(root, 'invalid'), transport }),
   )
@@ -429,7 +436,7 @@ test('invalid input and storage initialization/finalization failures prevent sub
     onCreated: (value) => {
       folder = value
     },
-    transport: {
+    transport: mockOpenRouterTransport({
       async send() {
         calls++
         const raw = new DatabaseSync(join(folder, 'records.sqlite'))
@@ -441,7 +448,7 @@ test('invalid input and storage initialization/finalization failures prevent sub
         return reply('Привет, мир!')
       },
       async close() {},
-    },
+    }),
   })
   assert.equal(calls, 1)
   assert.equal(final.run.errorCode, 'STORAGE_ERROR')

@@ -15,18 +15,43 @@
 - Preserve existing compiler settings; strict mode is not an agreed requirement.
 - Prefer inference where clear and explicit types at boundaries; avoid any.
 - Components and types use PascalCase; functions use camelCase.
+- Name boolean variables and internal properties with `is` followed by a
+  descriptive word in camelCase, such as `isProduction`, `isDevelopment`, or
+  `isAvailable`. Preserve names required by external APIs and public contracts.
+- Replace magic numbers with descriptive named constants, even when used only
+  once. Include units where relevant; for example, use
+  `MAX_RESPONSE_BYTES = 1024 * 1024` for the OpenRouter response-size limit and
+  reference `MAX_RESPONSE_BYTES` in the size check.
+- Define validated finite value sets once with Zod enums and infer their
+  TypeScript types. Reference values through the schema's `.enum` property,
+  such as `ErrorCode.enum.INVALID_INPUT`; do not duplicate the set in a
+  TypeScript enum. Use named constants for HTTP statuses and typed records for
+  mappings between application errors and HTTP statuses.
+- Reuse existing definitions and helpers before adding new ones. Keep each
+  policy or value in one authoritative place; extract shared code when it
+  removes meaningful duplication without adding unnecessary layers.
+- Separate independent declarations and logical steps with a blank line. Keep
+  tightly related statements together and inferred types beside their schemas.
 - Follow the surrounding file's formatting. Both workspaces use Prettier via
   `npm run format -w apps/server` and `npm run format -w apps/web` with matching settings.
 
 ## Structure and rendering
 
 - apps/web/src contains the React entry point, App.tsx, and plain CSS.
-- apps/server/src contains app.ts, correction/history APIs, a correction service,
-  SQLite storage and Undici transport. Fastify CLI runs the app; Autoload loads
-  the root route.
+- apps/server/src/app.ts composes resources and explicitly registers routes/.
+  app-resources.ts owns initialization and cleanup. Route modules own HTTP;
+  correction/ owns the workflow, prompt and small storage/transport contracts.
+  openrouter/ owns Undici and provider response parsing. storage/ owns SQLite,
+  migrations, correction writes, history queries and model preferences.
+  benchmark/ owns the manual CLI, mocked-testable runner and offline report.
+- These backend areas are internal modules, not workspace packages. Import their
+  public index.ts from other modules; use direct file imports within a module.
+  Correction must not import SQLite, Undici, Fastify, storage/ or openrouter/.
+  Keep the benchmark CLI out of application startup and all public entry points.
 - apps/server/test contains node:test tests using Fastify inject.
-- packages/contracts/src/index.ts defines public Zod contracts, model choices
-  and shared limits. docs/architecture.md describes the implemented layout.
+- packages/contracts/src contains models.ts, correction.ts and history.ts for
+  public Zod contracts, model choices and shared limits. index.ts re-exports the
+  public API. docs/architecture.md describes the implemented layout.
 - Use functional React components and hooks; keep components focused.
 
 ## Styling
@@ -41,9 +66,9 @@ Preserve accessible controls, keyboard interaction, and mobile usability.
 - OpenRouter is server-only. Keep keys and server dependencies out of web bundles.
 - Validate untrusted requests and upstream responses at runtime. Use the shared
   Zod contracts for public boundaries.
-- SQLite uses built-in node:sqlite. CorrectionDatabase owns transactional schema
-  migrations and queries; do not prescribe Prisma or invent migration commands.
-- Respect docs/environments.md: Home Lab requires its configured proxy, with no
+- SQLite uses built-in node:sqlite. storage/ owns transactional schema migrations
+  and queries; do not prescribe an ORM or invent migration commands.
+- Respect docs/environments.md: production requires its configured proxy, with no
   direct fallback. Development uses the user's system VPN configuration.
 - Preserve input on request failure. Never show truncated or failed responses as
   successful, or report copying before the clipboard operation succeeds.

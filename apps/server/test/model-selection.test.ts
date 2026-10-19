@@ -1,3 +1,4 @@
+import { mockOpenRouterTransport } from './mock-transport'
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
@@ -6,15 +7,15 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import Fastify from 'fastify'
 import {
-  MODEL_ID,
+  DEFAULT_MODEL_ID,
   MODELS,
   CorrectionConfig,
   CorrectionSuccess,
   ModelPreference,
 } from '@gramota/contracts'
-import { CorrectionDatabase } from '../src/database'
-import { correctionApi } from '../src/correction-api'
-import { createCorrectionService, AttemptError, STRICT_PROMPT } from '../src/correction-service'
+import { SqliteStorage } from '../src/storage'
+import application from '../src/app'
+import { createCorrectionService, AttemptError, STRICT_PROMPT } from '../src/correction'
 
 const environment = { GRAMOTA_ENV: 'development', OPENROUTER_API_KEY: 'fictional-test-key' }
 const date = '2026-10-18T00:00:00.000Z'
@@ -36,10 +37,17 @@ test('model preference migrates v2 history and persists after reopening', (t) =>
   const directory = mkdtempSync(join(tmpdir(), 'gramota-models-'))
   const file = join(directory, 'test.sqlite')
   t.after(() => rmSync(directory, { recursive: true, force: true }))
-  let database = new CorrectionDatabase(file)
+  let database = new SqliteStorage(file)
   const ids = { correctionId: randomUUID(), requestId: randomUUID() }
-  database.begin(ids, '  Fictional text 👋\n', 'old/model', 'strict-v2', {}, date)
-  database.finish(ids.requestId, {
+  database.corrections.beginAttempt({
+    ids: ids,
+    originalText: '  Fictional text 👋\n',
+    modelId: 'old/model',
+    promptVersion: 'strict-v2',
+    parameters: {},
+    startedAt: date,
+  })
+  database.corrections.finishAttempt(ids.requestId, {
     status: 'succeeded',
     correctedText: '  Fictional text 👋\n',
     endedAt: date,
@@ -49,17 +57,17 @@ test('model preference migrates v2 history and persists after reopening', (t) =>
   })
   database.db.exec('DROP TABLE model_preference; PRAGMA user_version=2;')
   database.close()
-  database = new CorrectionDatabase(file)
-  assert.equal(database.getModelPreference(), MODEL_ID)
-  assert.equal(database.getHistory(ids.correctionId)?.originalText, '  Fictional text 👋\n')
-  database.setModelPreference(MODELS[0].id)
+  database = new SqliteStorage(file)
+  assert.equal(database.modelPreferences.get(), DEFAULT_MODEL_ID)
+  assert.equal(database.history.get(ids.correctionId)?.originalText, '  Fictional text 👋\n')
+  database.modelPreferences.set(MODELS[0].id)
   database.close()
-  database = new CorrectionDatabase(file)
+  database = new SqliteStorage(file)
   try {
-    assert.equal(database.getModelPreference(), MODELS[0].id)
+    assert.equal(database.modelPreferences.get(), MODELS[0].id)
     assert.equal(database.db.prepare('PRAGMA user_version').get()?.user_version, 3)
     assert.equal(
-      database.getHistory(ids.correctionId)?.requests[0].correctedText,
+      database.history.get(ids.correctionId)?.requests[0].correctedText,
       '  Fictional text 👋\n',
     )
   } finally {
@@ -68,56 +76,58 @@ test('model preference migrates v2 history and persists after reopening', (t) =>
 })
 
 test('preference routes validate, reset unsupported selection to Gemma and handle save failure without inference', async (t) => {
-  const database = new CorrectionDatabase(':memory:')
+  const database = new SqliteStorage(':memory:')
   const app = Fastify()
   let calls = 0
-  await correctionApi(app, {
-    environment: {},
-    database,
-    transport: {
-      async send() {
-        calls++
-        throw Error('Must not invoke transport')
-      },
-      async close() {},
+  await application(app, {
+    correction: {
+      environment: {},
+      storage: database,
+      transport: mockOpenRouterTransport({
+        async send() {
+          calls++
+          throw Error('Must not invoke transport')
+        },
+        async close() {},
+      }),
     },
   })
   t.after(() => app.close())
   let config = CorrectionConfig.parse((await app.inject('/api/correction-config')).json())
-  assert.equal(config.modelId, MODEL_ID)
+  assert.equal(config.modelId, DEFAULT_MODEL_ID)
   assert.deepEqual(config.models, MODELS)
   assert.equal(config.available, false)
   const save = (payload: object) =>
     app.inject({ method: 'PUT', url: '/api/model-preference', payload })
   assert.equal((await save({ modelId: MODELS[1].id })).statusCode, 200)
-  assert.equal(database.getModelPreference(), MODELS[1].id)
+  assert.equal(database.modelPreferences.get(), MODELS[1].id)
   for (const payload of [
     {},
     { modelId: 'unknown' },
     { modelId: 'qwen/qwen3.5-flash-02-23' },
-    { modelId: MODEL_ID, reasoning: true },
+    { modelId: DEFAULT_MODEL_ID, reasoning: true },
   ]) {
     assert.equal((await save(payload)).statusCode, 400)
-    assert.equal(database.getModelPreference(), MODELS[1].id)
+    assert.equal(database.modelPreferences.get(), MODELS[1].id)
   }
   database.db.prepare('UPDATE model_preference SET model_id=?').run('qwen/qwen3.5-flash-02-23')
   config = CorrectionConfig.parse((await app.inject('/api/correction-config')).json())
-  assert.equal(config.modelId, MODEL_ID)
-  assert.equal(database.getModelPreference(), MODEL_ID)
-  assert.equal((await save({ modelId: MODEL_ID })).statusCode, 200)
+  assert.equal(config.modelId, DEFAULT_MODEL_ID)
+  assert.equal(database.modelPreferences.get(), DEFAULT_MODEL_ID)
+  assert.equal((await save({ modelId: DEFAULT_MODEL_ID })).statusCode, 200)
   database.db.exec(`CREATE TRIGGER deny_preference BEFORE UPDATE ON model_preference
     BEGIN SELECT RAISE(ABORT, 'private storage detail'); END;`)
   const failed = await save({ modelId: MODELS[0].id })
   assert.equal(failed.statusCode, 503)
   assert.equal(failed.json().error.code, 'STORAGE_ERROR')
   assert.equal(failed.body.includes('private'), false)
-  assert.equal(database.getModelPreference(), MODEL_ID)
+  assert.equal(database.modelPreferences.get(), DEFAULT_MODEL_ID)
   assert.equal(calls, 0)
 })
 
 test('config and preference writes fail safely without storage', async (t) => {
   const app = Fastify()
-  await correctionApi(app, { environment: {}, database: null })
+  await application(app, { correction: { environment: {}, storage: null } })
   t.after(() => app.close())
   assert.equal((await app.inject('/api/correction-config')).statusCode, 503)
   assert.equal(
@@ -125,7 +135,7 @@ test('config and preference writes fail safely without storage', async (t) => {
       await app.inject({
         method: 'PUT',
         url: '/api/model-preference',
-        payload: { modelId: MODEL_ID },
+        payload: { modelId: DEFAULT_MODEL_ID },
       })
     ).statusCode,
     503,
@@ -134,30 +144,32 @@ test('config and preference writes fail safely without storage', async (t) => {
 })
 
 test('all models repeat one original with independent immutable outcomes and no reasoning', async (t) => {
-  const database = new CorrectionDatabase(':memory:')
+  const database = new SqliteStorage(':memory:')
   const app = Fastify()
   const original = '  Привет мир! 👋\n'
   let calls = 0
-  await correctionApi(app, {
-    environment,
-    database,
-    transport: {
-      async send(body) {
-        const value = body as {
-          model: string
-          reasoning: { enabled: boolean }
-          messages: unknown[]
-        }
-        assert.deepEqual(value.reasoning, { enabled: false })
-        assert.deepEqual(value.messages, [
-          { role: 'system', content: STRICT_PROMPT },
-          { role: 'user', content: original },
-        ])
-        calls++
-        if (calls === 2) return { status: 502, data: { error: 'fictional failure' } }
-        return { status: 200, data: output(value.model, original + calls) }
-      },
-      async close() {},
+  await application(app, {
+    correction: {
+      environment,
+      storage: database,
+      transport: mockOpenRouterTransport({
+        async send(body) {
+          const value = body as {
+            model: string
+            reasoning: { enabled: boolean }
+            messages: unknown[]
+          }
+          assert.deepEqual(value.reasoning, { enabled: false })
+          assert.deepEqual(value.messages, [
+            { role: 'system', content: STRICT_PROMPT },
+            { role: 'user', content: original },
+          ])
+          calls++
+          if (calls === 2) return { status: 502, data: { error: 'fictional failure' } }
+          return { status: 200, data: output(value.model, original + calls) }
+        },
+        async close() {},
+      }),
     },
   })
   t.after(() => app.close())
@@ -179,7 +191,7 @@ test('all models repeat one original with independent immutable outcomes and no 
     assert.equal(result.correctionId, correctionId)
     assert.equal(result.modelId, model.id)
   }
-  const detail = database.getHistory(correctionId!)!
+  const detail = database.history.get(correctionId!)!
   assert.equal(detail.originalText, original)
   assert.equal(detail.requests.length, MODELS.length)
   assert.equal(new Set(detail.requests.map((request) => request.id)).size, MODELS.length)
@@ -196,56 +208,58 @@ test('all models repeat one original with independent immutable outcomes and no 
       assert.equal(request.costUsd, 0.000000001)
     }
   }
-  assert.equal(database.listHistory().items.length, 1)
-  assert.equal(database.getModelPreference(), MODEL_ID)
+  assert.equal(database.history.list().items.length, 1)
+  assert.equal(database.modelPreferences.get(), DEFAULT_MODEL_ID)
   assert.equal(calls, MODELS.length)
 })
 
 test('invalid models and repeat references make no paid calls or new records; changed text starts fresh', async (t) => {
-  const database = new CorrectionDatabase(':memory:')
+  const database = new SqliteStorage(':memory:')
   const app = Fastify()
   let calls = 0
-  await correctionApi(app, {
-    environment,
-    database,
-    transport: {
-      async send() {
-        calls++
-        return { status: 200, data: output(MODEL_ID) }
-      },
-      async close() {},
+  await application(app, {
+    correction: {
+      environment,
+      storage: database,
+      transport: mockOpenRouterTransport({
+        async send() {
+          calls++
+          return { status: 200, data: output(DEFAULT_MODEL_ID) }
+        },
+        async close() {},
+      }),
     },
   })
   t.after(() => app.close())
   const run = (payload: object) => app.inject({ method: 'POST', url: '/api/corrections', payload })
-  const first = (await run({ text: 'Original', modelId: MODEL_ID })).json()
+  const first = (await run({ text: 'Original', modelId: DEFAULT_MODEL_ID })).json()
   for (const payload of [
     { text: 'Original', modelId: 'unknown' },
     { text: 'Original' },
-    { text: 'Original', modelId: MODEL_ID, correctionId: 'invalid' },
-    { text: 'Original', modelId: MODEL_ID, correctionId: randomUUID() },
-    { text: 'Original ', modelId: MODEL_ID, correctionId: first.correctionId },
+    { text: 'Original', modelId: DEFAULT_MODEL_ID, correctionId: 'invalid' },
+    { text: 'Original', modelId: DEFAULT_MODEL_ID, correctionId: randomUUID() },
+    { text: 'Original ', modelId: DEFAULT_MODEL_ID, correctionId: first.correctionId },
   ]) {
     const response = await run(payload)
     assert.equal(response.statusCode, 400)
     assert.equal(response.json().error.code, 'INVALID_INPUT')
     assert.equal(calls, 1)
-    assert.equal(database.getHistory(first.correctionId)?.requests.length, 1)
+    assert.equal(database.history.get(first.correctionId)?.requests.length, 1)
   }
-  const next = (await run({ text: 'Different', modelId: MODEL_ID })).json()
+  const next = (await run({ text: 'Different', modelId: DEFAULT_MODEL_ID })).json()
   assert.notEqual(next.correctionId, first.correctionId)
-  assert.equal(database.listHistory().items.length, 2)
+  assert.equal(database.history.list().items.length, 2)
 })
 
 test('concurrent models keep their own parameters even when preference changes', async (t) => {
-  const database = new CorrectionDatabase(':memory:')
+  const database = new SqliteStorage(':memory:')
   t.after(() => database.close())
   const sent: { model: string; reasoning: { enabled: boolean } }[] = []
   const releases: (() => void)[] = []
   const correct = createCorrectionService({
-    database,
-    available: true,
-    transport: {
+    store: database.corrections,
+    isAvailable: true,
+    transport: mockOpenRouterTransport({
       async send(body) {
         const value = body as (typeof sent)[number]
         sent.push(value)
@@ -253,11 +267,11 @@ test('concurrent models keep their own parameters even when preference changes',
         return { status: 200, data: output(value.model) }
       },
       async close() {},
-    },
+    }),
   })
   const first = correct('First', MODELS[0].id)
   const second = correct('Second', MODELS[1].id)
-  database.setModelPreference(MODELS[1].id)
+  database.modelPreferences.set(MODELS[1].id)
   releases.forEach((release) => release())
   const results = await Promise.all([first, second])
   assert.deepEqual(
@@ -267,7 +281,7 @@ test('concurrent models keep their own parameters even when preference changes',
   assert.notEqual(sent[0].reasoning, sent[1].reasoning)
   for (const result of results) {
     assert.equal(
-      database.getHistory(result.correctionId)?.requests[0].parameters.model,
+      database.history.get(result.correctionId)?.requests[0].parameters.model,
       result.modelId,
     )
   }

@@ -3,6 +3,18 @@
 Fastify API for corrections, model preferences and searchable SQLite history.
 The OpenRouter transport and prompt remain server-only.
 
+`app.ts` composes resources and routes. Internal modules expose their public API
+through `index.ts`:
+
+- `correction/`: workflow, prompt and small storage/transport contracts.
+- `openrouter/`: HTTP transport and provider response parsing.
+- `storage/`: Node SQLite connection, migrations, attempt recording, history and preferences.
+- `benchmark/`: manual CLI, reusable runner and offline report.
+
+These modules share the server workspace; no extra npm packages are needed.
+The application imports no benchmark CLI code. Only the human may invoke
+`benchmark/cli.ts`; automated tests use injected mocked transport via its runner.
+
 Run from the repository root after installing workspace dependencies:
 
 - `npm run dev:server`: compile/watch and run the API on port 3000.

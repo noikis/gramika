@@ -65,7 +65,7 @@ Run `npm run build -w apps/web` and `npm run lint -w apps/web` once after implem
 
 ## Notes for the AI
 
-Use the user's exact strict-v3 prompt (updated at user request), 5,000-character limit, 60-second timeout for all models (increased at user request), 8,192 output-token cap, no retries and completion after browser disconnect. Keep the existing Undici transport and OpenRouter metadata header. OpenRouter stays server-only; Home Lab requires its configured proxy with no direct fallback.
+Use the user's exact strict-v3 prompt (updated at user request), 5,000-character limit, 60-second timeout for all models (increased at user request), 8,192 output-token cap, no retries and completion after browser disconnect. Keep the existing Undici transport and OpenRouter metadata header. OpenRouter stays server-only; production requires its configured proxy with no direct fallback.
 
 Never read private env files, keys or personal saved records. Never make OpenRouter API requests, install dependencies or start dev servers. Ask explicit target/action permission before any future Playwright call. Reviews remain user-controlled.
 

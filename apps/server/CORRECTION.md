@@ -18,8 +18,9 @@ Database files and sidecars are ignored by Git. Startup applies transactional
 migrations and records interrupted pending requests without resubmitting them.
 
 On the development computer, use the system VPN and leave OPENROUTER_PROXY_URL
-unset. Home Lab requires GRAMOTA_ENV=homelab and
-OPENROUTER_PROXY_URL=http://10.201.0.2:8888. Missing configuration prevents calls;
+unset. Production requires GRAMOTA_ENV=production and a valid HTTP(S) proxy URL in
+OPENROUTER_PROXY_URL, supplied through private environment configuration.
+Missing or invalid configuration prevents calls;
 proxy failures never trigger a direct retry. On 2026-10-19 the user reported that OpenRouter access is denied when the VPN
 is disconnected. This manual evidence does not verify future container packaging
 or storage durability.

@@ -148,7 +148,7 @@ shape, text-length limit or validation policy. Empty text is a valid draft.
 Browser clipboard access can be denied; it is never assumed or requested before
 the user invokes Paste. Treat clipboard contents as untrusted plain text.
 
-Server-side model and mandatory Home Lab proxy rules remain unchanged. This
+Server-side model and mandatory production proxy rules remain unchanged. This
 feature sends no correction text or history anywhere and makes no paid calls.
 
 ## Testing

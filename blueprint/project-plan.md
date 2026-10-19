@@ -16,7 +16,7 @@ The desired result is ready-to-send text, without explanations or an educational
 
 ## 2. Users
 
-The application serves one person and runs on their Home Lab.
+The application serves one person and runs on their production.
 
 It is used mainly from a phone for:
 
@@ -199,18 +199,19 @@ behavior verification remain separate work; see the prototype handoff above.
 
 ## 8. Deployment
 
-Target: Home Lab with persistent storage for SQLite.
+Target: production with persistent storage for SQLite.
 
 The intended deployment is one application container serving the API and built frontend, with the database stored on a persistent volume.
 
 ### Network requirements
 
-**Development computer:** VPN already operates at the system level. Do not explicitly use the Home Lab proxy.
+**Development computer:** VPN already operates at the system level. Do not explicitly use the production proxy.
 
-**Home Lab:** all OpenRouter traffic must use:
+**Production:** all OpenRouter traffic must use the HTTP(S) proxy configured privately
+through OPENROUTER_PROXY_URL. The following address is fictional:
 
 ```dotenv
-OPENROUTER_PROXY_URL=http://10.201.0.2:8888
+OPENROUTER_PROXY_URL=http://proxy.example:8888
 ```
 
 Missing or unavailable required proxy configuration must block OpenRouter requests. There must be no direct-connection fallback.
@@ -252,7 +253,7 @@ The MVP is useful when:
 - Original text, successful results and request metrics persist in history.
 - Multiple requests for the same input retain their separate outputs and costs.
 - API and proxy failures preserve input and produce clear errors.
-- Home Lab requests cannot bypass the configured proxy.
+- production requests cannot bypass the configured proxy.
 - Routine automated checks incur no LLM charges.
 
 Exact quality and latency thresholds will be established through a small set of representative examples and ordinary usage.
@@ -265,7 +266,7 @@ Exact quality and latency thresholds will be established through a small set of 
 - Maximum input length, timeouts and cancellation behaviour.
 - Streaming, retry and caching policies.
 - Implementation details and responsive verification of the approved UI prototypes.
-- Backup procedure and final Home Lab access configuration.
+- Backup procedure and final production access configuration.
 
 These are explicit follow-up decisions. They are not permission to add speculative infrastructure.
 
