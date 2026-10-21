@@ -61,7 +61,7 @@ use the current UI with necessary adjustments; UI direction is chosen at V2.6.
 - [ ] **V2.2 - Rewrite mode:** explicitly request alternative wording, adapting the extent of rewriting to the text while preserving meaning and voice; retain Strict as the default. Working UI label: Gentle rewrite. Approved implementation steps are in the active V2.2 spec on feature/rewrite-mode.
 - [ ] **V2.3 — Another opinion:** replace the model selector with Gemma as the normal correction action and an explicit Gemini second opinion; retain both results.
 - [ ] **V2.4 — Selected-correction explanations:** explain a requested word or phrase correction rather than the whole result; save explanations for reuse.
-- [ ] **V2.5 — Soft-delete history:** allow history records to be removed from normal views while retaining them in storage.
+- [ ] **V2.5 — Soft-delete history:** allow history records to be removed from normal views while retaining them in storage. Implemented in the current checkout; human review and completion pending. Whole-entry deletion, no Trash/restore screen.
 - [ ] **V2.6 — Choose the UI direction:** explore and approve the visual design and interactions after the preceding features are usable.
 - [ ] **V2.7 — Implement the UI redesign:** include light/dark themes, system preference with manual override, New correction, better mobile access to results and Copy, and Ctrl+Enter submission. Revisit existing feedback presentation.
 - [ ] **V2.8 — Minimal installable PWA:** support phone installation and home-screen launch; defer offline functionality and local-storage decisions.

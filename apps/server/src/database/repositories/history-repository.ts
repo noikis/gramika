@@ -8,6 +8,7 @@ import {
   exists,
   getTableColumns,
   gte,
+  isNull,
   lt,
   ne,
   or,
@@ -82,6 +83,7 @@ function historyFilter(db: DatabaseClient, query: HistorySearchQuery) {
     )
 
   return and(
+    isNull(corrections.deletedAt),
     query.search
       ? or(
           sql`history_contains(${corrections.originalText}, ${query.search})`,
@@ -118,6 +120,8 @@ export function createHistoryRepository(db: DatabaseClient) {
       const models = db
         .selectDistinct({ model: modelRequests.requestedModel })
         .from(modelRequests)
+        .innerJoin(corrections, eq(modelRequests.correctionId, corrections.id))
+        .where(isNull(corrections.deletedAt))
         .orderBy(modelRequests.requestedModel)
         .all()
         .map((row) => row.model)
@@ -145,8 +149,22 @@ export function createHistoryRepository(db: DatabaseClient) {
       })
     },
 
+    softDelete(id: string) {
+      return (
+        db
+          .update(corrections)
+          .set({ deletedAt: new Date().toISOString() })
+          .where(and(eq(corrections.id, id), isNull(corrections.deletedAt)))
+          .run().changes === 1
+      )
+    },
+
     get(id: string) {
-      const correction = db.select().from(corrections).where(eq(corrections.id, id)).get()
+      const correction = db
+        .select()
+        .from(corrections)
+        .where(and(eq(corrections.id, id), isNull(corrections.deletedAt)))
+        .get()
       if (!correction) return null
 
       const { correctionId, ...requestColumns } = getTableColumns(modelRequests)
@@ -158,7 +176,10 @@ export function createHistoryRepository(db: DatabaseClient) {
         .all()
 
       return HistoryDetail.parse({
-        ...correction,
+        id: correction.id,
+        createdAt: correction.createdAt,
+        originalText: correction.originalText,
+        language: correction.language,
         requests: rows,
       })
     },

@@ -42,10 +42,13 @@ export async function historyRoutes(
         {
           req: request,
           err: _error,
-          operation: LogOperation.enum['history-read'],
+          operation:
+            request.method === 'DELETE'
+              ? LogOperation.enum['history-delete']
+              : LogOperation.enum['history-read'],
           code: HistoryErrorCode.enum.HISTORY_UNAVAILABLE,
         },
-        'History read failed',
+        'History operation failed',
       )
       reply.code(HTTP_STATUS.SERVICE_UNAVAILABLE).send(unavailable())
     })
@@ -61,6 +64,34 @@ export async function historyRoutes(
       if (!historyRepository) return reply.code(HTTP_STATUS.SERVICE_UNAVAILABLE).send(unavailable())
       return historyRepository.list(parsed.data)
     })
+
+    history.delete<{ Params: { correctionId: string } }>(
+      '/api/history/:correctionId',
+      async (request, reply) => {
+        const parsed = z.uuid().safeParse(request.params.correctionId)
+        if (!parsed.success)
+          return reply.code(HTTP_STATUS.BAD_REQUEST).send(
+            HistoryFailure.parse({
+              error: {
+                code: HistoryErrorCode.enum.INVALID_HISTORY_ID,
+                message: 'The history identifier is invalid.',
+              },
+            }),
+          )
+        if (!historyRepository)
+          return reply.code(HTTP_STATUS.SERVICE_UNAVAILABLE).send(unavailable())
+        if (!historyRepository.softDelete(parsed.data))
+          return reply.code(HTTP_STATUS.NOT_FOUND).send(
+            HistoryFailure.parse({
+              error: {
+                code: HistoryErrorCode.enum.HISTORY_NOT_FOUND,
+                message: 'This correction was not found.',
+              },
+            }),
+          )
+        return reply.code(HTTP_STATUS.NO_CONTENT).send()
+      },
+    )
 
     history.get<{ Params: { correctionId: string } }>(
       '/api/history/:correctionId',

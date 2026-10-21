@@ -9,6 +9,7 @@ export const LogOperation = z.enum([
   'correction-storage',
   'correction-api',
   'history-read',
+  'history-delete',
   'database-initialize',
 ])
 export type LogOperation = z.infer<typeof LogOperation>

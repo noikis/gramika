@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify'
-import { parseConfig, readEnvironment, type Environment } from './correction-config'
+import { parseConfig, readEnvironment, type Environment } from './config'
 import { SqliteDatabase, databaseDiagnostic, type Database } from './database'
 import { createTransport } from './openrouter'
 import { type CorrectionTransport } from './correction'

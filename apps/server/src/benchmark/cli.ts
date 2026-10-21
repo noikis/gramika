@@ -4,9 +4,9 @@ import { parseArgs } from 'node:util'
 import { createInterface } from 'node:readline/promises'
 import { stdin, stdout } from 'node:process'
 import { BenchmarkInputError, prepareBenchmark, parseBenchmarkVariants, runBenchmark } from './run'
-import { parseConfig, readEnvironment } from '../correction-config'
+import { parseConfig, readEnvironment } from '../config'
 import { createTransport } from '../openrouter'
-import { PROMPT_VERSION, REWRITE_PROMPT_VERSION } from '../correction'
+import { STRICT_PROMPT_VERSION, REWRITE_PROMPT_VERSION } from '../correction'
 
 // Human-only entry point. Never import or invoke this command from checks or startup.
 async function main() {
@@ -41,7 +41,7 @@ async function main() {
     values.variants === undefined ? undefined : parseBenchmarkVariants(values.variants)
   const plan = prepareBenchmark(cases, models, variants)
   console.log(
-    `Prompts: ${[...new Set(plan.variants.map((variant) => (variant.mode === 'strict' ? PROMPT_VERSION : REWRITE_PROMPT_VERSION)))].join(', ')}\nSentences: ${plan.cases.length}\nVariants: ${plan.variants.map((variant) => variant.name).join(', ')}\nMaximum requests: ${plan.maxRequests}`,
+    `Prompts: ${[...new Set(plan.variants.map((variant) => (variant.mode === 'strict' ? STRICT_PROMPT_VERSION : REWRITE_PROMPT_VERSION)))].join(', ')}\nSentences: ${plan.cases.length}\nVariants: ${plan.variants.map((variant) => variant.name).join(', ')}\nMaximum requests: ${plan.maxRequests}`,
   )
   console.log(
     'One request per sentence/model/mode combination; no retries. Stop on first failure. Monetary cost is not capped.',

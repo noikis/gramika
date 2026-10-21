@@ -16,8 +16,13 @@ import {
   type Attempt,
   type Outcome,
 } from './types'
-import { PARAMETERS, PROMPT_VERSION, STRICT_PROMPT } from './prompt'
-import { REWRITE_PROMPT, REWRITE_PROMPT_VERSION } from './rewrite-prompt'
+import {
+  OPENROUTER_REQUEST_DEFAULTS,
+  STRICT_PROMPT_VERSION,
+  REWRITE_PROMPT_VERSION,
+} from './constants'
+import { STRICT_PROMPT } from './prompts/strict'
+import { REWRITE_PROMPT } from './prompts/rewrite'
 
 export class AttemptError extends CorrectionError {
   constructor(
@@ -59,15 +64,15 @@ export function createCorrectionService(deps: Dependencies) {
     if (!deps.repository) throw new AttemptError(ErrorCode.enum.STORAGE_ERROR, null)
 
     const isRewrite = input.data.mode === CorrectionMode.enum['gentle-rewrite']
-    const promptVersion = isRewrite ? REWRITE_PROMPT_VERSION : PROMPT_VERSION
+    const promptVersion = isRewrite ? REWRITE_PROMPT_VERSION : STRICT_PROMPT_VERSION
     const prompt = isRewrite ? REWRITE_PROMPT : STRICT_PROMPT
 
     const ids = { correctionId: correctionId ?? uuid(), requestId: uuid() }
     const requestParameters = {
-      ...PARAMETERS,
+      ...OPENROUTER_REQUEST_DEFAULTS,
       model: input.data.modelId,
-      reasoning: { ...PARAMETERS.reasoning },
-      provider: { ...PARAMETERS.provider },
+      reasoning: { ...OPENROUTER_REQUEST_DEFAULTS.reasoning },
+      provider: { ...OPENROUTER_REQUEST_DEFAULTS.provider },
     }
 
     const startedAtMs = clock()

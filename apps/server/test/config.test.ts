@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { resolve } from 'node:path'
 import process from 'node:process'
-import { readEnvironment } from '../src/correction-config'
+import { readEnvironment } from '../src/config'
 
 test('environment loader uses the repository root rather than the server workspace', (t) => {
   const loader = t.mock.method(process, 'loadEnvFile', () => {})

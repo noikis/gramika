@@ -191,7 +191,16 @@ export function useCorrection(text: string) {
         : ''
   const validationMessage =
     text && !validation.success ? (validation.error.issues[0]?.message ?? '') : ''
+
+  function forgetHistoryEntry(id: string) {
+    if (!association.current || association.current.correctionId === id) {
+      association.current = null
+      draftRevision.current += 1
+    }
+  }
+
   return {
+    forgetHistoryEntry,
     config,
     mode,
     selectMode,

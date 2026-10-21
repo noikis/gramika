@@ -39,7 +39,7 @@ function App() {
         {view === 'correction' ? (
           <CorrectionWorkspace draft={draft} correction={correction} />
         ) : (
-          <HistoryPage />
+          <HistoryPage onDeleted={correction.forgetHistoryEntry} />
         )}
       </main>
       <Toaster

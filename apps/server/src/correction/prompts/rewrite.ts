@@ -1,5 +1,3 @@
-export const REWRITE_PROMPT_VERSION = 'rewrite-v1'
-
 export const REWRITE_PROMPT = `You are an expert Russian-language editor.
 
 Rewrite the user's Russian text to produce a differently worded version while

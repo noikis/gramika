@@ -8,7 +8,12 @@ export type {
   CorrectionReply,
 } from './types'
 export { createCorrectionService, AttemptError } from './service'
-export { PARAMETERS, PROMPT_VERSION, STRICT_PROMPT } from './prompt'
+export {
+  OPENROUTER_REQUEST_DEFAULTS,
+  STRICT_PROMPT_VERSION,
+  REWRITE_PROMPT_VERSION,
+} from './constants'
+export { STRICT_PROMPT } from './prompts/strict'
 export { MessageRole } from './types'
 
-export { REWRITE_PROMPT, REWRITE_PROMPT_VERSION } from './rewrite-prompt'
+export { REWRITE_PROMPT } from './prompts/rewrite'

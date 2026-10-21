@@ -13,8 +13,8 @@ import {
 import {
   AttemptError,
   createCorrectionService,
-  PARAMETERS,
-  PROMPT_VERSION,
+  OPENROUTER_REQUEST_DEFAULTS,
+  STRICT_PROMPT_VERSION,
   STRICT_PROMPT,
   REWRITE_PROMPT,
   REWRITE_PROMPT_VERSION,
@@ -46,7 +46,7 @@ export function parseBenchmarkVariants(value: string) {
 }
 
 export function prepareBenchmark(cases: unknown, models?: unknown, variants?: unknown) {
-  assertBenchmarkPrompt(PROMPT_VERSION)
+  assertBenchmarkPrompt(STRICT_PROMPT_VERSION)
   const parsedCases = z
     .array(z.strictObject({ id: z.string().trim().min(1).max(200), text: OriginalText }))
     .min(1)
@@ -105,7 +105,7 @@ export type BenchmarkPlan = ReturnType<typeof prepareBenchmark>
 export type BenchmarkRun = BenchmarkPlan & {
   schemaVersion: 2
   prompts: Partial<Record<CorrectionMode, { version: string; text: string }>>
-  parameters: Record<string, typeof PARAMETERS>
+  parameters: Record<string, typeof OPENROUTER_REQUEST_DEFAULTS>
   timeoutMs: number
   startedAt: string
   endedAt: string | null
@@ -154,12 +154,15 @@ export async function runBenchmark(options: Options) {
         plan.variants.map((variant) => [
           variant.mode,
           variant.mode === CorrectionMode.enum.strict
-            ? { version: PROMPT_VERSION, text: STRICT_PROMPT }
+            ? { version: STRICT_PROMPT_VERSION, text: STRICT_PROMPT }
             : { version: REWRITE_PROMPT_VERSION, text: REWRITE_PROMPT },
         ]),
       ),
       parameters: Object.fromEntries(
-        plan.models.map((model) => [model.id, { ...structuredClone(PARAMETERS), model: model.id }]),
+        plan.models.map((model) => [
+          model.id,
+          { ...structuredClone(OPENROUTER_REQUEST_DEFAULTS), model: model.id },
+        ]),
       ),
       timeoutMs: options.timeoutMs ?? TIMEOUT_MS,
       startedAt: new Date().toISOString(),

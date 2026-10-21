@@ -106,8 +106,8 @@ English and French remain future candidates. Russian is the initial acceptance t
   requested explanations for reuse to avoid repeated cost. Selection and request
   controls remain to be designed; an Explain button is allowed.
 - **Soft-delete history:** remove deleted records from normal history views while
-  retaining them in storage. Deletion scope and recovery behavior remain to be
-  specified.
+  retaining them in storage. Delete a whole original and all its attempts after
+  confirmation. No Trash or restore screen in V2.5 (user decision, 2026-10-21).
 - **UI redesign:** rethink the visual design, layout, controls and feedback after
   the preceding features are usable. Include light and dark themes, following
   the system by default with a manual override, a New correction action, easier
@@ -302,7 +302,8 @@ manual selection available; secure phone clipboard access depends on deployment.
 History supports case-insensitive phrase search across originals/results,
 filters, newest/oldest sorting and pages of 10 records. It preserves separate
 attempts and their metrics without displaying metrics on the correction screen.
-Sonner notifications are transient. History deletion is not implemented.
+Sonner notifications are transient. Confirmed history deletion hides an entire
+original and all its attempts while retaining stored data; no restore screen.
 
 Do not show mode or tone selectors in the Strict-only MVP.
 
@@ -415,7 +416,7 @@ Revisit only if the user decides the saved history has become important.
 
 V2 decisions to resolve in the owning specs include the rewrite boundaries,
 diff grouping and explanation interaction, explanation model and storage,
-soft-deletion scope and recovery, the UI direction and minimal PWA behavior.
+the UI direction and minimal PWA behavior.
 These open details do not expand the agreed scope.
 
 Models, the Strict mode's strict-v3 prompt, SQLite/Drizzle, contracts, input limits, timeout, disabled

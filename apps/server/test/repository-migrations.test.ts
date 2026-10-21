@@ -69,7 +69,10 @@ test('opens an explicitly registered baseline, preserving history, preferences, 
     assert.equal(first.requests[0].inputTokens, null)
     assert.equal(database.modelPreferences.get(), MODELS[1].id)
     const journal = database.db.prepare('SELECT hash, created_at FROM __drizzle_migrations').all()
-    assert.equal(journal.length, 2)
+    assert.equal(
+      journal.length,
+      readMigrationFiles({ migrationsFolder: join(__dirname, '../drizzle') }).length,
+    )
     database.close()
     database = new SqliteDatabase(path)
     assert.deepEqual(database.history.get(correctionId), first)
@@ -195,7 +198,10 @@ test('failed Drizzle migration rolls back tables, seed and version and can resum
   try {
     assert.equal(resumed.modelPreferences.get(), DEFAULT_MODEL_ID)
     assert.equal(resumed.history.list().total, 0)
-    assert.equal(resumed.db.prepare('SELECT * FROM __drizzle_migrations').all().length, 2)
+    assert.equal(
+      resumed.db.prepare('SELECT * FROM __drizzle_migrations').all().length,
+      readMigrationFiles({ migrationsFolder: join(__dirname, '../drizzle') }).length,
+    )
   } finally {
     resumed.close()
   }

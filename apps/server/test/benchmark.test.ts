@@ -21,7 +21,7 @@ import {
 import {
   AttemptError,
   createCorrectionService,
-  PARAMETERS,
+  OPENROUTER_REQUEST_DEFAULTS,
   STRICT_PROMPT,
   REWRITE_PROMPT,
   type CorrectionTransport,
@@ -223,7 +223,7 @@ test('mocked library run sends identical sentences in order, reuses production p
     )
     for (const body of bodies) {
       assert.deepEqual(body, {
-        ...PARAMETERS,
+        ...OPENROUTER_REQUEST_DEFAULTS,
         model: body.model,
         messages: [
           { role: 'system', content: STRICT_PROMPT },
@@ -235,7 +235,10 @@ test('mocked library run sends identical sentences in order, reuses production p
     assert.equal(result.run.status, 'completed')
     assert.ok(result.run.endedAt)
     assert.equal(result.run.prompts.strict?.text, STRICT_PROMPT)
-    assert.deepEqual(result.run.parameters[models[1]!], { ...PARAMETERS, model: models[1] })
+    assert.deepEqual(result.run.parameters[models[1]!], {
+      ...OPENROUTER_REQUEST_DEFAULTS,
+      model: models[1],
+    })
     const local = new SqliteDatabase(join(folder, 'records.sqlite'))
     try {
       assert.equal(local.history.list().total, 2)
@@ -536,7 +539,7 @@ test('three-variant mocked run preserves prompts, parameters, isolated mixed-mod
         const item = cases[Math.floor(bodies.length / variants.length)]
         bodies.push(value)
         assert.deepEqual(value, {
-          ...PARAMETERS,
+          ...OPENROUTER_REQUEST_DEFAULTS,
           model: variant.modelId,
           messages: [
             { role: 'system', content: variant.mode === 'strict' ? STRICT_PROMPT : REWRITE_PROMPT },

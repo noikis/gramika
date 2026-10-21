@@ -6,7 +6,7 @@ import { MockAgent } from 'undici'
 import { OriginalText, DEFAULT_MODEL_ID, MODELS } from '@gramota/contracts'
 import { SqliteDatabase, databaseDiagnostic } from '../src/database'
 import application from '../src/app'
-import { parseConfig } from '../src/correction-config'
+import { parseConfig } from '../src/config'
 import { resolve } from 'node:path'
 import {
   createCorrectionService,

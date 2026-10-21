@@ -47,6 +47,18 @@
 - Follow the surrounding file's formatting. Both workspaces use Prettier via
   `npm run format -w apps/server` and `npm run format -w apps/web` with matching settings.
 
+## Configuration and constants
+
+- Use `config.ts` when runtime configuration needs its own file, such as loading
+  and validating environment settings.
+- Use `constants.ts` to group related fixed values, including strings, numbers,
+  objects, arrays and tuples. Give exported constants descriptive names.
+- Place these files inside the module that owns them, or at application scope
+  when shared across modules. Keep unrelated concerns separate.
+- Keep configuration, constants and type declarations distinct; use `types.ts`
+  when a separate type file is useful. Keep inferred Zod types beside their schemas.
+- Create these files when needed, rather than requiring them in every module.
+
 ## Structure and rendering
 
 - apps/web/src contains the React entry point, App.tsx, and plain CSS.

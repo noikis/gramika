@@ -7,13 +7,22 @@ import {
   type HistorySearchQuery,
 } from '@gramota/contracts'
 import { formatDate, modelName } from '../lib/history-format'
+import { HistoryDelete } from './history-delete'
 import { HistoryRequest } from './history-request'
 import { Button } from './ui/button'
 import { useHistory } from '../hooks/use-history'
 import { useExchangeRate } from '../hooks/use-exchange-rate'
 import './history.css'
 
-function HistoryEntry({ item, rate }: { item: HistorySummary; rate: number | null }) {
+function HistoryEntry({
+  item,
+  rate,
+  onDeleted,
+}: {
+  item: HistorySummary
+  rate: number | null
+  onDeleted: (id: string) => void
+}) {
   const [detail, setDetail] = useState<HistoryDetail | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -71,6 +80,7 @@ function HistoryEntry({ item, rate }: { item: HistorySummary; rate: number | nul
         <span className="expand-control" aria-hidden="true" />
       </summary>
       <div className="history-detail" aria-busy={loading}>
+        <HistoryDelete id={item.id} onDeleted={onDeleted} />
         {loading && (
           <p className="clipboard-feedback" role="status">
             Loading correction...
@@ -135,7 +145,7 @@ function dateBoundary(value: string, nextDay = false) {
   return date.toISOString()
 }
 
-export function HistoryPage() {
+export function HistoryPage({ onDeleted }: { onDeleted: (id: string) => void }) {
   const rate = useExchangeRate()
   const [search, setSearch] = useState('')
   const [filters, setFilters] = useState(initialFilters)
@@ -305,7 +315,15 @@ export function HistoryPage() {
             <>
               <div className="history-list" key={JSON.stringify(filters)}>
                 {data.items.map((item) => (
-                  <HistoryEntry key={item.id} item={item} rate={rate} />
+                  <HistoryEntry
+                    key={item.id}
+                    item={item}
+                    rate={rate}
+                    onDeleted={(id) => {
+                      onDeleted(id)
+                      history.retry()
+                    }}
+                  />
                 ))}
               </div>
               <nav className="history-pagination" aria-label="History pagination">

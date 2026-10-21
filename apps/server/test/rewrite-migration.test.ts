@@ -57,7 +57,9 @@ test('mode migration preserves every old request field, status and relation tran
   try {
     const requests = raw.prepare('SELECT * FROM model_requests ORDER BY id').all()
     const group = raw
-      .prepare('SELECT id, created_at, original_text, language FROM corrections')
+      .prepare<unknown[], Record<string, unknown>>(
+        'SELECT id, created_at, original_text, language FROM corrections',
+      )
       .get()
     const preference = raw.prepare('SELECT * FROM model_preference').get()
     migrateDatabase(drizzle(raw))
@@ -71,15 +73,21 @@ test('mode migration preserves every old request field, status and relation tran
       }),
       requests,
     )
-    assert.deepEqual(raw.prepare('SELECT * FROM corrections').get(), group)
+    assert.deepEqual(raw.prepare('SELECT * FROM corrections').get(), { ...group, deleted_at: null })
     assert.deepEqual(raw.prepare('SELECT * FROM model_preference').get(), preference)
     assert.deepEqual(raw.pragma('foreign_key_check'), [])
     assert.equal(raw.pragma('foreign_keys', { simple: true }), 1)
-    assert.equal(raw.prepare('SELECT * FROM __drizzle_migrations').all().length, 2)
+    assert.equal(
+      raw.prepare('SELECT * FROM __drizzle_migrations').all().length,
+      readMigrationFiles({ migrationsFolder }).length,
+    )
     raw.exec("UPDATE model_requests SET mode = 'gentle-rewrite' WHERE id = 'pending'")
     assert.throws(() => raw.exec("UPDATE model_requests SET mode = 'unknown'"))
     migrateDatabase(drizzle(raw))
-    assert.equal(raw.prepare('SELECT * FROM __drizzle_migrations').all().length, 2)
+    assert.equal(
+      raw.prepare('SELECT * FROM __drizzle_migrations').all().length,
+      readMigrationFiles({ migrationsFolder }).length,
+    )
   } finally {
     raw.close()
   }
@@ -103,7 +111,10 @@ test('mode migration failure rolls back populated tables and journal, then resum
     assert.deepEqual(raw.pragma('foreign_key_check'), [])
     raw.exec('DROP TRIGGER deny_mode_migration')
     migrateDatabase(drizzle(raw))
-    assert.equal(raw.prepare('SELECT * FROM __drizzle_migrations').all().length, 2)
+    assert.equal(
+      raw.prepare('SELECT * FROM __drizzle_migrations').all().length,
+      readMigrationFiles({ migrationsFolder }).length,
+    )
   } finally {
     raw.close()
   }

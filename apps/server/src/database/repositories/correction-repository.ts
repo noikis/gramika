@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm'
+import { and, eq, isNull } from 'drizzle-orm'
 import { InvalidCorrectionReference, type CorrectionRepository } from '../../correction'
 import type { DatabaseClient } from '../sqlite-database'
 import { corrections, modelRequests } from '../schema'
@@ -33,7 +33,7 @@ export function createCorrectionRepository(db: DatabaseClient): CorrectionReposi
             const row = tx
               .select({ originalText: corrections.originalText })
               .from(corrections)
-              .where(eq(corrections.id, ids.correctionId))
+              .where(and(eq(corrections.id, ids.correctionId), isNull(corrections.deletedAt)))
               .get()
             if (!row || row.originalText !== originalText) throw new InvalidCorrectionReference()
           } else {

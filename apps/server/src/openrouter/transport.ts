@@ -3,7 +3,7 @@ import { ErrorCode } from '@gramota/contracts'
 import { CorrectionError, type CorrectionTransport } from '../correction'
 import { parseOpenRouterReply } from './response'
 import { Agent, ProxyAgent, request, type Dispatcher } from 'undici'
-import type { ServerConfig } from '../correction-config'
+import type { ServerConfig } from '../config'
 
 const MAX_RESPONSE_BYTES = 1024 * 1024
 
