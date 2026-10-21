@@ -12,6 +12,7 @@ import {
   assertBenchmarkPrompt,
   BENCHMARK_MODELS,
   prepareBenchmark,
+  parseBenchmarkVariants,
   runBenchmark,
   type BenchmarkRun,
   benchmarkSummary,
@@ -22,6 +23,7 @@ import {
   createCorrectionService,
   PARAMETERS,
   STRICT_PROMPT,
+  REWRITE_PROMPT,
   type CorrectionTransport,
 } from '../src/correction'
 
@@ -232,7 +234,7 @@ test('mocked library run sends identical sentences in order, reuses production p
     }
     assert.equal(result.run.status, 'completed')
     assert.ok(result.run.endedAt)
-    assert.equal(result.run.prompt, STRICT_PROMPT)
+    assert.equal(result.run.prompts.strict?.text, STRICT_PROMPT)
     assert.deepEqual(result.run.parameters[models[1]!], { ...PARAMETERS, model: models[1] })
     const local = new SqliteDatabase(join(folder, 'records.sqlite'))
     try {
@@ -456,4 +458,186 @@ test('invalid input and repository initialization/finalization failures prevent 
     final.run.attempts.map((item) => item.status),
     ['failed', 'not-run', 'not-run', 'not-run'],
   )
+})
+
+test('explicit variants validate model/mode pairs and preserve Strict-only legacy commands', () => {
+  const variants = parseBenchmarkVariants(
+    `${models[0]}:strict, ${models[0]}:gentle-rewrite, ${models[1]}:gentle-rewrite`,
+  )
+  const plan = prepareBenchmark(cases, undefined, variants)
+  assert.equal(plan.maxRequests, 6)
+  assert.equal(plan.models.length, 2)
+  assert.equal(plan.variants.length, 3)
+  assert.equal(new Set(plan.variants.map((variant) => variant.id)).size, 3)
+  assert.deepEqual(
+    prepareBenchmark(cases, models).variants.map((variant) => variant.mode),
+    ['strict', 'strict'],
+  )
+  assert.equal(prepareBenchmark(cases, undefined, variants.slice(0, 2)).maxRequests, 4)
+  assert.equal(prepareBenchmark(cases, undefined, variants.slice(1)).maxRequests, 4)
+  assertBenchmarkPrompt('rewrite-v1', 'gentle-rewrite')
+  assert.throws(() => assertBenchmarkPrompt('strict-v3', 'gentle-rewrite'))
+  assert.throws(() => prepareBenchmark(cases, models, variants))
+  for (const invalid of [
+    [],
+    null,
+    [variants[0], variants[0]],
+    [{ modelId: models[0], mode: 'unknown' }],
+    [{ modelId: 'unknown/model', mode: 'strict' }],
+    [{ modelId: models[0] }],
+    [{ modelId: models[0], mode: 'strict', extra: true }],
+    parseBenchmarkVariants(`${models[0]}:gentle-rewrite:strict`),
+    parseBenchmarkVariants(`${models[0]}`),
+    parseBenchmarkVariants(''),
+  ])
+    assert.throws(() => prepareBenchmark(cases, undefined, invalid))
+})
+
+class ReportNode {
+  textContent = ''
+  className = ''
+  lang = ''
+  tabIndex = 0
+  selectedIndex = 0
+  private optionValue = ''
+  children: ReportNode[] = []
+  events: Record<string, () => void> = {}
+  constructor(readonly tag: string) {}
+  get value(): string {
+    return this.tag === 'select' ? this.children[this.selectedIndex].value : this.optionValue
+  }
+  set value(value: string) {
+    this.optionValue = value
+  }
+  append(...nodes: ReportNode[]) {
+    this.children.push(...nodes)
+  }
+  replaceChildren() {
+    this.children = []
+  }
+  addEventListener(name: string, callback: () => void) {
+    this.events[name] = callback
+  }
+}
+
+test('three-variant mocked run preserves prompts, parameters, isolated mixed-mode records and offline selection', async (t) => {
+  const variants = parseBenchmarkVariants(
+    `${models[0]}:strict,${models[0]}:gentle-rewrite,${models[1]}:gentle-rewrite`,
+  )
+  const bodies: { model: string; messages: { role: string; content: string }[] }[] = []
+  const result = await runBenchmark({
+    cases,
+    variants,
+    outputRoot: directory(t),
+    transport: mockOpenRouterTransport({
+      async send(body) {
+        const value = body as (typeof bodies)[number]
+        const variant = variants[bodies.length % variants.length]
+        const item = cases[Math.floor(bodies.length / variants.length)]
+        bodies.push(value)
+        assert.deepEqual(value, {
+          ...PARAMETERS,
+          model: variant.modelId,
+          messages: [
+            { role: 'system', content: variant.mode === 'strict' ? STRICT_PROMPT : REWRITE_PROMPT },
+            { role: 'user', content: item.text },
+          ],
+        })
+        return reply(`${variant.modelId}:${variant.mode}: ${item.text}`, bodies.length * 0.001)
+      },
+      async close() {},
+    }),
+  })
+  assert.equal(bodies.length, 6)
+  assert.equal(result.run.status, 'completed')
+  assert.equal(result.run.schemaVersion, 2)
+  assert.equal(result.run.prompts.strict?.text, STRICT_PROMPT)
+  assert.equal(result.run.prompts['gentle-rewrite']?.text, REWRITE_PROMPT)
+  assert.equal(result.run.prompts['gentle-rewrite']?.version, 'rewrite-v1')
+  const report = reportData(result.folder)
+  assert.equal(report.data.summary.length, 3)
+  assert.deepEqual(
+    report.data.summary.map((item) => item.knownCostUsd),
+    [0.005, 0.007, 0.009000000000000001],
+  )
+  assert.ok(report.data.summary.every((item) => item.succeeded === 2))
+  assert.equal(
+    new Set(result.run.attempts.slice(0, 3).map((attempt) => attempt.correctionId)).size,
+    1,
+  )
+  const database = new SqliteDatabase(join(result.folder, 'records.sqlite'))
+  try {
+    assert.equal(database.history.list().total, 2)
+    for (const attempt of result.run.attempts) {
+      const request = database.history
+        .get(attempt.correctionId!)!
+        .requests.find((request) => request.id === attempt.requestId)!
+      assert.equal(request.mode, attempt.mode)
+      assert.equal(request.promptVersion, attempt.mode === 'strict' ? 'strict-v3' : 'rewrite-v1')
+    }
+  } finally {
+    database.close()
+  }
+  const nodes = Object.fromEntries(
+    ['sentence', 'left', 'right'].map((id) => [id, new ReportNode('select')]),
+  )
+  for (const id of [
+    'benchmark-data',
+    'run-status',
+    'summary',
+    'original',
+    'left-result',
+    'right-result',
+  ])
+    nodes[id] = new ReportNode('div')
+  nodes['benchmark-data'].textContent = JSON.stringify(report.data)
+  const script = report.html.match(/<script>([^]*?)<\/script>/)![1]
+  new Script(script).runInNewContext({
+    document: {
+      getElementById: (id: string) => nodes[id],
+      createElement: (tag: string) => new ReportNode(tag),
+    },
+  })
+  assert.equal(nodes.left.children.length, 3)
+  assert.ok(nodes['left-result'].children[1].textContent.includes(`${models[0]}:strict`))
+  assert.ok(nodes['right-result'].children[1].textContent.includes(`${models[0]}:gentle-rewrite`))
+  nodes.right.selectedIndex = 2
+  nodes.right.events.change()
+  assert.ok(nodes['right-result'].children[1].textContent.includes(`${models[1]}:gentle-rewrite`))
+  nodes.sentence.selectedIndex = 1
+  nodes.sentence.events.change()
+  assert.equal(nodes.original.textContent, cases[1].text)
+  assert.ok(nodes['right-result'].children[1].textContent.includes(cases[1].text))
+})
+
+test('mixed-mode failure records Rewrite separately and stops remaining variants', async (t) => {
+  let calls = 0
+  const result = await runBenchmark({
+    cases,
+    variants: parseBenchmarkVariants(
+      `${models[0]}:strict,${models[0]}:gentle-rewrite,${models[1]}:gentle-rewrite`,
+    ),
+    outputRoot: directory(t),
+    transport: mockOpenRouterTransport({
+      async send() {
+        calls++
+        return calls === 1 ? reply('Синтетический ответ.', 0) : { status: 502, data: {} }
+      },
+      async close() {},
+    }),
+  })
+  assert.equal(calls, 2)
+  assert.equal(result.run.status, 'failed')
+  assert.deepEqual(
+    result.run.attempts.map((item) => item.status),
+    ['succeeded', 'failed', 'not-run', 'not-run', 'not-run', 'not-run'],
+  )
+  const report = reportData(result.folder)
+  assert.equal(report.data.summary[0].knownCostUsd, 0)
+  assert.equal(report.data.summary[1].failed, 1)
+  assert.equal(report.data.summary[1].unknownCostCount, 1)
+  assert.equal(report.data.summary[2].notRun, 2)
+  const request = report.data.requests[result.run.attempts[1].requestId!]
+  assert.equal(request.mode, 'gentle-rewrite')
+  assert.equal(request.promptVersion, 'rewrite-v1')
 })

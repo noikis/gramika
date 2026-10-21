@@ -2,6 +2,7 @@ export {
   assertBenchmarkPrompt,
   BENCHMARK_MODELS,
   prepareBenchmark,
+  parseBenchmarkVariants,
   runBenchmark,
   BenchmarkInputError,
 } from './run'

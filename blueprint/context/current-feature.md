@@ -50,7 +50,7 @@ explicit behavioral instructions in the prompt.
 
 Another opinion, explanations, strength controls, new model choices, broad
 redesign, extra model calls, automatic retries, paid evaluation by agents,
-benchmark CLI changes, cost-formatting changes, commits, merges and deployment.
+cost-formatting changes and deployment.
 
 ## Build loop
 
@@ -273,3 +273,31 @@ implementation describe its original development location. Human UI/model review
 and V2.1a completion bookkeeping remain pending; this move does not waive them.
 
 Relocation checks in E:/Code/gramota: all 89 server tests and the web build pass.
+
+## User-requested extension: mode-aware manual benchmark
+
+The user requested Gemma Strict versus Gemma Gentle rewrite, and Gemma
+Gentle rewrite versus Gemini Gentle rewrite, in the usual checkout.
+
+- [x] 5. Add explicit model/mode variants to the human-only benchmark, preserving
+  existing --models commands as Strict-only. Allow the three requested variants
+  in one run without paying for an unnecessary Gemini Strict request. Preview
+  and confirmation must count case/variant pairs accurately. Record prompts,
+  versions and per-attempt modes; report selectors and cost summaries must
+  distinguish modes of the same model. Keep parameters, reasoning policy,
+  isolated records, stop-on-failure behavior and offline report safety intact.
+  Done when: injected mocked tests cover both requested comparisons, validation,
+  original-only input, counts, saved metadata, failures and report selection;
+  documented server tests, lint and touched-file formatting pass. No agent
+  invokes the CLI, even preview, or makes paid calls.
+
+Benchmark extension evidence: npm test -w apps/server passes all 92 tests
+(including 12 mocked benchmark tests); server lint, touched-file Prettier and
+git diff --check pass. Offline report JavaScript was exercised with a minimal
+DOM test double, covering same-model mode selection and cross-model Rewrite
+selection. Browser visual review and real model quality remain untested.
+No CLI invocation (including preview), paid call, SSH or Playwright was used.
+Existing --models inputs remain Strict-only. New run manifests use schemaVersion
+2 and retain prompts by mode plus per-attempt variant and mode IDs. Existing
+reports are unchanged standalone HTML. No web source changed; prior web build
+evidence remains applicable. Instructions are in docs/benchmark.md.

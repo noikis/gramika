@@ -1,4 +1,4 @@
-# Manual V3 model benchmark
+# Manual model and mode benchmark
 
 This is a small, local comparison tool for deliberate runs, not an automated test
 suite or a product feature. Only the human user may invoke the benchmark command,
@@ -34,7 +34,8 @@ The benchmark and application use the same two-model list. Both keep the current
 reasoning-disabled request and provider settings.
 
 Duplicate or unknown IDs are rejected. There is no implicit model selection.
-Each selected model receives every identical case once, in case/model order.
+Existing --models commands remain Strict-only. Each selected variant receives
+every identical original once, in case/variant order.
 
 ## Preview, then authorize spending
 
@@ -62,14 +63,44 @@ the root `.env` and environment variables. Development uses the system VPN;
 production retains the mandatory proxy with no direct fallback. Invalid or missing
 configuration prevents execution. Never print or paste credentials into a report.
 
-The active prompt must still be `strict-v3`. The runner reuses the production
-prompt, parameters, reasoning-disabled request setting, response validation and
-60-second timeout. Benchmarks accept valid correction outputs even when the
-provider returns reasoning fields or reports reasoning tokens. Reported token
-usage and costs are still recorded. Ordinary application corrections retain
-their reasoning-response guard.
-If the production prompt changes, revise the benchmark deliberately rather than
-running an accidentally different prompt under a V3 label.
+## Compare Strict and Gentle rewrite
+
+Use --variants instead of --models to select explicit model/mode pairs.
+Modes are strict and gentle-rewrite. A pair uses model-id:mode; pairs are
+comma-separated. Unknown models/modes, duplicate pairs and providing both
+selection flags are rejected before any requests or run files.
+
+For both requested comparisons in one report, preview these three variants:
+
+```powershell
+npm run benchmark -w apps/server -- --cases benchmark-data/cases.json --variants google/gemma-4-26b-a4b-it:strict,google/gemma-4-26b-a4b-it:gentle-rewrite,google/gemini-3.1-flash-lite:gentle-rewrite
+```
+
+This makes at most three requests per case when executed. It includes Gemma
+Strict versus Gemma Gentle rewrite, and Gemma Gentle rewrite versus Gemini
+Gentle rewrite, without an extra Gemini Strict request. For two cases the
+execution confirmation is RUN 6. Add --execute only when ready to spend.
+
+To test only Strict versus Rewrite for Gemma:
+
+```powershell
+npm run benchmark -w apps/server -- --cases benchmark-data/cases.json --variants google/gemma-4-26b-a4b-it:strict,google/gemma-4-26b-a4b-it:gentle-rewrite
+```
+
+To test only Rewrite across models:
+
+```powershell
+npm run benchmark -w apps/server -- --cases benchmark-data/cases.json --variants google/gemma-4-26b-a4b-it:gentle-rewrite,google/gemini-3.1-flash-lite:gentle-rewrite
+```
+
+The runner uses the production strict-v3 and rewrite-v1 prompts, identical
+production parameters (including disabled reasoning and max_tokens: 8192),
+response validation and 60-second timeout. Prompts are checked against their
+expected versions so future changes require a deliberate benchmark update.
+Benchmarks accept valid outputs even when the provider returns reasoning
+fields or reports reasoning tokens; reported usage and costs are retained.
+Ordinary application corrections retain their reasoning-response guard.
+Each request uses the original, never an earlier corrected or rewritten result.
 
 ## Stopping and costs
 
@@ -89,8 +120,8 @@ An execution-time Ctrl+C exits with code 130. A new invocation always creates a
 fresh run and may charge again for previously completed pairs, so choose cases
 and models deliberately before a second run.
 
-The maximum number of requests is cases multiplied by selected models. This is
-not a dollar cap: cost and usage are provider-reported after each request, and
+The maximum number of requests is cases multiplied by selected model/mode
+variants. This is not a dollar cap: cost and usage are provider-reported after each request, and
 failed requests can also cost money. Unknown cost is never counted as zero.
 
 ## Compare results offline
@@ -100,20 +131,21 @@ Each execution creates a unique directory under
 overwritten. The folder contains:
 
 - `records.sqlite`: normal correction/request records, isolated from everyday
-  history. Each sentence has one correction with its attempted model requests.
-- `run.json`: exact prompt and parameters by model, selected models and case
-  order, timestamps, completion state, case texts, and saved request identifiers.
+  history. Each sentence has one correction with its attempted model/mode requests.
+- `run.json`: schema version 2, exact prompts and versions by mode, parameters
+  by model, selected variants and case order, timestamps, completion state, case
+  texts, per-attempt mode/variant IDs, and saved request identifiers.
 - `report.html`: a self-contained comparison, updated after every attempt.
 
 Open `report.html` directly in a browser. It needs no app server, internet, or
-additional requests. Select a sentence and two models to compare complete outputs
-side by side, with the shared original above. Narrow screens stack the panels.
-The default selection is the first sentence and first two models; if only one
-model was selected, both panels show that model.
+additional requests. Select a sentence and two model/mode variants to compare
+complete outputs side by side, with the shared original above. Narrow screens stack the panels.
+The default selection is the first sentence and first two variants; if only one
+variant was selected, both panels show that variant.
 
 The report shows success, failure and not-run states, returned model/provider,
 generation and application timings, token usage, finish reason and reported cost.
-Per-model summaries count successes/failures/not-run comparisons and show known
+Per-variant summaries count successes/failures/not-run comparisons and show known
 cost separately from unavailable costs. All recorded request details remain in
 SQLite. Text is displayed literally with whitespace preserved, not rendered as
 model-supplied HTML.
@@ -128,3 +160,7 @@ errors, ambiguous phrasing, formal and conversational styles, names, links,
 numbers, emoji, whitespace and embedded instructions. Accept valid alternative
 corrections rather than requiring one exact reference answer. Compare quality
 alongside reported cost and timing before deciding whether a model helps.
+
+For Rewrite, assess faithfulness first, then naturalness, clarity, flow and
+proportionate change. See [synthetic evaluation criteria](rewrite-evaluation.md).
+Previously generated offline reports remain self-contained and readable.

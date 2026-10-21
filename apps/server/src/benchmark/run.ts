@@ -2,6 +2,7 @@ import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { z } from 'zod'
 import {
+  CorrectionMode,
   ErrorCode,
   ModelId,
   MODELS,
@@ -15,6 +16,8 @@ import {
   PARAMETERS,
   PROMPT_VERSION,
   STRICT_PROMPT,
+  REWRITE_PROMPT,
+  REWRITE_PROMPT_VERSION,
   type CorrectionTransport,
 } from '../correction'
 
@@ -26,12 +29,23 @@ export class BenchmarkInputError extends Error {}
 
 export const BENCHMARK_MODELS = MODELS
 
-export function assertBenchmarkPrompt(version: string) {
-  if (version !== 'strict-v3')
-    throw new BenchmarkInputError('This benchmark requires the active strict-v3 prompt.')
+export function assertBenchmarkPrompt(
+  version: string,
+  mode: CorrectionMode = CorrectionMode.enum.strict,
+) {
+  const expected = mode === CorrectionMode.enum.strict ? 'strict-v3' : 'rewrite-v1'
+  if (version !== expected)
+    throw new BenchmarkInputError('Unexpected benchmark prompt version for ' + mode + '.')
 }
 
-export function prepareBenchmark(cases: unknown, models: unknown) {
+export function parseBenchmarkVariants(value: string) {
+  return value.split(',').map((entry) => {
+    const separator = entry.lastIndexOf(':')
+    return { modelId: entry.slice(0, separator).trim(), mode: entry.slice(separator + 1).trim() }
+  })
+}
+
+export function prepareBenchmark(cases: unknown, models?: unknown, variants?: unknown) {
   assertBenchmarkPrompt(PROMPT_VERSION)
   const parsedCases = z
     .array(z.strictObject({ id: z.string().trim().min(1).max(200), text: OriginalText }))
@@ -45,27 +59,52 @@ export function prepareBenchmark(cases: unknown, models: unknown) {
       'Provide a nonempty cases array with unique IDs and valid correction texts.',
     )
   }
+  if (models !== undefined && variants !== undefined)
+    throw new BenchmarkInputError('Select either models or model/mode variants, not both.')
   const parsedModels = z.array(ModelId).min(1).safeParse(models)
-  if (!parsedModels.success || new Set(parsedModels.data).size !== parsedModels.data.length) {
+  if (
+    variants === undefined &&
+    (!parsedModels.success || new Set(parsedModels.data).size !== parsedModels.data.length)
+  )
     throw new BenchmarkInputError(
       'Select one or more unique model IDs from the configured model list.',
     )
-  }
+  const selected = z
+    .array(z.strictObject({ modelId: ModelId, mode: CorrectionMode }))
+    .min(1)
+    .safeParse(
+      variants ??
+        (parsedModels.success
+          ? parsedModels.data.map((modelId) => ({ modelId, mode: CorrectionMode.enum.strict }))
+          : undefined),
+    )
+  if (!selected.success) throw new BenchmarkInputError('Select valid model/mode variants.')
+  const choices = selected.data.map(({ modelId, mode }) => ({
+    id: modelId + ':' + mode,
+    modelId,
+    mode,
+    name:
+      BENCHMARK_MODELS.find((model) => model.id === modelId)!.name +
+      ' · ' +
+      (mode === CorrectionMode.enum.strict ? 'Strict' : 'Gentle rewrite'),
+  }))
+  if (new Set(choices.map((choice) => choice.id)).size !== choices.length)
+    throw new BenchmarkInputError('Duplicate model/mode variants are not allowed.')
+  assertBenchmarkPrompt(REWRITE_PROMPT_VERSION, CorrectionMode.enum['gentle-rewrite'])
   return {
     cases: parsedCases.data,
-    models: parsedModels.data.map((id) => ({
-      id,
-      name: BENCHMARK_MODELS.find((model) => model.id === id)!.name,
-    })),
-    maxRequests: parsedCases.data.length * parsedModels.data.length,
+    models: [...new Set(choices.map((choice) => choice.modelId))].map((id) =>
+      BENCHMARK_MODELS.find((model) => model.id === id)!,
+    ),
+    variants: choices,
+    maxRequests: parsedCases.data.length * choices.length,
   }
 }
 
 export type BenchmarkPlan = ReturnType<typeof prepareBenchmark>
 export type BenchmarkRun = BenchmarkPlan & {
-  schemaVersion: 1
-  promptVersion: string
-  prompt: string
+  schemaVersion: 2
+  prompts: Partial<Record<CorrectionMode, { version: string; text: string }>>
   parameters: Record<string, typeof PARAMETERS>
   timeoutMs: number
   startedAt: string
@@ -75,6 +114,8 @@ export type BenchmarkRun = BenchmarkPlan & {
   attempts: {
     caseId: string
     modelId: string
+    mode: CorrectionMode
+    variantId: string
     status: 'not-run' | 'succeeded' | 'failed'
     correctionId: string | null
     requestId: string | null
@@ -84,7 +125,8 @@ export type BenchmarkRun = BenchmarkPlan & {
 
 type Options = {
   cases: unknown
-  models: unknown
+  models?: unknown
+  variants?: unknown
   outputRoot: string
   transport: CorrectionTransport
   shouldStop?: () => boolean
@@ -97,7 +139,7 @@ type Options = {
 export async function runBenchmark(options: Options) {
   let database: SqliteDatabase | undefined
   try {
-    const plan = prepareBenchmark(options.cases, options.models)
+    const plan = prepareBenchmark(options.cases, options.models, options.variants)
     mkdirSync(options.outputRoot, { recursive: true })
     const folder = mkdtempSync(
       join(options.outputRoot, new Date().toISOString().replace(/[:.]/g, '-') + '-'),
@@ -107,9 +149,15 @@ export async function runBenchmark(options: Options) {
     // Initialize the benchmark run state and report
     const run: BenchmarkRun = {
       ...plan,
-      schemaVersion: 1,
-      promptVersion: PROMPT_VERSION,
-      prompt: STRICT_PROMPT,
+      schemaVersion: 2,
+      prompts: Object.fromEntries(
+        plan.variants.map((variant) => [
+          variant.mode,
+          variant.mode === CorrectionMode.enum.strict
+            ? { version: PROMPT_VERSION, text: STRICT_PROMPT }
+            : { version: REWRITE_PROMPT_VERSION, text: REWRITE_PROMPT },
+        ]),
+      ),
       parameters: Object.fromEntries(
         plan.models.map((model) => [model.id, { ...structuredClone(PARAMETERS), model: model.id }]),
       ),
@@ -119,9 +167,11 @@ export async function runBenchmark(options: Options) {
       status: 'running',
       errorCode: null,
       attempts: plan.cases.flatMap((item) =>
-        plan.models.map((model) => ({
+        plan.variants.map((variant) => ({
           caseId: item.id,
-          modelId: model.id,
+          modelId: variant.modelId,
+          mode: variant.mode,
+          variantId: variant.id,
           status: 'not-run' as const,
           correctionId: null,
           requestId: null,
@@ -160,14 +210,20 @@ export async function runBenchmark(options: Options) {
     let completed = 0
     for (const item of plan.cases) {
       let correctionId: string | undefined
-      for (const model of plan.models) {
+      for (const variant of plan.variants) {
         if (options.shouldStop?.()) {
           run.status = 'interrupted'
           break
         }
         const attempt = run.attempts[completed]!
         try {
-          const result = await correct(item.text, model.id, correctionId)
+          const result = await correct(
+            item.text,
+            variant.modelId,
+            correctionId,
+            undefined,
+            variant.mode,
+          )
           attempt.correctionId = result.correctionId
           attempt.requestId = result.requestId
           attempt.status = 'succeeded'

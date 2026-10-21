@@ -3,30 +3,32 @@ import { resolve } from 'node:path'
 import { parseArgs } from 'node:util'
 import { createInterface } from 'node:readline/promises'
 import { stdin, stdout } from 'node:process'
-import { BenchmarkInputError, prepareBenchmark, runBenchmark } from './run'
+import { BenchmarkInputError, prepareBenchmark, parseBenchmarkVariants, runBenchmark } from './run'
 import { parseConfig, readEnvironment } from '../correction-config'
 import { createTransport } from '../openrouter'
+import { PROMPT_VERSION, REWRITE_PROMPT_VERSION } from '../correction'
 
 // Human-only entry point. Never import or invoke this command from checks or startup.
 async function main() {
-  let values: { cases?: string; models?: string; execute?: boolean }
+  let values: { cases?: string; models?: string; variants?: string; execute?: boolean }
   try {
     values = parseArgs({
       options: {
         cases: { type: 'string' },
         models: { type: 'string' },
+        variants: { type: 'string' },
         execute: { type: 'boolean' },
       },
       allowPositionals: false,
     }).values
   } catch {
     throw new BenchmarkInputError(
-      'Usage: npm run benchmark -w apps/server -- --cases <file.json> --models <id,id> [--execute]',
+      'Usage: npm run benchmark -w apps/server -- --cases <file.json> (--models <id,id> | --variants <model:mode,model:mode>) [--execute]',
     )
   }
-  if (!values.cases || !values.models)
+  if (!values.cases || (!values.models && !values.variants) || (values.models && values.variants))
     throw new BenchmarkInputError(
-      'Both --cases and --models are required. No default models are selected.',
+      'Provide --cases and exactly one of --models or --variants. No default models are selected.',
     )
   let cases: unknown
   try {
@@ -34,13 +36,15 @@ async function main() {
   } catch {
     throw new BenchmarkInputError('Could not read the cases JSON file.')
   }
-  const models = values.models.split(',').map((id) => id.trim())
-  const plan = prepareBenchmark(cases, models)
+  const models = values.models?.split(',').map((id) => id.trim())
+  const variants =
+    values.variants === undefined ? undefined : parseBenchmarkVariants(values.variants)
+  const plan = prepareBenchmark(cases, models, variants)
   console.log(
-    `Prompt: strict-v3\nSentences: ${plan.cases.length}\nModels: ${plan.models.map((model) => model.name).join(', ')}\nMaximum requests: ${plan.maxRequests}`,
+    `Prompts: ${[...new Set(plan.variants.map((variant) => (variant.mode === 'strict' ? PROMPT_VERSION : REWRITE_PROMPT_VERSION)))].join(', ')}\nSentences: ${plan.cases.length}\nVariants: ${plan.variants.map((variant) => variant.name).join(', ')}\nMaximum requests: ${plan.maxRequests}`,
   )
   console.log(
-    'One request per sentence/model pair; no retries. Stop on first failure. Monetary cost is not capped.',
+    'One request per sentence/model/mode combination; no retries. Stop on first failure. Monetary cost is not capped.',
   )
   if (!values.execute) {
     console.log('Preview only. No network calls or run files created.')
@@ -81,6 +85,7 @@ async function main() {
     const result = await runBenchmark({
       cases,
       models,
+      variants,
       outputRoot: resolve(__dirname, '../../benchmark-data/runs'),
       transport: createTransport(config),
       shouldStop: () => stopping,

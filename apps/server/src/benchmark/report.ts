@@ -2,15 +2,15 @@ import type { HistoryRequest } from '@gramota/contracts'
 import type { BenchmarkRun } from './run'
 
 export function benchmarkSummary(run: BenchmarkRun, requests: Record<string, HistoryRequest>) {
-  return run.models.map((model) => {
-    const attempts = run.attempts.filter((attempt) => attempt.modelId === model.id)
+  return run.variants.map((variant) => {
+    const attempts = run.attempts.filter((attempt) => attempt.variantId === variant.id)
     const sent = attempts.filter((attempt) => attempt.status !== 'not-run')
     const costs = sent.map((attempt) =>
       attempt.requestId ? (requests[attempt.requestId]?.costUsd ?? null) : null,
     )
     const known = costs.filter((cost): cost is number => cost !== null)
     return {
-      ...model,
+      ...variant,
       succeeded: attempts.filter((attempt) => attempt.status === 'succeeded').length,
       failed: attempts.filter((attempt) => attempt.status === 'failed').length,
       notRun: attempts.filter((attempt) => attempt.status === 'not-run').length,
@@ -52,14 +52,14 @@ th,td { padding: 12px; border-bottom: 1px solid #2a3942; vertical-align: top; }
 .failed { color: #ffb8bc; } .not-run { color: #aebac1; }
 @media(max-width:720px) { body { padding: 16px; } .compare { grid-template-columns: minmax(0,1fr); } }
 </style></head><body>
-<h1>Model benchmark</h1><p id="run-status" role="status"></p>
+<h1>Model and mode benchmark</h1><p id="run-status" role="status"></p>
 <p class="muted">Manual quality review. These are single observations, not automatic quality scores.</p>
-<div class="summary"><table><caption>Results by model</caption><thead><tr><th>Model</th><th>Succeeded</th><th>Failed</th><th>Not run</th><th>Reported cost</th></tr></thead><tbody id="summary"></tbody></table></div>
+<div class="summary"><table><caption>Results by model and mode</caption><thead><tr><th>Model / mode</th><th>Succeeded</th><th>Failed</th><th>Not run</th><th>Reported cost</th></tr></thead><tbody id="summary"></tbody></table></div>
 <label for="sentence">Sentence<select id="sentence"></select></label>
 <h2>Original</h2><pre id="original" lang="ru" tabindex="0"></pre>
 <div class="compare">
-<section aria-label="Left model comparison"><label for="left">First model<select id="left"></select></label><div id="left-result"></div></section>
-<section aria-label="Right model comparison"><label for="right">Second model<select id="right"></select></label><div id="right-result"></div></section>
+<section aria-label="Left model and mode comparison"><label for="left">First model / mode<select id="left"></select></label><div id="left-result"></div></section>
+<section aria-label="Right model and mode comparison"><label for="right">Second model / mode<select id="right"></select></label><div id="right-result"></div></section>
 </div>
 <noscript>Enable JavaScript to use this offline comparison. Records are also saved in the adjacent SQLite database and run manifest.</noscript>
 <script id="benchmark-data" type="application/json">${data}</script>
@@ -71,7 +71,7 @@ const right = document.getElementById('right');
 const statusNames = { succeeded: 'Succeeded', failed: 'Failed', 'not-run': 'Not run' };
 function element(tag, text) { const node = document.createElement(tag); node.textContent = text; return node; }
 function number(value, suffix = '') { return value == null ? 'Unavailable' : Number(value).toLocaleString('en-US', { maximumSignificantDigits: 12 }) + suffix; }
-document.getElementById('run-status').textContent = run.promptVersion + ' · ' + run.status + ' · Started ' + run.startedAt + (run.endedAt ? ' · Ended ' + run.endedAt : '') + (run.errorCode ? ' · ' + run.errorCode : '');
+document.getElementById('run-status').textContent = Object.values(run.prompts).map(prompt => prompt.version).join(', ') + ' · ' + run.status + ' · Started ' + run.startedAt + (run.endedAt ? ' · Ended ' + run.endedAt : '') + (run.errorCode ? ' · ' + run.errorCode : '');
 for (const model of summary) {
   const row = document.createElement('tr');
   const cost = number(model.knownCostUsd, ' USD known') + (model.unknownCostCount ? ' (' + model.unknownCostCount + ' cost unavailable)' : '');
@@ -79,12 +79,12 @@ for (const model of summary) {
   document.getElementById('summary').append(row);
 }
 run.cases.forEach((item, index) => { const option = element('option', (index + 1) + ' · ' + item.id); option.value = item.id; sentence.append(option); });
-for (const select of [left, right]) for (const model of run.models) { const option = element('option', model.name); option.value = model.id; select.append(option); }
-right.selectedIndex = Math.min(1, run.models.length - 1);
-function panel(target, modelId) {
+for (const select of [left, right]) for (const model of run.variants) { const option = element('option', model.name); option.value = model.id; select.append(option); }
+right.selectedIndex = Math.min(1, run.variants.length - 1);
+function panel(target, variantId) {
   const container = document.getElementById(target);
   container.replaceChildren();
-  const attempt = run.attempts.find(item => item.caseId === sentence.value && item.modelId === modelId);
+  const attempt = run.attempts.find(item => item.caseId === sentence.value && item.variantId === variantId);
   const request = attempt.requestId ? requests[attempt.requestId] : null;
   const status = element('p', statusNames[attempt.status]); status.className = attempt.status; container.append(status);
   const output = element('pre', attempt.status === 'succeeded' && request ? request.correctedText : attempt.status === 'not-run' ? 'This comparison was not run.' : 'No successful result available.');
@@ -92,6 +92,8 @@ function panel(target, modelId) {
   if (attempt.errorCode) container.append(element('p', attempt.errorCode));
   if (request && request.errorMessage) container.append(element('p', request.errorMessage));
   const facts = [
+    ['Mode', attempt.mode === 'strict' ? 'Strict' : 'Gentle rewrite'],
+    ['Prompt version', run.prompts[attempt.mode].version],
     ['Returned model', request ? request.returnedModel ?? 'Unavailable' : 'Unavailable'],
     ['Provider', request ? request.provider ?? 'Unavailable' : 'Unavailable'],
     ['Generation time', number(request?.generationTimeMs, ' ms')],
