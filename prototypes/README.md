@@ -1,5 +1,23 @@
 # Approved UI prototypes
 
+## V2.3 Another opinion (awaiting visual review)
+
+- [Correction only](another-opinion.html), using the existing shared `theme.css`,
+  local Roboto and current dark/emerald palette. No production code changes.
+- Correct uses Gemma; the model selector is removed. Another opinion explicitly
+  requests Gemini, with its higher cost identified before the action.
+- Preview controls show Gemma only, Gemini loading, both results, and Gemini
+  failure. Gemma remains visible throughout; each completed result has its own
+  Text/Changes and Copy controls. Both samples deliberately agree.
+- Desktop retains Original/Result columns; mobile stacks Original then results.
+  Existing correction-inspector behavior is outside this layout mockup.
+- User approved the direction and Correction-only scope on 2026-10-21.
+  History is not prototyped: it displays only requests actually made. A Gemma-only
+  entry has no Gemini result or Another opinion action.
+- Open the HTML directly. Controls only switch static views; no model calls.
+  Paste, Correct and mode selection are disabled. Copy uses the clean sample
+  and reports clipboard failure honestly. Visual approval is pending.
+
 ## History redesign (awaiting visual review)
 
 - [History v2](history-v2.html): search, model/result/date filters, newest/oldest

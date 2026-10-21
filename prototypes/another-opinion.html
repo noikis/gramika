@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gramota · Another opinion prototype</title>
+  <link rel="stylesheet" href="theme.css">
+  <style>
+    .mode-field { display: grid; gap: var(--space-2); margin-bottom: var(--space-5); width: calc((100% - var(--space-5)) / 2); }
+    .results { min-width: 0; display: grid; gap: var(--space-6); align-items: start; }
+    .result-meta { display: block; color: var(--muted); font-size: var(--text-sm); font-weight: 400; }
+    .opinion-action { display: grid; gap: var(--space-3); margin-top: var(--space-5); padding-top: var(--space-4); border-top: var(--border-width) solid var(--border); }
+    .opinion-action small { font-size: var(--text-sm); }
+    .opinion-action button { justify-self: start; }
+    .v23 .editor-heading { min-height: calc(var(--heading-height) + var(--space-4)); }
+    .v23 .text-box { border-radius: var(--radius-sm); height: var(--editor-height); overflow: auto; }
+    .v23 .result { min-height: var(--editor-height); }
+    .result-actions { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-top: var(--space-3); }
+    .result-actions button { min-width: calc(var(--control) * 2); }
+    .v23 .toggle label { display: inline-flex; align-items: center; min-height: var(--control); }
+    .v23 .toggle input { width: var(--border-width); height: var(--border-width); }
+    .v23 .toggle { padding: 0; gap: 0; }
+    .v23 .toggle label { border: var(--border-width) solid transparent; }
+    .v23 .toggle label:has(input:checked) { border-color: var(--border); }
+    .v23 .toggle label:hover { color: var(--text); }
+    .v23 button:not(:disabled):active { border-color: var(--accent); }
+    .v23 ::selection { background: var(--accent); color: var(--accent-ink); }
+    .v23 textarea { caret-color: var(--accent); }
+    .loading-state, .error-state { padding: var(--space-4); background: var(--surface); border-radius: var(--radius-sm); }
+    .loading-state p, .error-state p { margin-bottom: var(--space-2); }
+    .loading-state small, .error-state small { display: block; color: var(--muted); }
+    .loading-state button, .error-state button { margin-top: var(--space-3); }
+    .v23 mark { background: var(--added-bg); color: var(--added); border-radius: var(--space-1); }
+    .v23 [hidden] { display: none; }
+    .v23 button:disabled { opacity: .6; }
+    .prototype-controls { border-top: var(--border-width) solid var(--border); padding-top: var(--space-4); }
+    .prototype-controls label { display: grid; gap: var(--space-2); margin-block: var(--space-3); color: var(--muted); font-size: var(--text-sm); }
+    .prototype-controls select { width: 100%; }
+    .prototype-controls p { max-width: 75ch; font-size: var(--text-sm); }
+    @media (min-width: 1120px) {
+      .v23:has(#scenario option[value="both"]:checked) .editors { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); }
+      .v23:has(#scenario option[value="both"]:checked) .results { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-5); }
+    }
+    .v23:has(#scenario option[value="ready"]:checked) .second-result,
+    .v23:has(#scenario option[value="loading"]:checked) .second-result,
+    .v23:has(#scenario option[value="error"]:checked) .second-result,
+    .v23:has(#scenario option[value="both"]:checked) .opinion-action,
+    .v23:not(:has(#scenario option[value="loading"]:checked)) .loading-state,
+    .v23:not(:has(#scenario option[value="error"]:checked)) .error-state,
+    .v23:has(#scenario option[value="loading"]:checked) .ask-opinion,
+    .v23:has(#scenario option[value="error"]:checked) .ask-opinion { display: none; }
+    @media (max-width: 720px) {
+      .mode-field { width: 100%; }
+      .opinion-action button { width: 100%; }
+      .v23 .editor-heading { gap: var(--space-2); }
+      .v23 .text-box { height: var(--editor-height-mobile); min-height: var(--editor-height-mobile); }
+      .v23 .result-actions button { width: auto; }
+      .prototype-controls { margin-top: var(--space-6); }
+    }
+  </style>
+</head>
+<body class="v23">
+<!-- Static, synthetic design reference. State controls only switch mock views. No API calls. -->
+<div class="shell">
+  <header>
+    <a class="brand" href="another-opinion.html">gramota</a>
+    <nav aria-label="Main navigation"><a href="another-opinion.html" aria-current="page">Correction</a><a href="history-v2.html">History</a></nav>
+  </header>
+  <main>
+    <div class="mode-field"><label for="mode">Mode</label><select id="mode" disabled><option>Strict</option><option>Gentle rewrite</option></select></div>
+    <div class="editors">
+      <section class="editor" aria-labelledby="original-title">
+        <div class="editor-heading"><h2 id="original-title"><label for="original">Original</label></h2><button type="button" disabled>Paste</button></div>
+        <textarea class="text-box" id="original" lang="ru" spellcheck="false" readonly>Здравствуйте Анна!
+
+Подскажите пожалуйста, можно ли перенести встречу на пятницу?
+
+Спасибо за помощ!</textarea>
+        <div class="editor-actions"><button class="primary" type="button" disabled>Correct</button></div>
+      </section>
+      <div class="results">
+        <section class="editor output" aria-labelledby="gemma-title">
+          <div class="editor-heading">
+            <h2 id="gemma-title">Result<span class="result-meta">Gemma 4</span></h2>
+          </div>
+          <div class="text-box result clean" lang="ru">Здравствуйте, Анна!
+
+Подскажите, пожалуйста, можно ли перенести встречу на пятницу?
+
+Спасибо за помощь!</div>
+          <div class="text-box result diff" lang="ru">Здравствуйте<mark>,</mark> Анна!
+
+Подскажите<mark>,</mark> пожалуйста, можно ли перенести встречу на пятницу?
+
+Спасибо за <mark>помощь</mark>!</div>
+          <div class="result-actions">
+            <div class="toggle" role="group" aria-label="Gemma result view">
+              <label><input type="radio" name="gemma-view">Text</label>
+              <label><input class="view-changes" type="radio" name="gemma-view" checked>Changes</label>
+            </div>
+            <button type="button" data-copy aria-label="Copy Gemma result">Copy</button>
+          </div>
+          <p class="clipboard-status" role="status"></p>
+          <div class="opinion-action">
+            <small id="opinion-cost">Gemini 3.1 Flash Lite · Higher cost</small>
+            <button class="ask-opinion" type="button" data-state="both" aria-describedby="opinion-cost">Another opinion</button>
+            <div class="loading-state" role="status"><p>Getting another opinion...</p><small>Your Gemma result is still available.</small><button type="button" disabled>Requesting Gemini...</button></div>
+            <div class="error-state"><p class="error" role="alert">Gemini couldn’t return an opinion.</p><small>Your Gemma result is still available.</small><button type="button" data-state="both" aria-describedby="opinion-cost">Retry another opinion</button></div>
+          </div>
+        </section>
+        <section class="editor output second-result" aria-labelledby="gemini-title">
+          <div class="editor-heading">
+            <h2 id="gemini-title">Another opinion<span class="result-meta">Gemini 3.1 Flash Lite</span></h2>
+          </div>
+          <div class="text-box result clean" lang="ru">Здравствуйте, Анна!
+
+Подскажите, пожалуйста, можно ли перенести встречу на пятницу?
+
+Спасибо за помощь!</div>
+          <div class="text-box result diff" lang="ru">Здравствуйте<mark>,</mark> Анна!
+
+Подскажите<mark>,</mark> пожалуйста, можно ли перенести встречу на пятницу?
+
+Спасибо за <mark>помощь</mark>!</div>
+          <div class="result-actions">
+            <div class="toggle" role="group" aria-label="Gemini result view">
+              <label><input type="radio" name="gemini-view">Text</label>
+              <label><input class="view-changes" type="radio" name="gemini-view" checked>Changes</label>
+            </div>
+            <button type="button" data-copy aria-label="Copy Gemini result">Copy</button>
+          </div>
+          <p class="clipboard-status" role="status"></p>
+        </section>
+      </div>
+    </div>
+  </main>
+  <footer class="prototype-controls">
+    <details>
+      <summary>Prototype controls</summary>
+      <label for="scenario">Preview state<select id="scenario"><option value="ready">Gemma result · Another opinion available</option><option value="loading">Gemini loading · Gemma retained</option><option value="both">Both results retained</option><option value="error">Gemini failed · Gemma retained</option></select></label>
+      <p>Static sample, no model requests. Another opinion and Retry switch directly to the completed sample. Mode, Paste and Correct are disabled. Resize the browser to review the mobile layout.</p>
+      <p>Both models may return the same correction, as in this sample. History should show only requests actually made; it has no Another opinion action. Text/Changes demonstrates presentation only; the existing correction inspector is unchanged.</p>
+    </details>
+  </footer>
+</div>
+<script>
+  document.querySelectorAll('[data-state]').forEach(button => button.addEventListener('click', () => {
+    document.querySelector('#scenario').value = button.dataset.state;
+  }));
+  document.querySelectorAll('[data-copy]').forEach(button => button.addEventListener('click', async () => {
+    const result = button.closest('.output');
+    const status = result.querySelector('[role="status"]');
+    try {
+      await navigator.clipboard.writeText(result.querySelector('.clean').textContent);
+      status.textContent = 'Copied';
+    } catch {
+      result.querySelector('input[type="radio"]').checked = true;
+      status.textContent = 'Clipboard unavailable. Select the result and copy manually.';
+    }
+  }));
+</script>
+</body>
+</html>
