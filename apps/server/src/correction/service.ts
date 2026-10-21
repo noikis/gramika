@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import {
   CorrectionInput,
+  CorrectionMode,
   DEFAULT_MODEL_ID,
   TIMEOUT_MS,
   ERROR_MESSAGES,
@@ -16,6 +17,7 @@ import {
   type Outcome,
 } from './types'
 import { PARAMETERS, PROMPT_VERSION, STRICT_PROMPT } from './prompt'
+import { REWRITE_PROMPT, REWRITE_PROMPT_VERSION } from './rewrite-prompt'
 
 export class AttemptError extends CorrectionError {
   constructor(
@@ -48,12 +50,17 @@ export function createCorrectionService(deps: Dependencies) {
     modelId: string = DEFAULT_MODEL_ID,
     correctionId?: string,
     onRepositoryFailure = deps.onRepositoryFailure,
+    mode: CorrectionMode = CorrectionMode.enum.strict,
   ) {
-    const input = CorrectionInput.safeParse({ text, modelId, correctionId })
+    const input = CorrectionInput.safeParse({ text, modelId, correctionId, mode })
     if (!input.success) throw new AttemptError(ErrorCode.enum.INVALID_INPUT, null)
     if (!deps.isAvailable || !deps.transport)
       throw new AttemptError(ErrorCode.enum.NOT_CONFIGURED, null)
     if (!deps.repository) throw new AttemptError(ErrorCode.enum.STORAGE_ERROR, null)
+
+    const isRewrite = input.data.mode === CorrectionMode.enum['gentle-rewrite']
+    const promptVersion = isRewrite ? REWRITE_PROMPT_VERSION : PROMPT_VERSION
+    const prompt = isRewrite ? REWRITE_PROMPT : STRICT_PROMPT
 
     const ids = { correctionId: correctionId ?? uuid(), requestId: uuid() }
     const requestParameters = {
@@ -71,7 +78,8 @@ export function createCorrectionService(deps: Dependencies) {
         ids,
         originalText: text,
         modelId,
-        promptVersion: PROMPT_VERSION,
+        mode: input.data.mode,
+        promptVersion,
         parameters: requestParameters,
         startedAt: now(),
         isRepeat: correctionId !== undefined,
@@ -104,7 +112,7 @@ export function createCorrectionService(deps: Dependencies) {
         {
           ...requestParameters,
           messages: [
-            { role: MessageRole.enum.system, content: STRICT_PROMPT },
+            { role: MessageRole.enum.system, content: prompt },
             { role: MessageRole.enum.user, content: text },
           ],
         },
@@ -151,6 +159,7 @@ export function createCorrectionService(deps: Dependencies) {
       originalText: text,
       correctedText: correctedText!,
       modelId: input.data.modelId,
+      mode: input.data.mode,
     }
   }
 }

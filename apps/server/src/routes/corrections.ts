@@ -31,6 +31,7 @@ export async function correctionRoutes(
               parsed.data.modelId,
               parsed.data.correctionId,
               createCorrectionStorageFailureLogger(request),
+              parsed.data.mode,
             ),
           )
         } catch (error) {

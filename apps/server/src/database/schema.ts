@@ -9,12 +9,8 @@ export const corrections = sqliteTable(
     createdAt: text('created_at').notNull(),
     originalText: text('original_text').notNull(),
     language: text('language').$type<HistoryDetail['language']>().notNull(),
-    mode: text('mode').$type<HistoryDetail['mode']>().notNull(),
   },
-  (table) => [
-    check('corrections_language', sql`${table.language} = 'ru'`),
-    check('corrections_mode', sql`${table.mode} = 'strict'`),
-  ],
+  (table) => [check('corrections_language', sql`${table.language} = 'ru'`)],
 )
 
 export const modelRequests = sqliteTable(
@@ -25,6 +21,7 @@ export const modelRequests = sqliteTable(
       .notNull()
       .references(() => corrections.id),
     requestedModel: text('requested_model').notNull(),
+    mode: text('mode').$type<HistoryRequest['mode']>().notNull().default('strict'),
     returnedModel: text('returned_model'),
     provider: text('provider'),
     openrouterGenerationId: text('openrouter_generation_id'),
@@ -55,6 +52,7 @@ export const modelRequests = sqliteTable(
     errorMessage: text('error_message'),
   },
   (table) => [
+    check('requests_mode', sql`${table.mode} IN ('strict', 'gentle-rewrite')`),
     check('requests_parameters_json', sql`json_valid(${table.parameters})`),
     ...[
       table.appRequestTimeMs,

@@ -1,6 +1,13 @@
 import { useId, useRef, useState } from 'react'
 import type { HistoryRequest as SavedRequest } from '@gramota/contracts'
-import { formatCost, formatCount, formatDate, formatTime, modelName } from '../lib/history-format'
+import {
+  formatCost,
+  formatCount,
+  formatDate,
+  formatTime,
+  modelName,
+  modeLabels,
+} from '../lib/history-format'
 import { writeClipboardText } from '../lib/clipboard'
 import { notify } from '../lib/notifications'
 import { ResultView, type ResultViewMode } from './result-view'
@@ -120,12 +127,14 @@ export function HistoryRequest({
           view={view}
           onViewChange={setView}
           labelId={labelId}
-          title={modelName(request.requestedModel)}
+          title={`${modelName(request.requestedModel)} · ${modeLabels[request.mode]}`}
         />
       ) : (
         <>
           <div className="editor-heading">
-            <h2 id={labelId}>{modelName(request.requestedModel)}</h2>
+            <h2 id={labelId}>
+              {modelName(request.requestedModel)} · {modeLabels[request.mode]}
+            </h2>
           </div>
           <p className="history-status">{request.status === 'pending' ? 'Pending' : 'Failed'}</p>
           {request.errorMessage && <p className="history-error">{request.errorMessage}</p>}

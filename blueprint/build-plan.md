@@ -58,7 +58,7 @@ use the current UI with necessary adjustments; UI direction is chosen at V2.6.
 
 - [x] **V2.1 — Improve diff readability:** make dense edits and substantial word changes easier to review. Completed and approved by the user on 2026-10-21; Git completion/landing remains separate.
 - [ ] **V2.1a — History costs in Russian kopecks:** next small follow-up before V2.2. Convert all displayed history costs from their stored USD values to kopecks in the frontend using a free USD/RUB exchange-rate API; use a Russian kopeck unit label. If the API is unavailable or conversion fails, show the USD amount instead. Planning only; not implemented. See the contract below.
-- [ ] **V2.2 — Gentle rewrite mode:** allow improvements to phrasing and flow while preserving meaning and tone; retain Strict correction.
+- [ ] **V2.2 - Rewrite mode:** explicitly request alternative wording, adapting the extent of rewriting to the text while preserving meaning and voice; retain Strict as the default. Working UI label: Gentle rewrite. Approved implementation steps are in the active V2.2 spec on feature/rewrite-mode.
 - [ ] **V2.3 — Another opinion:** replace the model selector with Gemma as the normal correction action and an explicit Gemini second opinion; retain both results.
 - [ ] **V2.4 — Selected-correction explanations:** explain a requested word or phrase correction rather than the whole result; save explanations for reuse.
 - [ ] **V2.5 — Soft-delete history:** allow history records to be removed from normal views while retaining them in storage.

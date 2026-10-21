@@ -1,4 +1,4 @@
-import { MODELS } from '@gramota/contracts'
+import { MODELS, type CorrectionMode } from '@gramota/contracts'
 export { formatCost } from './cost-format'
 
 export function modelName(id: string) {
@@ -26,4 +26,9 @@ export function formatTime(value: number | null) {
   return value === null
     ? 'Unavailable'
     : value.toLocaleString('en-US', { maximumSignificantDigits: 12 }) + ' ms'
+}
+
+export const modeLabels: Record<CorrectionMode, string> = {
+  strict: 'Strict',
+  'gentle-rewrite': 'Gentle rewrite',
 }

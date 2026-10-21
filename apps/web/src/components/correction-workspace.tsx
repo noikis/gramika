@@ -3,6 +3,8 @@ import type { useCorrection } from '../hooks/use-correction'
 import { Button } from './ui/button'
 import { Textarea } from './ui/textarea'
 import { ResultView } from './result-view'
+import { CorrectionMode } from '@gramota/contracts'
+import { modeLabels } from '../lib/history-format'
 
 type Draft = ReturnType<typeof useCorrectionDraft>
 type Correction = ReturnType<typeof useCorrection>
@@ -64,6 +66,19 @@ export function CorrectionWorkspace({
     <>
       <h1 className="sr-only">Correction</h1>
       <div className="model-control">
+        <label htmlFor="mode">Mode</label>
+        <select
+          id="mode"
+          value={correction.mode}
+          disabled={correction.pending}
+          onChange={(event) => correction.selectMode(event.target.value)}
+        >
+          {CorrectionMode.options.map((mode) => (
+            <option key={mode} value={mode}>
+              {modeLabels[mode]}
+            </option>
+          ))}
+        </select>
         <label htmlFor="model">Model</label>
         <select
           id="model"
@@ -125,6 +140,7 @@ export function CorrectionWorkspace({
               view={correction.resultView}
               onViewChange={correction.setResultView}
               labelId="result-title"
+              title={`Result · ${modeLabels[correction.visibleResult.mode]}`}
             />
           ) : (
             <>

@@ -21,6 +21,7 @@ export function createCorrectionRepository(db: DatabaseClient): CorrectionReposi
       ids,
       originalText,
       modelId,
+      mode = 'strict',
       promptVersion,
       parameters,
       startedAt,
@@ -42,7 +43,6 @@ export function createCorrectionRepository(db: DatabaseClient): CorrectionReposi
                 createdAt: startedAt,
                 originalText,
                 language: 'ru',
-                mode: 'strict',
               })
               .run()
           }
@@ -52,6 +52,7 @@ export function createCorrectionRepository(db: DatabaseClient): CorrectionReposi
               id: ids.requestId,
               correctionId: ids.correctionId,
               requestedModel: modelId,
+              mode,
               promptVersion,
               parameters,
               startedAt,

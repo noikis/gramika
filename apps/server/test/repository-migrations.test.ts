@@ -69,7 +69,7 @@ test('opens an explicitly registered baseline, preserving history, preferences, 
     assert.equal(first.requests[0].inputTokens, null)
     assert.equal(database.modelPreferences.get(), MODELS[1].id)
     const journal = database.db.prepare('SELECT hash, created_at FROM __drizzle_migrations').all()
-    assert.equal(journal.length, 1)
+    assert.equal(journal.length, 2)
     database.close()
     database = new SqliteDatabase(path)
     assert.deepEqual(database.history.get(correctionId), first)
@@ -137,7 +137,7 @@ test('fresh migration and explicit baseline registration enforce the same reposi
           )
         }
         assert.throws(() => database.db.exec("UPDATE corrections SET language = 'en'"))
-        assert.throws(() => database.db.exec("UPDATE corrections SET mode = 'minimal'"))
+        assert.throws(() => database.db.exec("UPDATE model_requests SET mode = 'minimal'"))
         assert.throws(() => database.db.exec("INSERT INTO model_preference VALUES (2, 'other')"))
         assert.deepEqual(database.history.get(correctionId)?.requests[0].parameters, {
           reasoning: { enabled: false },
@@ -195,7 +195,7 @@ test('failed Drizzle migration rolls back tables, seed and version and can resum
   try {
     assert.equal(resumed.modelPreferences.get(), DEFAULT_MODEL_ID)
     assert.equal(resumed.history.list().total, 0)
-    assert.equal(resumed.db.prepare('SELECT * FROM __drizzle_migrations').all().length, 1)
+    assert.equal(resumed.db.prepare('SELECT * FROM __drizzle_migrations').all().length, 2)
   } finally {
     resumed.close()
   }

@@ -85,9 +85,17 @@ English and French remain future candidates. Russian is the initial acceptance t
   fails. Stored costs remain USD; no backend conversion or paid API. Provider,
   display precision and rate-reuse details belong in the feature spec. Planned
   only; implementation has not been authorized.
-- **Gentle rewrite mode:** retain Strict for objective corrections and add a mode
-  with more freedom to improve phrasing and flow while preserving meaning and
-  tone. The exact degree of rewriting will be agreed in its feature spec.
+- **Rewrite mode (working UI label: Gentle rewrite):** retain Strict as the
+  default, unchanged correction mode. Explicit Rewrite requests different wording:
+  minimal natural alternatives for already-good text, phrase improvements for
+  awkward text, simplification for unnecessary repetition, and sentence
+  restructuring for tangled text. Preserve meaning, facts, uncertainty, intent,
+  emotion, politeness and voice; add no content. Preserve paragraphs and allow
+  sentence splitting/combining within them. No strength selector. Use the same
+  versioned prompt for both models. Remember mode only while the app is open,
+  start Strict after reload, and label results by mode within the same history
+  group for repeated unchanged input. If a model still returns identical text,
+  show honest No changes feedback without automatic retries. See the V2.2 spec.
 - **Another opinion:** replace the model selector with Gemma as the normal
   correction action and an explicit Gemini second opinion. Retain both results;
   using Gemini does not change the next message's default model or imply better

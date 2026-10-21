@@ -17,8 +17,12 @@ export const OriginalText = z
     'Invalid Unicode text.',
   )
 
+export const CorrectionMode = z.enum(['strict', 'gentle-rewrite'])
+export type CorrectionMode = z.infer<typeof CorrectionMode>
+
 export const CorrectionInput = z.strictObject({
   text: OriginalText,
+  mode: CorrectionMode.default(CorrectionMode.enum.strict),
   modelId: ModelId,
   correctionId: z.uuid().optional(),
 })
@@ -36,6 +40,7 @@ export const CorrectionSuccess = z.strictObject({
   correctionId: z.uuid(),
   requestId: z.uuid(),
   originalText: OriginalText,
+  mode: CorrectionMode,
   correctedText: z.string().refine((text) => text.trim().length > 0),
   modelId: ModelId,
 })

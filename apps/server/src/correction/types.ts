@@ -1,4 +1,4 @@
-import type { ErrorCode } from '@gramota/contracts'
+import type { CorrectionMode, ErrorCode } from '@gramota/contracts'
 import { z } from 'zod'
 
 export const MessageRole = z.enum(['system', 'user', 'assistant'])
@@ -38,6 +38,7 @@ export type StartAttempt = {
   ids: Attempt
   originalText: string
   modelId: string
+  mode?: CorrectionMode
   promptVersion: string
   parameters: object
   startedAt: string

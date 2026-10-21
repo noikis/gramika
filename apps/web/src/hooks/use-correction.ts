@@ -3,6 +3,7 @@ import {
   CorrectionConfig,
   CorrectionFailure,
   CorrectionInput,
+  CorrectionMode,
   CorrectionSuccess,
   OriginalText,
   ModelPreference,
@@ -24,6 +25,7 @@ export function useCorrection(text: string) {
   const [savingModel, setSavingModel] = useState(false)
   const [modelError, setModelError] = useState('')
   const [retryModel, setRetryModel] = useState<string | null>(null)
+  const [mode, setMode] = useState<CorrectionMode>(CorrectionMode.enum.strict)
   const [pending, setPending] = useState(false)
   const [result, setResult] = useState<CorrectionResult | null>(null)
   const [resultView, setResultView] = useState<ResultViewMode>('changes')
@@ -79,7 +81,17 @@ export function useCorrection(text: string) {
     }
   }
 
+  function selectMode(value: string) {
+    const parsed = CorrectionMode.safeParse(value)
+    if (parsed.success && !sending.current) setMode(parsed.data)
+  }
+
   const original = text.trim()
+  const draftRevision = useRef(0)
+  useEffect(() => {
+    association.current = null
+    draftRevision.current += 1
+  }, [text])
   const validation = OriginalText.safeParse(original)
   const visibleResult = result?.originalText === original ? result : null
 
@@ -93,6 +105,8 @@ export function useCorrection(text: string) {
   async function correct() {
     if (sending.current || saving.current || !canCorrect || !config?.modelId) return
     const modelId = config.modelId
+    const submittedMode = mode
+    const submittedRevision = draftRevision.current
     const correctionId =
       association.current?.original === original ? association.current.correctionId : undefined
     if (!correctionId) association.current = null
@@ -104,12 +118,18 @@ export function useCorrection(text: string) {
       const response = await fetch('/api/corrections', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(CorrectionInput.parse({ text: original, modelId, correctionId })),
+        body: JSON.stringify(
+          CorrectionInput.parse({ text: original, modelId, correctionId, mode: submittedMode }),
+        ),
       })
       const payload: unknown = await response.json()
       if (!response.ok) {
         const failure = CorrectionFailure.safeParse(payload)
-        if (failure.success && failure.data.correctionId) {
+        if (
+          failure.success &&
+          failure.data.correctionId &&
+          draftRevision.current === submittedRevision
+        ) {
           association.current = { original, correctionId: failure.data.correctionId }
         } else if (failure.success && failure.data.error.code === 'INVALID_INPUT')
           association.current = null
@@ -125,10 +145,12 @@ export function useCorrection(text: string) {
       if (
         value.originalText !== original ||
         value.modelId !== modelId ||
+        value.mode !== submittedMode ||
         (correctionId && value.correctionId !== correctionId)
       )
         throw Error('Mismatched correction')
-      association.current = { original, correctionId: value.correctionId }
+      if (draftRevision.current === submittedRevision)
+        association.current = { original, correctionId: value.correctionId }
       setResultView('changes')
       setResult(value)
       notify(
@@ -171,6 +193,8 @@ export function useCorrection(text: string) {
     text && !validation.success ? (validation.error.issues[0]?.message ?? '') : ''
   return {
     config,
+    mode,
+    selectMode,
     configFailed,
     reloadConfig,
     savingModel,

@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { MAX_INPUT_CHARACTERS } from './correction.js'
+import { CorrectionMode, MAX_INPUT_CHARACTERS } from './correction.js'
 
 const NullableCount = z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).nullable()
 
@@ -21,6 +21,7 @@ export const HistoryRequest = z
   .strictObject({
     id: z.uuid(),
     requestedModel: z.string(),
+    mode: CorrectionMode,
     returnedModel: NullableText,
     provider: NullableText,
     openrouterGenerationId: NullableText,
@@ -104,7 +105,6 @@ export const HistoryDetail = z.strictObject({
   createdAt: Timestamp,
   originalText: z.string(),
   language: z.literal('ru'),
-  mode: z.literal('strict'),
   requests: z.array(HistoryRequest),
 })
 export type HistoryDetail = z.infer<typeof HistoryDetail>
