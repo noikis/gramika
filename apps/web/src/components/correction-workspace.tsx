@@ -1,5 +1,5 @@
-import type { useCorrectionDraft } from '../use-correction-draft'
-import type { useCorrection } from '../use-correction'
+import type { useCorrectionDraft } from '../hooks/use-correction-draft'
+import type { useCorrection } from '../hooks/use-correction'
 import { Button } from './ui/button'
 import { Textarea } from './ui/textarea'
 import { ResultView } from './result-view'

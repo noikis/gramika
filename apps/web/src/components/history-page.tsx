@@ -9,10 +9,11 @@ import {
 import { formatDate, modelName } from '../lib/history-format'
 import { HistoryRequest } from './history-request'
 import { Button } from './ui/button'
-import { useHistory } from '../use-history'
+import { useHistory } from '../hooks/use-history'
+import { useExchangeRate } from '../hooks/use-exchange-rate'
 import './history.css'
 
-function HistoryEntry({ item }: { item: HistorySummary }) {
+function HistoryEntry({ item, rate }: { item: HistorySummary; rate: number | null }) {
   const [detail, setDetail] = useState<HistoryDetail | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -100,7 +101,12 @@ function HistoryEntry({ item }: { item: HistorySummary }) {
               {detail.originalText}
             </div>
             {detail.requests.map((request) => (
-              <HistoryRequest key={request.id} request={request} original={detail.originalText} />
+              <HistoryRequest
+                key={request.id}
+                request={request}
+                original={detail.originalText}
+                rate={rate}
+              />
             ))}
             {detail.requests.length === 0 && (
               <p className="clipboard-feedback">No recorded requests.</p>
@@ -130,6 +136,7 @@ function dateBoundary(value: string, nextDay = false) {
 }
 
 export function HistoryPage() {
+  const rate = useExchangeRate()
   const [search, setSearch] = useState('')
   const [filters, setFilters] = useState(initialFilters)
   const history = useHistory({
@@ -170,6 +177,9 @@ export function HistoryPage() {
   return (
     <section className="history-page" aria-labelledby="history-title" aria-busy={loading}>
       <h1 id="history-title">History</h1>
+      <small className="history-cost-note">
+        Approximate costs. <a href="https://www.exchangerate-api.com">Rates By Exchange Rate API</a>
+      </small>
       <form
         className="history-tools"
         onSubmit={(event) => event.preventDefault()}
@@ -295,7 +305,7 @@ export function HistoryPage() {
             <>
               <div className="history-list" key={JSON.stringify(filters)}>
                 {data.items.map((item) => (
-                  <HistoryEntry key={item.id} item={item} />
+                  <HistoryEntry key={item.id} item={item} rate={rate} />
                 ))}
               </div>
               <nav className="history-pagination" aria-label="History pagination">

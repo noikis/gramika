@@ -10,10 +10,10 @@ import {
   type CorrectionResult,
   type PublicConfig,
 } from '@gramota/contracts'
-import type { ResultViewMode } from './components/result-view'
-import { writeClipboardText } from './lib/clipboard'
-import { notify } from './lib/notifications'
-import { modelName } from './lib/history-format'
+import type { ResultViewMode } from '../components/result-view'
+import { writeClipboardText } from '../lib/clipboard'
+import { notify } from '../lib/notifications'
+import { modelName } from '../lib/history-format'
 
 type Feedback = { original: string; message: string }
 

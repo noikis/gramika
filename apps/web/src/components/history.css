@@ -287,6 +287,15 @@
   margin-bottom: var(--space-4);
   color: var(--muted);
 }
+.history-cost-note {
+  display: block;
+  color: var(--muted);
+  margin-bottom: var(--space-3);
+}
+.history-cost-note a {
+  color: inherit;
+  text-decoration: underline;
+}
 @media (max-width: 720px) {
   .filter-fields,
   .request-metrics {

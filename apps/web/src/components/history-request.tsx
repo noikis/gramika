@@ -6,12 +6,12 @@ import { notify } from '../lib/notifications'
 import { ResultView, type ResultViewMode } from './result-view'
 import { Button } from './ui/button'
 
-function RequestMetrics({ request }: { request: SavedRequest }) {
+export function RequestMetrics({ request, rate }: { request: SavedRequest; rate: number | null }) {
   const primary = [
     ['Generation time', formatTime(request.generationTimeMs)],
     ['Input tokens', formatCount(request.inputTokens)],
     ['Output tokens', formatCount(request.outputTokens)],
-    ['Cost', formatCost(request.costUsd)],
+    ['Cost', formatCost(request.costUsd, rate)],
   ]
   const routing = [
     ['Requested model', request.requestedModel],
@@ -27,9 +27,9 @@ function RequestMetrics({ request }: { request: SavedRequest }) {
     ['Reasoning tokens', formatCount(request.reasoningTokens)],
     ['Cache-read tokens', formatCount(request.cachedInputTokens)],
     ['Cache-write tokens', formatCount(request.cacheWriteTokens)],
-    ['Upstream cost', formatCost(request.upstreamInferenceCostUsd)],
-    ['Upstream input cost', formatCost(request.upstreamPromptCostUsd)],
-    ['Upstream output cost', formatCost(request.upstreamCompletionCostUsd)],
+    ['Upstream cost', formatCost(request.upstreamInferenceCostUsd, rate)],
+    ['Upstream input cost', formatCost(request.upstreamPromptCostUsd, rate)],
+    ['Upstream output cost', formatCost(request.upstreamCompletionCostUsd, rate)],
   ]
   const diagnostics = [
     ['Started', formatDate(request.startedAt)],
@@ -83,7 +83,15 @@ function RequestMetrics({ request }: { request: SavedRequest }) {
   )
 }
 
-export function HistoryRequest({ request, original }: { request: SavedRequest; original: string }) {
+export function HistoryRequest({
+  request,
+  original,
+  rate,
+}: {
+  request: SavedRequest
+  original: string
+  rate: number | null
+}) {
   const labelId = useId()
   const [view, setView] = useState<ResultViewMode>('changes')
   const [copying, setCopying] = useState(false)
@@ -135,7 +143,7 @@ export function HistoryRequest({ request, original }: { request: SavedRequest; o
           </div>
         </>
       )}
-      <RequestMetrics request={request} />
+      <RequestMetrics request={request} rate={rate} />
     </section>
   )
 }

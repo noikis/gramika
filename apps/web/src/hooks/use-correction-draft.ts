@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { notify } from './lib/notifications'
+import { notify } from '../lib/notifications'
 
 function clipboardErrorMessage(error: unknown) {
   if (error instanceof DOMException && ['NotAllowedError', 'SecurityError'].includes(error.name)) {
