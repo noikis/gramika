@@ -12,6 +12,7 @@ export type ChangeSegment =
     }
 type ArrayChange = { value: string[]; added?: boolean; removed?: boolean }
 type ComparisonBudget = { remaining: number }
+type Passage = { original: string; corrected: string }
 
 const words = new Intl.Segmenter('ru', { granularity: 'word' })
 const graphemes = new Intl.Segmenter('ru', { granularity: 'grapheme' })
@@ -115,10 +116,39 @@ function joinsWord(parts: string[], target: string, fromEnd: boolean) {
   return false
 }
 
+function groupAdjacentCorrections(passages: Passage[]) {
+  const grouped: Passage[] = []
+  for (let index = 0; index < passages.length; index++) {
+    const current = { ...passages[index] }
+    while (passages[index].original !== passages[index].corrected) {
+      const previous = passages[index]
+      const separator = passages[index + 1]
+      const next = passages[index + 2]
+      if (
+        !separator ||
+        separator.original !== separator.corrected ||
+        !/^\p{Zs}+$/u.test(separator.original) ||
+        !next ||
+        next.original === next.corrected ||
+        ![previous.original, previous.corrected].every((text) =>
+          /[\p{L}\p{N}\p{M}]$/u.test(text),
+        ) ||
+        ![next.original, next.corrected].every((text) => /^[\p{L}\p{N}\p{M}]/u.test(text))
+      )
+        break
+      current.original += separator.original + next.original
+      current.corrected += separator.corrected + next.corrected
+      index += 2
+    }
+    grouped.push(current)
+  }
+  return grouped
+}
+
 export function diffText(original: string, corrected: string): ChangeSegment[] {
   if (original === corrected) return original ? [{ kind: 'equal', original, corrected }] : []
   const budget = { remaining: COMPARISON_BUDGET }
-  const passages: { original: string; corrected: string }[] = []
+  const passages: Passage[] = []
   const before = tokens(original)
   const after = tokens(corrected)
   // Fall back at word boundaries as well: a large rewrite stays one readable passage.
@@ -213,13 +243,21 @@ export function diffText(original: string, corrected: string): ChangeSegment[] {
   flush()
   let originalOffset = 0
   let correctedOffset = 0
-  return passages.map(({ original: oldText, corrected: newText }): ChangeSegment => {
-    const originalRange = { start: originalOffset, end: originalOffset + oldText.length }
-    const correctedRange = { start: correctedOffset, end: correctedOffset + newText.length }
-    originalOffset = originalRange.end
-    correctedOffset = correctedRange.end
-    return oldText === newText
-      ? { kind: 'equal', original: oldText, corrected: newText }
-      : { kind: 'correction', original: oldText, corrected: newText, originalRange, correctedRange }
-  })
+  return groupAdjacentCorrections(passages).map(
+    ({ original: oldText, corrected: newText }): ChangeSegment => {
+      const originalRange = { start: originalOffset, end: originalOffset + oldText.length }
+      const correctedRange = { start: correctedOffset, end: correctedOffset + newText.length }
+      originalOffset = originalRange.end
+      correctedOffset = correctedRange.end
+      return oldText === newText
+        ? { kind: 'equal', original: oldText, corrected: newText }
+        : {
+            kind: 'correction',
+            original: oldText,
+            corrected: newText,
+            originalRange,
+            correctedRange,
+          }
+    },
+  )
 }

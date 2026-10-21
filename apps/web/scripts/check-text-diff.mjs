@@ -135,7 +135,40 @@ for (let index = 0; index < 200; index++) verify(sample(), sample())
 
 const units = (original, corrected) =>
   diffText(original, corrected).filter((part) => part.kind === 'correction')
-assert.equal(units('кот пёс', 'кит лис').length, 2)
+assert.equal(units('кот пёс', 'кит лис').length, 1)
+const groupedCases = [
+  ['никого подтверждение', 'никакого подтверждения'],
+  ['кот  пёс', 'кит  лис'],
+  ['кот\u00a0пёс', 'кит\u00a0лис'],
+  ['кот пёс дом', 'кит лис дым'],
+  ['е́нот кот', 'е́ноты кит'],
+]
+for (const [original, corrected] of groupedCases) {
+  verify(original, corrected)
+  assert.deepEqual(
+    units(original, corrected).map((part) => [part.original, part.corrected]),
+    [[original, corrected]],
+  )
+}
+const separatedCases = [
+  ['кот и пёс', 'кит и лис'],
+  ['кот, пёс', 'кит, лис'],
+  ['кот. пёс', 'кит. лис'],
+  ['кот; пёс', 'кит; лис'],
+  ['кот - пёс', 'кит - лис'],
+  ['кот\nпёс', 'кит\nлис'],
+  ['кот\r\nпёс', 'кит\r\nлис'],
+  ['кот\n\nпёс', 'кит\n\nлис'],
+  ['кот\u2028пёс', 'кит\u2028лис'],
+  ['кот\u2029пёс', 'кит\u2029лис'],
+  ['кот\tпёс', 'кит\tлис'],
+  ['кот 👩‍💻 пёс', 'кит 👩‍💻 лис'],
+]
+for (const [original, corrected] of separatedCases) {
+  verify(original, corrected)
+  assert.equal(units(original, corrected).length, 2, original)
+}
+assert(units('кот лишний пёс', 'кот пёс').some((part) => part.corrected === ''))
 assert.equal(units('по этому', 'поэтому').length, 1)
 assert.equal(units('неверно', 'не верно').length, 1)
 assert.equal(units('без правок', 'без правок').length, 0)
@@ -150,17 +183,11 @@ assert.deepEqual(
 )
 assert.deepEqual(
   units('Сегодя не удобно.', 'Сегодня неудобно.').map((part) => [part.original, part.corrected]),
-  [
-    ['Сегодя', 'Сегодня'],
-    ['не удобно.', 'неудобно.'],
-  ],
+  [['Сегодя не удобно.', 'Сегодня неудобно.']],
 )
 assert.deepEqual(
   units('не удобно сегодя', 'неудобно сегодня').map((part) => [part.original, part.corrected]),
-  [
-    ['не удобно', 'неудобно'],
-    ['сегодя', 'сегодня'],
-  ],
+  [['не удобно сегодя', 'неудобно сегодня']],
 )
 assert.deepEqual(
   units('Первое слово. Чтобы закончить', 'Первое слово, чтобы закончить.').map((part) => [
@@ -169,8 +196,7 @@ assert.deepEqual(
   ]),
   [
     ['слово.', 'слово,'],
-    ['Чтобы', 'чтобы'],
-    ['закончить', 'закончить.'],
+    ['Чтобы закончить', 'чтобы закончить.'],
   ],
 )
 assert.deepEqual(
@@ -186,5 +212,5 @@ for (const [original, corrected] of cases.filter(([text]) => /\S/u.test(text))) 
   }
 }
 console.log(
-  `Passed ${cases.length} edge cases and 200 generated pairs; ranges, reconstruction, graphemes and grouping.`,
+  `Passed ${cases.length} edge cases, ${groupedCases.length} grouped cases, ${separatedCases.length} boundary cases and 200 generated pairs; ranges, reconstruction, graphemes and grouping.`,
 )
