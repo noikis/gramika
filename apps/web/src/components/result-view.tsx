@@ -1,4 +1,5 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import type { ReactNode } from 'react'
 import type { CorrectionResult } from '@gramota/contracts'
 import { diffText, isWhitespaceOnlyChange } from '../lib/text-diff'
 import { correctionDescription, whitespaceComparison } from '../lib/whitespace-display'
@@ -13,6 +14,8 @@ type Props = {
   onViewChange: (view: ResultViewMode) => void
   labelId: string
   title?: string
+  compact?: boolean
+  actions?: ReactNode
 }
 
 export function ResultView(props: Props) {
@@ -30,7 +33,15 @@ function passage(text: string, empty: string) {
   return text
 }
 
-function ResultContent({ result, view, onViewChange, labelId, title = 'Result' }: Props) {
+function ResultContent({
+  result,
+  view,
+  onViewChange,
+  labelId,
+  title = 'Result',
+  compact = false,
+  actions,
+}: Props) {
   const groupName = useId()
   const panelId = useId()
   const [selected, setSelected] = useState(0)
@@ -65,29 +76,71 @@ function ResultContent({ result, view, onViewChange, labelId, title = 'Result' }
   }, [selected, view])
 
   let correctionIndex = 0
+  const viewToggle = (
+    <fieldset className="result-toggle">
+      <legend className="sr-only">
+        {title === 'Result' ? 'Result view' : `${title} result view`}
+      </legend>
+      {(['text', 'changes'] as const).map((mode) => (
+        <label key={mode}>
+          <input
+            type="radio"
+            name={groupName}
+            value={mode}
+            checked={view === mode}
+            onChange={() => onViewChange(mode)}
+          />
+          {mode === 'text' ? 'Text' : 'Changes'}
+        </label>
+      ))}
+    </fieldset>
+  )
+  const correctionNavigation = corrections.length > 1 && (
+    <div
+      className="correction-navigation"
+      aria-label={`${title} correction navigation`}
+      role="group"
+    >
+      {selected > 0 && (
+        <Button
+          className="previous-correction"
+          type="button"
+          variant="secondary"
+          onClick={() => setSelected(selected - 1)}
+          aria-label="Previous correction"
+        >
+          Previous
+        </Button>
+      )}
+      <span className="correction-counter">
+        {selected + 1} / {corrections.length}
+      </span>
+      {selected < corrections.length - 1 && (
+        <Button
+          className="next-correction"
+          type="button"
+          variant="secondary"
+          onClick={() => setSelected(selected + 1)}
+          aria-label="Next correction"
+        >
+          Next
+        </Button>
+      )}
+    </div>
+  )
 
   return (
     <>
-      <div className="editor-heading">
-        <h2 id={labelId}>{title}</h2>
-        <fieldset className="result-toggle">
-          <legend className="sr-only">
-            {title === 'Result' ? 'Result view' : `${title} result view`}
-          </legend>
-          {(['text', 'changes'] as const).map((mode) => (
-            <label key={mode}>
-              <input
-                type="radio"
-                name={groupName}
-                value={mode}
-                checked={view === mode}
-                onChange={() => onViewChange(mode)}
-              />
-              {mode === 'text' ? 'Text' : 'Changes'}
-            </label>
-          ))}
-        </fieldset>
-      </div>
+      {compact ? (
+        <h3 id={labelId} className="sr-only">
+          {title}
+        </h3>
+      ) : (
+        <div className="editor-heading">
+          <h2 id={labelId}>{title}</h2>
+          {viewToggle}
+        </div>
+      )}
       {view === 'text' ? (
         <Textarea
           className="editor-input result-text"
@@ -139,31 +192,23 @@ function ResultContent({ result, view, onViewChange, labelId, title = 'Result' }
           })}
         </div>
       )}
+      {compact && (
+        <div className="result-actions">
+          {viewToggle}
+          {actions}
+        </div>
+      )}
+      {compact && !corrections.length && <p className="clipboard-feedback">No changes.</p>}
       {view === 'changes' && current && comparison && (
-        <div className="correction-details">
-          <div className="correction-navigation" aria-label="Correction navigation" role="group">
-            <Button
-              type="button"
-              variant="secondary"
-              disabled={selected === 0}
-              onClick={() => setSelected(selected - 1)}
-              aria-label="Previous correction"
-            >
-              Previous
-            </Button>
-            <span className="correction-counter">
-              {selected + 1} / {corrections.length}
-            </span>
-            <Button
-              type="button"
-              variant="secondary"
-              disabled={selected === corrections.length - 1}
-              onClick={() => setSelected(selected + 1)}
-              aria-label="Next correction"
-            >
-              Next
-            </Button>
-          </div>
+        <div className={`correction-details${compact ? ' compact-inspector' : ''}`}>
+          {compact ? (
+            <div className="inspector-heading">
+              <h3>{title}</h3>
+              {correctionNavigation}
+            </div>
+          ) : (
+            correctionNavigation
+          )}
           <div id={panelId} className="correction-comparison" role="status" aria-atomic="true">
             <span className="sr-only">
               Correction {selected + 1} of {corrections.length}.

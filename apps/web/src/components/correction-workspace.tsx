@@ -1,23 +1,21 @@
+import { useEffect, useRef } from 'react'
+import type { PointerEvent } from 'react'
+import { CorrectionMode, DEFAULT_MODEL_ID } from '@gramota/contracts'
 import type { useCorrectionDraft } from '../hooks/use-correction-draft'
 import type { useCorrection } from '../hooks/use-correction'
 import { Button } from './ui/button'
 import { Textarea } from './ui/textarea'
 import { ResultView } from './result-view'
-import { CorrectionMode } from '@gramota/contracts'
 import { modeLabels } from '../lib/history-format'
 
 type Draft = ReturnType<typeof useCorrectionDraft>
 type Correction = ReturnType<typeof useCorrection>
-
-const modelLabels: Record<string, string> = {
-  'google/gemma-4-26b-a4b-it': 'Gemma 4 · Standard',
-  'google/gemini-3.1-flash-lite': 'Gemini 3.1 Flash Lite · Higher cost',
-}
+const MIN_SWIPE_DISTANCE_PX = 48
 
 function OriginalEditor({ draft, correction }: { draft: Draft; correction: Correction }) {
   const { text, edit, paste, pending, inputRef } = draft
   return (
-    <section className="editor" aria-labelledby="original-title">
+    <section className="editor original-editor" aria-labelledby="original-title">
       <div className="editor-heading">
         <h2 id="original-title">
           <label htmlFor="original">Original</label>
@@ -48,10 +46,138 @@ function OriginalEditor({ draft, correction }: { draft: Draft; correction: Corre
           onClick={correction.correct}
           aria-describedby="correction-status"
         >
-          {correction.pending ? 'Correcting...' : 'Correct'}
+          {correction.pending && !correction.isOpinionPending ? 'Correcting...' : 'Correct'}
         </Button>
       </div>
     </section>
+  )
+}
+
+function ResultHeading({ correction }: { correction: Correction }) {
+  const headingRef = useRef<HTMLHeadingElement>(null)
+  const swipeStart = useRef<{ x: number; y: number } | null>(null)
+  const isGemma = correction.activeModel === DEFAULT_MODEL_ID || !correction.visibleResult
+  const hasBoth = correction.results.length === 2
+  const activeLabel = isGemma ? 'Gemma 4' : correction.opinionModelName
+  const visibleRequestId = correction.visibleResult?.requestId
+
+  useEffect(() => {
+    if (visibleRequestId) headingRef.current?.focus({ preventScroll: true })
+  }, [visibleRequestId])
+
+  function switchResult(isNext: boolean) {
+    if (!hasBoth) return
+    const target = correction.results[isNext ? 1 : 0].result.modelId
+    correction.selectResult(target)
+    headingRef.current?.focus({ preventScroll: true })
+  }
+
+  function startSwipe(event: PointerEvent<HTMLDivElement>) {
+    if (!event.isPrimary || event.button !== 0 || (event.target as Element).closest('button'))
+      return
+    swipeStart.current = { x: event.clientX, y: event.clientY }
+    event.currentTarget.setPointerCapture(event.pointerId)
+  }
+
+  function finishSwipe(event: PointerEvent<HTMLDivElement>) {
+    if (!swipeStart.current) return
+    const dx = event.clientX - swipeStart.current.x
+    const dy = event.clientY - swipeStart.current.y
+    swipeStart.current = null
+    if (Math.abs(dx) > MIN_SWIPE_DISTANCE_PX && Math.abs(dx) > Math.abs(dy)) switchResult(dx < 0)
+  }
+
+  return (
+    <div
+      className="result-heading"
+      onPointerDown={startSwipe}
+      onPointerUp={finishSwipe}
+      onPointerCancel={() => {
+        swipeStart.current = null
+      }}
+    >
+      {hasBoth && !isGemma && (
+        <Button
+          className="previous-model"
+          variant="secondary"
+          aria-label="Show Gemma result"
+          onClick={() => switchResult(false)}
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            aria-hidden="true"
+          >
+            <path d="m15 6-6 6 6 6" />
+          </svg>
+        </Button>
+      )}
+      <h2 id="result-title" tabIndex={-1} ref={headingRef} aria-live="polite">
+        Result<span className="result-model">{activeLabel}</span>
+      </h2>
+      {hasBoth && isGemma && (
+        <Button
+          className="next-model"
+          variant="secondary"
+          aria-label="Show Gemini result"
+          onClick={() => switchResult(true)}
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            aria-hidden="true"
+          >
+            <path d="m9 6 6 6-6 6" />
+          </svg>
+        </Button>
+      )}
+    </div>
+  )
+}
+
+function OpinionAction({ correction }: { correction: Correction }) {
+  if (!correction.results.length || correction.results.length === 2) return null
+  return (
+    <div className="opinion-action">
+      <p className="opinion-label">Second opinion</p>
+      <p id="opinion-cost">Higher cost</p>
+      <Button
+        type="button"
+        variant="secondary"
+        disabled={!correction.canRequestOpinion}
+        onClick={correction.requestOpinion}
+        aria-describedby="opinion-cost"
+      >
+        <span>
+          {correction.isOpinionPending
+            ? 'Requesting Gemini...'
+            : correction.opinionError
+              ? 'Retry Gemini'
+              : correction.opinionModelName}
+        </span>
+        <span className="opinion-button-model" aria-hidden="true">
+          Higher cost
+        </span>
+      </Button>
+      {correction.isModeChanged ? (
+        <p className="clipboard-feedback">
+          Correct in {modeLabels[correction.mode]} before requesting another opinion.
+        </p>
+      ) : (
+        <>
+          {correction.isOpinionPending && (
+            <p role="status">Getting another opinion. Your Gemma result is still available.</p>
+          )}
+          {correction.opinionError && (
+            <p role="alert">{correction.opinionError} Your Gemma result is still available.</p>
+          )}
+        </>
+      )}
+    </div>
   )
 }
 
@@ -65,117 +191,85 @@ export function CorrectionWorkspace({
   return (
     <>
       <h1 className="sr-only">Correction</h1>
-      <div className="model-control">
-        <label htmlFor="mode">Mode</label>
-        <select
-          id="mode"
-          value={correction.mode}
-          disabled={correction.pending}
-          onChange={(event) => correction.selectMode(event.target.value)}
-        >
-          {CorrectionMode.options.map((mode) => (
-            <option key={mode} value={mode}>
-              {modeLabels[mode]}
-            </option>
-          ))}
-        </select>
-        <label htmlFor="model">Model</label>
-        <select
-          id="model"
-          value={correction.config?.modelId ?? ''}
-          disabled={!correction.config || correction.pending || correction.savingModel}
-          onChange={(event) => correction.selectModel(event.target.value)}
-          aria-describedby={
-            correction.config?.modelId === 'google/gemini-3.1-flash-lite'
-              ? 'model-description model-availability'
-              : 'model-availability'
-          }
-        >
-          {!correction.config?.modelId && (
-            <option value="" disabled>
-              {correction.config ? 'Choose a model' : 'Unavailable'}
-            </option>
-          )}
-          {correction.config?.models.map((model) => (
-            <option key={model.id} value={model.id}>
-              {modelLabels[model.id] ?? model.name}
-            </option>
-          ))}
-        </select>
-        {correction.config?.modelId === 'google/gemini-3.1-flash-lite' && (
-          <p id="model-description" className="model-description">
-            Gemini is an alternative; better correction quality hasn’t been established.
-          </p>
-        )}
-        {correction.configFailed && (
-          <Button type="button" variant="secondary" onClick={correction.reloadConfig}>
-            Retry
-          </Button>
-        )}
-        {correction.retryModel && (
-          <Button
-            type="button"
-            variant="secondary"
-            disabled={correction.pending || correction.savingModel}
-            onClick={() => correction.selectModel(correction.retryModel!)}
+      <div className="editors correction-workspace">
+        <div className="model-control">
+          <label htmlFor="mode">Mode</label>
+          <select
+            id="mode"
+            value={correction.mode}
+            disabled={correction.pending}
+            onChange={(event) => correction.selectMode(event.target.value)}
           >
-            Retry save
-          </Button>
-        )}
-        <span id="model-availability" className="model-feedback" role="status" aria-atomic="true">
-          {correction.savingModel
-            ? 'Saving...'
-            : correction.modelError ||
-              (correction.config && !correction.config.modelId
-                ? 'The saved model is unavailable. Choose a model.'
-                : '')}
-        </span>
-      </div>
-      <div className="editors">
+            {CorrectionMode.options.map((mode) => (
+              <option key={mode} value={mode}>
+                {modeLabels[mode]}
+              </option>
+            ))}
+          </select>
+          {correction.configFailed && (
+            <Button type="button" variant="secondary" onClick={correction.reloadConfig}>
+              Retry connection
+            </Button>
+          )}
+        </div>
         <OriginalEditor draft={draft} correction={correction} />
-        <section className="editor" aria-labelledby="result-title" aria-busy={correction.pending}>
-          {correction.visibleResult ? (
-            <ResultView
-              result={correction.visibleResult}
-              view={correction.resultView}
-              onViewChange={correction.setResultView}
-              labelId="result-title"
-              title={`Result · ${modeLabels[correction.visibleResult.mode]}`}
-            />
-          ) : (
-            <>
-              <div className="editor-heading">
-                <h2 id="result-title">Result</h2>
-              </div>
-              <div className="result-box">
-                <p>
-                  {correction.pending
-                    ? 'Correcting...'
-                    : correction.draftChanged
-                      ? 'Your original has changed. Correct it to get a new result.'
-                      : 'No result yet.'}
-                </p>
-              </div>
-            </>
+        <section className="editor result-editor" aria-labelledby="result-title">
+          <ResultHeading correction={correction} />
+          {correction.results.map(({ result, view }) => (
+            <div
+              className="workspace-result"
+              key={result.requestId}
+              hidden={result.modelId !== correction.activeModel}
+            >
+              <ResultView
+                result={result}
+                view={view}
+                onViewChange={(next) =>
+                  correction.setResultView(result.modelId, next, result.requestId)
+                }
+                labelId={`result-${result.requestId}`}
+                title={`${result.modelId === DEFAULT_MODEL_ID ? 'Gemma 4' : correction.opinionModelName} · ${modeLabels[result.mode]}`}
+                compact
+                actions={
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    disabled={correction.copying}
+                    onClick={correction.copy}
+                    aria-label={`Copy ${result.modelId === DEFAULT_MODEL_ID ? 'Gemma' : 'Gemini'} result`}
+                  >
+                    {correction.copying ? 'Copying...' : 'Copy'}
+                  </Button>
+                }
+              />
+            </div>
+          ))}
+          {!correction.visibleResult && (
+            <div className="result-box">
+              <p>
+                {correction.pending
+                  ? 'Correcting...'
+                  : correction.draftChanged
+                    ? 'Your original has changed. Correct it to get a new result.'
+                    : 'No result yet.'}
+              </p>
+            </div>
           )}
           <p id="correction-status" className="clipboard-feedback" role="status" aria-atomic="true">
-            {correction.availability || (correction.pending ? 'Correcting...' : '')}
+            {correction.availability ||
+              (correction.pending && !correction.isOpinionPending
+                ? 'Correcting with Gemma...'
+                : '')}
           </p>
           {correction.error && (
             <p className="clipboard-feedback" role="alert">
               {correction.error}
             </p>
           )}
-          <div className="editor-actions">
-            <Button
-              type="button"
-              disabled={!correction.visibleResult || correction.copying}
-              onClick={correction.copy}
-            >
-              {correction.copying ? 'Copying...' : 'Copy'}
-            </Button>
-          </div>
         </section>
+        <div className="workspace-opinion">
+          <OpinionAction correction={correction} />
+        </div>
       </div>
     </>
   )

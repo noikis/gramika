@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="theme.css">
   <style>
     .mode-field { display: grid; gap: var(--space-2); margin-bottom: var(--space-5); width: calc((100% - var(--space-5)) / 2); }
-    .results { min-width: 0; display: grid; gap: var(--space-6); align-items: start; }
+    .results { min-width: 0; display: grid; gap: var(--space-2); align-items: start; }
     .result-meta { display: block; color: var(--muted); font-size: var(--text-sm); font-weight: 400; }
     .opinion-action { display: grid; gap: var(--space-3); margin-top: var(--space-5); padding-top: var(--space-4); border-top: var(--border-width) solid var(--border); }
     .opinion-action small { font-size: var(--text-sm); }
@@ -31,16 +31,31 @@
     .loading-state small, .error-state small { display: block; color: var(--muted); }
     .loading-state button, .error-state button { margin-top: var(--space-3); }
     .v23 mark { background: var(--added-bg); color: var(--added); border-radius: var(--space-1); }
+    .result-nav { display: grid; grid-template-columns: var(--control) minmax(0, 1fr) var(--control); align-items: center; gap: var(--space-3); min-height: calc(var(--heading-height) + var(--space-4)); touch-action: pan-y; user-select: none; }
+    .result-nav h2 { grid-column: 2; grid-row: 1; text-align: center; }
+    .result-nav button { grid-row: 1; padding: 0; display: grid; place-items: center; background: transparent; }
+    #previous-model { grid-column: 1; }
+    #next-model { grid-column: 3; }
+    .result-nav svg { width: var(--space-5); height: var(--space-5); }
+    body[data-model="gemma"] .second-result, body[data-model="gemini"] .gemma-result { display: none; }
+    .output > .correction-inspector { margin-top: var(--space-4); }
+    .correction-inspector { grid-column: 1 / -1; padding: var(--space-4); border: var(--border-width) solid var(--border); border-radius: var(--radius-sm); background: var(--surface); }
+    .inspector-top { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; }
+    .inspector-title { margin: 0; font-size: var(--text-sm); font-weight: 500; }
+    .inspector-nav { display: flex; align-items: center; gap: var(--space-2); }
+    .inspector-nav button { padding-inline: var(--space-3); font-size: var(--text-sm); }
+    .comparison { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); margin: var(--space-3) 0 0; }
+    .comparison dt { color: var(--muted); font-size: var(--text-xs); }
+    .comparison dd { margin: var(--space-1) 0 0; overflow-wrap: anywhere; }
+    .v23 .correction { display: inline; min-height: 0; border: 0; padding: 0; border-radius: var(--space-1); color: var(--added); background: var(--added-bg); line-height: inherit; font: inherit; }
+    .v23 .correction[aria-pressed="true"] { outline: var(--focus-width) solid var(--accent); outline-offset: var(--border-width); }
     .v23 [hidden] { display: none; }
     .v23 button:disabled { opacity: .6; }
+    .v23 button:disabled:hover { border-color: var(--border); }
     .prototype-controls { border-top: var(--border-width) solid var(--border); padding-top: var(--space-4); }
     .prototype-controls label { display: grid; gap: var(--space-2); margin-block: var(--space-3); color: var(--muted); font-size: var(--text-sm); }
     .prototype-controls select { width: 100%; }
     .prototype-controls p { max-width: 75ch; font-size: var(--text-sm); }
-    @media (min-width: 1120px) {
-      .v23:has(#scenario option[value="both"]:checked) .editors { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); }
-      .v23:has(#scenario option[value="both"]:checked) .results { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-5); }
-    }
     .v23:has(#scenario option[value="ready"]:checked) .second-result,
     .v23:has(#scenario option[value="loading"]:checked) .second-result,
     .v23:has(#scenario option[value="error"]:checked) .second-result,
@@ -50,6 +65,8 @@
     .v23:has(#scenario option[value="loading"]:checked) .ask-opinion,
     .v23:has(#scenario option[value="error"]:checked) .ask-opinion { display: none; }
     @media (max-width: 720px) {
+      .inspector-top { gap: var(--space-2); }
+      .inspector-nav { width: 100%; justify-content: space-between; }
       .mode-field { width: 100%; }
       .opinion-action button { width: 100%; }
       .v23 .editor-heading { gap: var(--space-2); }
@@ -59,7 +76,7 @@
     }
   </style>
 </head>
-<body class="v23">
+<body class="v23" data-model="gemma">
 <!-- Static, synthetic design reference. State controls only switch mock views. No API calls. -->
 <div class="shell">
   <header>
@@ -79,10 +96,12 @@
         <div class="editor-actions"><button class="primary" type="button" disabled>Correct</button></div>
       </section>
       <div class="results">
-        <section class="editor output" aria-labelledby="gemma-title">
-          <div class="editor-heading">
-            <h2 id="gemma-title">Result<span class="result-meta">Gemma 4</span></h2>
-          </div>
+        <div class="result-nav" role="group" aria-label="Switch result model">
+          <button id="previous-model" type="button" aria-label="Show Gemma result" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg></button>
+          <h2 id="result-title" tabindex="-1" aria-live="polite">Result<span class="result-meta" id="active-model">Gemma 4</span></h2>
+          <button id="next-model" type="button" aria-label="Show Gemini result" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
+        </div>
+        <section class="editor output gemma-result" data-result="gemma" aria-label="Gemma result">
           <div class="text-box result clean" lang="ru">Здравствуйте, Анна!
 
 Подскажите, пожалуйста, можно ли перенести встречу на пятницу?
@@ -108,10 +127,7 @@
             <div class="error-state"><p class="error" role="alert">Gemini couldn’t return an opinion.</p><small>Your Gemma result is still available.</small><button type="button" data-state="both" aria-describedby="opinion-cost">Retry another opinion</button></div>
           </div>
         </section>
-        <section class="editor output second-result" aria-labelledby="gemini-title">
-          <div class="editor-heading">
-            <h2 id="gemini-title">Another opinion<span class="result-meta">Gemini 3.1 Flash Lite</span></h2>
-          </div>
+        <section class="editor output second-result" data-result="gemini" aria-label="Gemini result">
           <div class="text-box result clean" lang="ru">Здравствуйте, Анна!
 
 Подскажите, пожалуйста, можно ли перенести встречу на пятницу?
@@ -131,6 +147,17 @@
           </div>
           <p class="clipboard-status" role="status"></p>
         </section>
+        <section class="correction-inspector" id="correction-inspector" aria-label="Selected correction">
+          <div class="inspector-top">
+            <h3 class="inspector-title" id="inspector-model">Gemma 4</h3>
+            <div class="inspector-nav" role="group" aria-label="Navigate selected model corrections">
+              <button id="previous-correction" type="button">Previous</button>
+              <span id="correction-count" class="muted"></span>
+              <button id="next-correction" type="button">Next</button>
+            </div>
+          </div>
+          <dl class="comparison" aria-live="polite"><div><dt>Original</dt><dd id="comparison-original" lang="ru"></dd></div><div><dt>Corrected</dt><dd id="comparison-corrected" lang="ru"></dd></div></dl>
+        </section>
       </div>
     </div>
   </main>
@@ -139,13 +166,86 @@
       <summary>Prototype controls</summary>
       <label for="scenario">Preview state<select id="scenario"><option value="ready">Gemma result · Another opinion available</option><option value="loading">Gemini loading · Gemma retained</option><option value="both">Both results retained</option><option value="error">Gemini failed · Gemma retained</option></select></label>
       <p>Static sample, no model requests. Another opinion and Retry switch directly to the completed sample. Mode, Paste and Correct are disabled. Resize the browser to review the mobile layout.</p>
-      <p>Both models may return the same correction, as in this sample. History should show only requests actually made; it has no Another opinion action. Text/Changes demonstrates presentation only; the existing correction inspector is unchanged.</p>
+      <p>Use the available arrow or swipe across the Result heading to switch models after requesting another opinion. Before that, no arrows appear. Desktop keeps two columns: Original and the active Result. Phones stack them. Text remains selectable. Click a highlighted correction to inspect it. Each model remembers its view and selected correction. History shows only requests actually made, with no Another opinion action.</p>
     </details>
   </footer>
 </div>
 <script>
+  const scenario = document.querySelector('#scenario');
+  const inspector = document.querySelector('#correction-inspector');
+  const selected = { gemma: 0, gemini: 0 };
+  const changes = [
+    ['Здравствуйте', 'Здравствуйте,'],
+    ['Подскажите', 'Подскажите,'],
+    ['помощ', 'помощь'],
+  ];
+  let activeModel = 'gemma';
+  document.querySelectorAll('[data-result]').forEach(result => {
+    result.querySelectorAll('mark').forEach((mark, index) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'correction';
+      button.textContent = mark.textContent;
+      button.dataset.index = index;
+      button.setAttribute('aria-label', `Correction ${index + 1}: ${changes[index][0]} to ${changes[index][1]}`);
+      button.setAttribute('aria-controls', 'correction-inspector');
+      button.addEventListener('click', () => {
+        selected[result.dataset.result] = index;
+        activeModel = result.dataset.result;
+        renderInspector();
+      });
+      mark.replaceWith(button);
+    });
+    result.querySelectorAll('input[type="radio"]').forEach(input => input.addEventListener('change', () => { activeModel = result.dataset.result; renderInspector(); }));
+  });
+  function renderInspector() {
+    const result = document.querySelector(`[data-result="${activeModel}"]`);
+    const index = selected[activeModel];
+    document.body.dataset.model = activeModel;
+    document.querySelector('#active-model').textContent = activeModel === 'gemma' ? 'Gemma 4' : 'Gemini 3.1 Flash Lite';
+    document.querySelector('#previous-model').hidden = scenario.value !== 'both' || activeModel === 'gemma';
+    document.querySelector('#next-model').hidden = scenario.value !== 'both' || activeModel === 'gemini';
+    document.querySelectorAll('.correction').forEach(button => button.setAttribute('aria-pressed', String(button.closest('[data-result]') === result && Number(button.dataset.index) === index)));
+    document.querySelector('#inspector-model').textContent = activeModel === 'gemma' ? 'Gemma 4' : 'Gemini 3.1 Flash Lite';
+    document.querySelector('#correction-count').textContent = `${index + 1} / ${changes.length}`;
+    document.querySelector('#comparison-original').textContent = changes[index][0];
+    document.querySelector('#comparison-corrected').textContent = changes[index][1];
+    document.querySelector('#previous-correction').disabled = index === 0;
+    document.querySelector('#next-correction').disabled = index === changes.length - 1;
+    inspector.hidden = !result.querySelector('.view-changes').checked;
+    result.append(inspector);
+  }
+  function switchModel(model) {
+    if (model === 'gemini' && scenario.value !== 'both') return;
+    activeModel = model;
+    renderInspector();
+    document.querySelector('#result-title').focus({ preventScroll: true });
+  }
+  document.querySelector('#previous-model').addEventListener('click', () => switchModel('gemma'));
+  document.querySelector('#next-model').addEventListener('click', () => switchModel('gemini'));
+  document.querySelector('#previous-correction').addEventListener('click', () => { selected[activeModel]--; renderInspector(); });
+  document.querySelector('#next-correction').addEventListener('click', () => { selected[activeModel]++; renderInspector(); });
+  scenario.addEventListener('change', () => { if (scenario.value !== 'both') activeModel = 'gemma'; renderInspector(); });
+  const swipeArea = document.querySelector('.result-nav');
+  const SWIPE_DISTANCE = 48;
+  let swipeStart;
+  swipeArea.addEventListener('pointerdown', event => {
+    if (!event.isPrimary || event.button !== 0 || event.target.closest('button')) return;
+    swipeStart = { x: event.clientX, y: event.clientY };
+    swipeArea.setPointerCapture(event.pointerId);
+  });
+  swipeArea.addEventListener('pointerup', event => {
+    if (!swipeStart) return;
+    const dx = event.clientX - swipeStart.x;
+    const dy = event.clientY - swipeStart.y;
+    if (Math.abs(dx) > SWIPE_DISTANCE && Math.abs(dx) > Math.abs(dy)) switchModel(dx < 0 ? 'gemini' : 'gemma');
+    swipeStart = null;
+  });
+  swipeArea.addEventListener('pointercancel', () => { swipeStart = null; });
   document.querySelectorAll('[data-state]').forEach(button => button.addEventListener('click', () => {
-    document.querySelector('#scenario').value = button.dataset.state;
+    scenario.value = button.dataset.state;
+    switchModel('gemini');
+    document.querySelector('#result-title').focus();
   }));
   document.querySelectorAll('[data-copy]').forEach(button => button.addEventListener('click', async () => {
     const result = button.closest('.output');
@@ -155,9 +255,11 @@
       status.textContent = 'Copied';
     } catch {
       result.querySelector('input[type="radio"]').checked = true;
+      renderInspector();
       status.textContent = 'Clipboard unavailable. Select the result and copy manually.';
     }
   }));
+  renderInspector();
 </script>
 </body>
 </html>

@@ -10,7 +10,7 @@ import './App.css'
 function App() {
   const [view, setView] = useState<'correction' | 'history'>('correction')
   const draft = useCorrectionDraft()
-  const correction = useCorrection(draft.text)
+  const correction = useCorrection(draft.text, draft.revision)
 
   return (
     <div className="shell">

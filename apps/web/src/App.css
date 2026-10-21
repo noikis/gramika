@@ -181,12 +181,28 @@ h2 {
   font-size: var(--text-sm);
 }
 .correction-navigation {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(calc(var(--control) * 2), 1fr) auto minmax(
+      calc(var(--control) * 2),
+      1fr
+    );
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
 }
+.correction-navigation .previous-correction {
+  grid-column: 1;
+  grid-row: 1;
+  justify-self: start;
+}
+.correction-navigation .next-correction {
+  grid-column: 3;
+  grid-row: 1;
+  justify-self: end;
+}
 .correction-counter {
+  grid-column: 2;
+  grid-row: 1;
   color: var(--muted);
   font-size: var(--text-sm);
   font-variant-numeric: tabular-nums;
@@ -299,6 +315,194 @@ h2 {
     height: var(--editor-height-mobile);
   }
   .editor-actions button {
+    width: 100%;
+  }
+}
+
+/* The correction workspace shares one result pane across both models. */
+.correction-workspace {
+  grid-template-areas: 'mode opinion' 'original result';
+}
+.correction-workspace > .model-control {
+  grid-area: mode;
+  width: 100%;
+  margin-bottom: 0;
+}
+.original-editor {
+  grid-area: original;
+}
+.result-editor {
+  grid-area: result;
+}
+.workspace-opinion {
+  grid-area: opinion;
+  min-width: 0;
+  align-self: end;
+}
+.correction-workspace > .editor > .editor-heading,
+.result-heading {
+  min-height: calc(var(--heading-height) + var(--space-4));
+}
+.result-heading {
+  display: grid;
+  grid-template-columns: var(--control) minmax(0, 1fr) var(--control);
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-2);
+  touch-action: pan-y;
+  user-select: none;
+}
+.result-heading h2 {
+  grid-column: 2;
+  grid-row: 1;
+  text-align: center;
+}
+.result-heading button {
+  grid-row: 1;
+  width: var(--control);
+  padding: 0;
+  background: transparent;
+}
+.result-heading .previous-model {
+  grid-column: 1;
+}
+.result-heading .next-model {
+  grid-column: 3;
+}
+.result-heading svg {
+  width: var(--space-5);
+  height: var(--space-5);
+}
+.result-model {
+  display: block;
+  margin-top: var(--space-1);
+  color: var(--muted);
+  font-size: var(--text-sm);
+  font-weight: 400;
+}
+.workspace-result[hidden] {
+  display: none;
+}
+.result-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+.result-actions > button {
+  min-width: calc(var(--control) * 2);
+}
+.result-actions .result-toggle {
+  padding: 0;
+  gap: 0;
+}
+.result-actions .result-toggle label {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--control);
+}
+.result-actions .result-toggle label:has(input:checked) {
+  border-color: var(--border);
+}
+.compact-inspector {
+  padding: var(--space-4);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+.inspector-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+.inspector-heading h3 {
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+.compact-inspector .correction-navigation button {
+  padding-inline: var(--space-3);
+  font-size: var(--text-sm);
+}
+.compact-inspector .correction-comparison {
+  padding: 0;
+  border: 0;
+}
+.compact-inspector .correction-comparison dl {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.compact-inspector .correction-kind {
+  margin-bottom: var(--space-2);
+  font-size: var(--text-xs);
+}
+.compact-inspector .correction-comparison dt {
+  font-size: var(--text-xs);
+}
+.opinion-action {
+  display: grid;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+  padding-top: var(--space-4);
+  border-top: var(--border-width) solid var(--border);
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+.opinion-action > button {
+  justify-self: start;
+}
+.opinion-action .clipboard-feedback {
+  margin: 0;
+}
+.opinion-label,
+.opinion-button-model {
+  display: none;
+}
+@media (min-width: 721px) {
+  .workspace-opinion {
+    align-self: start;
+  }
+  .workspace-opinion .opinion-action {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    gap: var(--space-2);
+  }
+  .opinion-label {
+    display: block;
+    color: var(--text);
+    font-size: var(--text-base);
+  }
+  .opinion-action > #opinion-cost {
+    display: none;
+  }
+  .opinion-action > button {
+    justify-content: space-between;
+    gap: var(--space-3);
+    width: 100%;
+    min-height: var(--control);
+    flex-wrap: wrap;
+    text-align: left;
+  }
+  .opinion-button-model {
+    display: block;
+    color: var(--muted);
+    font-size: var(--text-xs);
+    font-weight: 400;
+  }
+}
+@media (max-width: 720px) {
+  .correction-workspace {
+    grid-template-areas: 'mode' 'original' 'result' 'opinion';
+  }
+  .workspace-opinion .opinion-action {
+    margin-top: 0;
+  }
+  .inspector-heading .correction-navigation {
+    width: 100%;
+  }
+  .opinion-action > button {
     width: 100%;
   }
 }

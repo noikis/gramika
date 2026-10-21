@@ -1,22 +1,43 @@
 # Approved UI prototypes
 
-## V2.3 Another opinion (awaiting visual review)
+## V2.3 Another opinion (approved)
 
 - [Correction only](another-opinion.html), using the existing shared `theme.css`,
   local Roboto and current dark/emerald palette. No production code changes.
 - Correct uses Gemma; the model selector is removed. Another opinion explicitly
   requests Gemini, with its higher cost identified before the action.
-- Preview controls show Gemma only, Gemini loading, both results, and Gemini
-  failure. Gemma remains visible throughout; each completed result has its own
+- Preview controls show Gemma only, Gemini loading, both results retained, and Gemini
+  failure. Gemma remains available throughout; each completed result has its own
   Text/Changes and Copy controls. Both samples deliberately agree.
-- Desktop retains Original/Result columns; mobile stacks Original then results.
-  Existing correction-inspector behavior is outside this layout mockup.
+- Desktop always has two columns: Original and one active Result. Mobile stacks
+  Original above that same result switcher. The centered Result/model heading
+  has no arrows until both results exist, then only the available direction:
+  right for Gemma, left for Gemini. Its center stays fixed as arrows appear.
+  Swipe the heading to switch models. The result text remains selectable. Headers identify the
+  role and model, with Text/Changes and Copy grouped below each result.
+  Clickable highlights feed one compact correction inspector beneath the active
+  result on both desktop and mobile. Each model
+  retains its own selected correction, Text/Changes view and result scroll position.
+  Previous/Next navigates only the inspected model. Switching models retains
+  both results. The sample comparisons are hard-coded.
 - User approved the direction and Correction-only scope on 2026-10-21.
   History is not prototyped: it displays only requests actually made. A Gemma-only
   entry has no Gemini result or Another opinion action.
 - Open the HTML directly. Controls only switch static views; no model calls.
   Paste, Correct and mode selection are disabled. Copy uses the clean sample
-  and reports clipboard failure honestly. Visual approval is pending.
+  and reports clipboard failure honestly. The final two-column design and
+  available-direction arrows were approved by the user on 2026-10-21.
+- Refined with Impeccable on 2026-10-21: aligned editor heights, comfortable
+  view controls, explicit retained-result failure/loading feedback, keyboard
+  focus on the revealed opinion and collapsed prototype-only controls.
+- Browser-reviewed at 390px, 800px and the default desktop width. Verified
+  second-opinion reveal, loading/failure previews, Retry, independent Text/Changes
+  controls and successful Gemini Copy feedback. No model requests were made.
+- Mobile navigation refinement verified at 390px: both arrow directions, pointer
+  swipes across the heading, separate remembered correction selections and a
+  compact inspector. The subsequent two-column refinement was checked on desktop
+  and at 390px: initially no arrows, Gemini with only left, Gemma with only right.
+  Physical phone touch behavior remains for human review.
 
 ## History redesign (awaiting visual review)
 

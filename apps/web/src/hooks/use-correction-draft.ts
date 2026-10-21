@@ -11,12 +11,14 @@ function clipboardErrorMessage(error: unknown) {
 export function useCorrectionDraft() {
   const [text, setText] = useState('')
   const [pending, setPending] = useState(false)
+  const [draftRevision, setDraftRevision] = useState(0)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const revision = useRef(0)
   const reading = useRef(false)
 
   function edit(value: string) {
     revision.current += 1
+    setDraftRevision((current) => current + 1)
     setText(value)
   }
 
@@ -48,5 +50,5 @@ export function useCorrectionDraft() {
     }
   }
 
-  return { text, edit, paste, pending, inputRef }
+  return { text, revision: draftRevision, edit, paste, pending, inputRef }
 }
