@@ -75,3 +75,14 @@ User visual review and approval are recorded above. Automated browser verificati
 was not completed: Playwright's configured Chrome executable was missing, and the
 in-app browser blocked local-file navigation. Product behavior and responsive
 layout still need verification during implementation.
+
+## V2 correction review reference
+
+[Readable corrections](clean-correction-example.html) is a standalone interactive
+reference for V2.1. Open it directly in a browser. It uses synthetic text and
+demonstrates selectable highlights, a comparison without strikethrough, and
+Previous/Next navigation on desktop and mobile. Highlight spacing still needs
+refinement during implementation; this is not a pixel-perfect design approval.
+
+Store future project HTML mockups and illustrations in this directory and link
+them with repository-relative paths in Blueprint documents.

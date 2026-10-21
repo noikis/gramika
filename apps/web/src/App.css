@@ -110,7 +110,7 @@ h2 {
   height: var(--editor-height);
   overflow: auto;
   white-space: pre-wrap;
-  line-height: var(--line);
+  line-height: 2.25;
   color: var(--text);
   tab-size: 4;
 }
@@ -118,16 +118,100 @@ h2 {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
-.result-changes del {
-  color: var(--removed);
-  background: var(--removed-bg);
-  text-decoration: line-through;
-}
-.result-changes ins {
+.correction-highlight {
+  padding: 0.2em;
+  margin-inline: -0.06em;
+  border-radius: 0.2em;
   color: var(--added);
   background: var(--added-bg);
-  text-decoration: underline;
-  text-underline-offset: 0.15em;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  cursor: pointer;
+}
+.correction-highlight[aria-pressed='true'] {
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+.correction-highlight:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 1px;
+}
+.correction-deletion,
+.correction-whitespace {
+  display: inline-block;
+  min-width: 0.5em;
+  line-height: 1.25;
+  text-align: center;
+}
+.correction-whitespace {
+  position: relative;
+}
+.correction-whitespace::after {
+  content: '·';
+  position: absolute;
+  inset: 0;
+  color: var(--added);
+}
+.correction-deletion {
+  color: var(--removed);
+  background: transparent;
+  margin-inline: 0.08em;
+  padding: 0.12em;
+  vertical-align: baseline;
+  user-select: none;
+}
+.correction-details {
+  margin-top: var(--space-3);
+}
+.correction-spacing-only {
+  color: var(--text);
+  background: transparent;
+  text-decoration: underline dotted var(--muted);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.3em;
+}
+.correction-spacing-only[aria-pressed='true'] {
+  box-shadow: inset 0 0 0 1px var(--muted);
+}
+.correction-spacing-only.correction-whitespace::after {
+  color: var(--muted);
+}
+.correction-kind {
+  margin: 0 0 var(--space-3);
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+.correction-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.correction-counter {
+  color: var(--muted);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.correction-comparison {
+  margin-top: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+.correction-comparison dl {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+}
+.correction-comparison dt {
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+.correction-comparison dd {
+  margin: var(--space-1) 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 .result-toggle {
   display: inline-flex;

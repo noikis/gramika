@@ -1,9 +1,9 @@
 # Gramota - Project Overview
 
-<!-- blueprint:source-hash 0667e10094e61b8cbc54d97e620d00865d3575b741ec5a5149c5b9794e016e01 -->
+<!-- blueprint:source-hash ae27dd1b68743bd0f09ea017e9f83cae37f4d9f8d59f48255a437501148f3d41 -->
 
 Derived from [project-plan.md](../project-plan.md) and [build-plan.md](../build-plan.md).
-Updated 2026-10-19 to reflect completed work and user decisions. Implementation
+Updated 2026-10-20 to reflect completed work and user decisions. Implementation
 contracts and history remain in current-feature.md and blueprint/history/.
 
 ## Product and scope
@@ -13,14 +13,18 @@ objective grammar, spelling and punctuation with minimal changes, preserving
 meaning, voice, names, numbers, links, emoji and whitespace. Return only complete
 corrected text; already-correct input stays unchanged.
 
-One user, primarily on a phone, with production deployment planned. Strict is the
+One user, primarily on a phone, with production running as reported by the user. Strict is the
 only mode. English/French, explanations, tone controls, document uploads,
-authentication and external access remain deferred. There is no monetization.
+application authentication and further access features remain deferred. There is no monetization.
 
 [Unreviewed ideas](../../docs/ideas.md) are retained for discussion only. They
 are not approved requirements, priorities or instructions to implement features.
 
 ## Progress
+
+**V1 is finished and accepted as of 2026-10-20**, with the agreed scope complete
+and the production deployment working as reported by the user. Deferred work is
+outside this release.
 
 Product decisions live in project-plan.md; setup and deployment instructions live
 in docs/container.md. Build-plan.md tracks progress; history retains completed work.
@@ -32,12 +36,18 @@ manual V3 comparison tooling are completed follow-up work.
 
 Feature 6 is split into 6a (minimal diagnostic logging and one local GET /health),
 6b (one container serving API/frontend, persistent SQLite and recreation checks),
-and 6c (backup/restore). Features 6a and 6b are complete, including disposable
-recreation checks. Backup/restore remains in 6c. VPN/proxy reachability
+and the now-deferred 6c (backup/restore). Features 6a and 6b are complete, including
+disposable recreation checks, and Feature 6 is complete for the agreed scope.
+The user deferred 6c on 2026-10-20 because the data is not important enough to
+require it; no backup/restore was implemented. VPN/proxy reachability
 monitoring remains a separate open question. Local health does not prove upstream
 availability. The user reported on 2026-10-19 that OpenRouter access is
 denied with VPN disconnected. This is manual user evidence, not verification of
-the future container or a new agent network test.
+the container's actual routing or a new agent network test.
+
+On 2026-10-20 the user confirmed that the production deployment is running and
+working, and accepted feature 6b as complete. This is user-reported evidence;
+no remote deployment verification was run.
 
 ## Implemented architecture
 
@@ -138,7 +148,8 @@ with no direct fallback. Missing or invalid configuration prevents correction. C
 Container SQLite retains server-relative data/gramota.sqlite, using a named volume
 mounted at /app/apps/server/data without a SQLITE_PATH override. Synthetic history and
 model preference survive local container recreation. GRAMOTA_PORT changes the
-loopback host port, default 3000; container logs rotate and restart policy is
-unless-stopped. Backup/restore, actual
-container VPN routing and secure phone access remain unverified. See
+published host port, default 3000, on all interfaces. The service joins the existing
+nginx-proxy-manager_default network; Nginx Proxy Manager targets http://gramota:3000.
+Container logs rotate and restart policy is unless-stopped. Backup/restore is deferred. Actual container VPN routing and
+secure phone access remain unverified. See
 docs/container.md.

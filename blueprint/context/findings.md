@@ -32,18 +32,18 @@
 **Resolution:** Removed at user request on 2026-10-18. Manifest and lockfile updated offline; demo code/tests and three images deleted. Server tests (40), web build and server lint pass; focused root/database tests (3) and test typecheck pass after lint repairs. Re-reviewed on 2026-10-19: removed files and dependencies remain absent, current route registration and source references do not reintroduce them. Closed by this quality audit; no independent review performed.
 
 
-### F-04 [P3] fixed - Current documentation retains pre-refactor descriptions
+### F-04 [P3] closed - Current documentation retains pre-refactor descriptions
 
 **File:** apps/server/README.md:9; docs/architecture.md:69; docs/status.md:33
 **Found:** 2026-10-19 by /audit (scope: current docs and nearby backend; lens: quality)
 **Why it matters:** The server README names the removed storage/ module and says no extra packages are needed. Architecture describes search on GET /api/history, although filters use POST /api/history/search. Status repeats superseded verification counts and detailed completion history already retained in the archive.
 **Suggested fix:** Update the README and API list, summarize current verification once, and link the existing completion archive for history. Current requirement lost: None.
-**Resolution:** Corrected the README/module and migration descriptions, history-search API and current status summary. Local links (20 Markdown files) and diff checks pass. Awaiting review.
+**Resolution:** Corrected the README/module and migration descriptions, history-search API and current status summary. Local links (20 Markdown files) and diff checks passed. Re-reviewed on 2026-10-20 after the user-approved documentation consolidation: the original files were removed, retained setup/storage instructions match the current implementation, and the overview points to the public route modules. Superseded descriptions and duplicate status counts are absent from active docs. Closed; original file references above are historical.
 
-### F-05 [P3] fixed - Diagnostics retain the removed driver's error format
+### F-05 [P3] closed - Diagnostics retain the removed driver's error format
 
 **File:** apps/server/src/database/diagnostics.ts:8
 **Found:** 2026-10-19 by /audit (scope: diagnostics and callers/tests; lens: quality)
 **Why it matters:** Application database access uses better-sqlite3, whose SqliteError carries a string code. The ERR_SQLITE_ERROR compatibility entries and numeric errcode mapping remain from node:sqlite and are exercised only by old synthetic test errors.
 **Suggested fix:** Remove the old-driver code entries and numeric mapping; retain the current driver allowlist, Drizzle cause unwrapping and safe metadata-only logging. Update diagnostic tests to use the current driver format. Current requirement lost: None; public error contracts remain unchanged.
-**Resolution:** Removed old-driver entries and numeric mapping; updated current-driver and Drizzle-wrapper safety assertions. All 66 server tests, server lint and targeted formatting pass. Awaiting review.
+**Resolution:** Removed old-driver entries and numeric mapping; updated current-driver and Drizzle-wrapper safety assertions. All 66 server tests, server lint and targeted formatting passed during implementation. Re-reviewed on 2026-10-20: diagnostics unwrap Drizzle causes and allow only current string driver codes, with no legacy numeric mapping. The focused Repository diagnostics test passed (1 test); private error fields and the fixture's extra numeric errcode are not emitted or interpreted. Closed without changing application code.

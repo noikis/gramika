@@ -16,8 +16,8 @@ for optional tool settings.
 Gramota is a personal writing assistant for correcting short messages and letters,
 with Russian quality, minimal edits, and mobile use as priorities. The repository
 implements correction, local diff, searchable history and persistent model
-selection. Original roadmap features 1-5 and production packaging/health (6a-6b)
-are complete; backup/restore remains in Feature 6c.
+selection. The active roadmap, including production packaging/health (6a-6b),
+is complete. The user deferred backup/restore (6c) because current data is not important.
 
 Read the relevant product context before planning or changing behavior:
 
@@ -30,7 +30,8 @@ MVP is Strict correction only. OpenRouter calls belong on the server, history
 must not be sent with correction requests, and diff is computed locally.
 Never put secrets or real personal texts in code, logs, docs, or test fixtures.
 In production, use the configured mandatory proxy and never fall back to direct
-OpenRouter access. Auth and external access are deferred.
+OpenRouter access. Application auth and further access features are deferred;
+Compose uses the existing Nginx Proxy Manager network.
 
 Use npm workspaces, React/Vite, Fastify, TypeScript, and public Zod contracts.
 SQLite uses Drizzle ORM and better-sqlite3 with transactional migrations. Tailwind
@@ -409,7 +410,7 @@ Run from the repository root with npm and the root package-lock.json.
 - Server formatting check: `npm run format:check -w apps/server`.
 - Server tests: `npm test -w apps/server` (build, test typecheck, node:test with c8).
 - Local production container: `docker compose up -d --build`; set `GRAMOTA_PORT`
-  to change the loopback host port (default 3000). See `docs/container.md` for
+  to change the published host port (default 3000, all interfaces). See `docs/container.md` for
   private runtime configuration, storage retention and recreation commands.
 - Generate SQLite migrations: `npm run db:generate -w apps/server -- --name=<change>`.
   Review and commit the generated SQL and metadata in `apps/server/drizzle/`.

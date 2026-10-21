@@ -32,8 +32,15 @@ requires a proxy even when the host is the development computer.
 ## Production container
 
 The container serves the built frontend and API from one Fastify process. It
-publishes only loopback, not external access. Auth, TLS and phone access remain
-separate decisions; browser clipboard use depends on a suitable secure context
+joins the existing external Docker network `nginx-proxy-manager_default`.
+That network must exist before Compose starts the service. In Nginx Proxy
+Manager, forward to scheme `http`, hostname `gramota`, port `3000`.
+
+Compose also publishes `${GRAMOTA_PORT:-3000}:3000` on all host interfaces,
+subject to the host firewall. The host port serves both the web interface and
+API; changing it does not change Nginx Proxy Manager's internal target port.
+Application authentication is not implemented. Domain, TLS and access restrictions
+are deployment settings; browser clipboard use needs a suitable secure context
 and retains a manual-copy fallback.
 
 ## Start and change the port
@@ -53,7 +60,8 @@ docker compose up -d --build
 Open `http://127.0.0.1:8080`. Omit `GRAMOTA_PORT` to use port 3000. Changing
 `GRAMOTA_PORT` and running `docker compose up -d` recreates the service with the
 new host port while retaining its named volume. The container always listens
-on port 3000, and the published host address stays `127.0.0.1`.
+on port 3000. Other devices can use `http://<server-ip>:8080` if the host firewall
+allows access. Nginx Proxy Manager uses `http://gramota:3000` on the shared network.
 
 On a POSIX shell the equivalent is:
 
@@ -116,8 +124,8 @@ docker compose up -d
 
 These commands retain the volume. `docker compose down --volumes`, volume removal
 and volume-pruning commands can destroy saved history; do not use them for normal
-restarts. The volume is not a backup. Backup/restore and importing an existing
-personal database belong to feature 6c; this setup starts with a fresh volume.
+restarts. The volume is not a backup. The user deferred backup/restore on
+2026-10-20 because the current data is not important enough to require it.
 
 ## Database migrations and existing history
 
