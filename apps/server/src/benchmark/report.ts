@@ -21,12 +21,7 @@ export function benchmarkSummary(run: BenchmarkRun, requests: Record<string, His
 }
 
 export function renderBenchmarkReport(run: BenchmarkRun, requests: Record<string, HistoryRequest>) {
-  const data = JSON.stringify({ run, requests, summary: benchmarkSummary(run, requests) })
-    .replace(/</g, '\\u003c')
-    .replace(/>/g, '\\u003e')
-    .replace(/&/g, '\\u0026')
-    .replace(/\u2028/g, '\\u2028')
-    .replace(/\u2029/g, '\\u2029')
+  const data = reportJson({ run, requests, summary: benchmarkSummary(run, requests) })
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
@@ -114,4 +109,13 @@ function render() {
 for (const select of [sentence, left, right]) select.addEventListener('change', render);
 render();
 </script></body></html>`
+}
+
+export function reportJson(value: unknown) {
+  return JSON.stringify(value)
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029')
 }

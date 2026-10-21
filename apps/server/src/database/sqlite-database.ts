@@ -1,3 +1,4 @@
+import { createExplanationRepository } from './repositories/explanation-repository'
 import Database from 'better-sqlite3'
 import { drizzle, type BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import { mkdirSync } from 'node:fs'
@@ -15,6 +16,7 @@ const BUSY_TIMEOUT_MS = 5000
 export type DatabaseClient = BetterSQLite3Database
 
 export class SqliteDatabase {
+  readonly explanations: ReturnType<typeof createExplanationRepository>
   readonly db: Database.Database
   readonly corrections: ReturnType<typeof createCorrectionRepository>
   readonly history: ReturnType<typeof createHistoryRepository>
@@ -29,6 +31,7 @@ export class SqliteDatabase {
       migrateDatabase(database)
       recoverInterruptedAttempts(database, now)
 
+      this.explanations = createExplanationRepository(database)
       this.corrections = createCorrectionRepository(database)
       this.history = createHistoryRepository(database)
       this.modelPreferences = createModelPreferenceRepository(database)

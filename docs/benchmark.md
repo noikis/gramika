@@ -164,3 +164,61 @@ alongside reported cost and timing before deciding whether a model helps.
 For Rewrite, assess faithfulness first, then naturalness, clarity, flow and
 proportionate change. See [synthetic evaluation criteria](rewrite-evaluation.md).
 Previously generated offline reports remain self-contained and readable.
+
+## Explain every change in an existing run
+
+Strict Explain can be evaluated against saved correction results without paying
+for corrections again. Use an existing version-2 correction benchmark folder
+containing `run.json` and `records.sqlite`. The source files stay unchanged.
+This command supports successful Strict results; Rewrite Explain awaits approval.
+Failed/not-run results and Rewrite results are shown as skipped. Unchanged Strict
+results need no explanation request. Each detected change gets its own request,
+using the correcting model and full original/result context. Adjacent grouped
+corrections and whitespace context match the app's Changes inspector. Missed
+errors cannot be explained because they did not produce a change.
+
+Preview it yourself from the repository root, replacing the example folder:
+
+```powershell
+npm run benchmark -w apps/server -- --explain-run benchmark-data/runs/YOUR-RUN-FOLDER
+```
+
+The preview opens only the supplied source database read-only. It does not read
+credentials, send requests, create output files or run migrations. It prints the
+exact explanation count for this source snapshot. Do not combine `--explain-run`
+with `--cases`, `--models` or `--variants`.
+
+Add `--execute` when ready to spend and type the displayed `RUN N` confirmation
+in an interactive terminal. The prepared snapshot is used after confirmation;
+there are no fresh corrections or automatic retries. If there are no eligible
+changes, execution sends no requests. Repeating this command creates a fresh
+Explain run and may charge for the same changes again; it does not reuse app
+history explanations or prior Explain benchmarks.
+
+Requests use the actual `explain-v1` prompts and the application's existing
+request settings. Gemini explanations explicitly use `reasoning: { effort: 'minimal' }`
+in both the app and benchmark; Gemma explanations still use disabled reasoning.
+Like correction benchmarks, Explain
+benchmarks accept otherwise valid answers with reasoning metadata and retain
+reported usage; the run records `isRejectReasoning: false`. Application
+corrections and Gemma explanations keep their reasoning-response guard enabled.
+Gemini app explanations accept reasoning metadata too, as requested by the user.
+The first failed response or timeout stops the queue.
+Ctrl+C waits for the current response to be saved, then stops. Reports mark the
+remaining changes Not run. Storage/report failures stop further requests too.
+Provider-reported unknown costs remain unavailable, including on failed calls.
+
+A new folder under `apps/server/benchmark-data/explain-runs/` contains:
+
+- `run.json`: the source folder, exact source texts and change positions, model
+  identities, prompt/version, request settings, per-change status, explanation,
+  reported metadata, cost and duration. These are local benchmark records only;
+  application explanation accounting remains deferred.
+- `report.html`: a self-contained offline report. Choose a correction result to
+  see the complete original/result and **every detected change with its own
+  explanation** below it. No additional requests happen when viewing the report.
+
+Judge explanations manually for accuracy, focus, contextual reasoning, honesty
+about optional or questionable edits, clear Russian and the five-sentence ceiling.
+Agents may test helper functions with mocked transport only and must never invoke
+the benchmark CLI, including preview.

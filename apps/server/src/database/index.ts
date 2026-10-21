@@ -7,5 +7,7 @@ export type HistoryRepository = SqliteDatabase['history']
 export type ModelPreferenceRepository = SqliteDatabase['modelPreferences']
 export type Database = Pick<
   SqliteDatabase,
-  'corrections' | 'history' | 'modelPreferences' | 'close' | 'checkHealth'
+  'explanations' | 'corrections' | 'history' | 'modelPreferences' | 'close' | 'checkHealth'
 >
+
+export { openBenchmarkSource } from './repositories/benchmark-source-repository'

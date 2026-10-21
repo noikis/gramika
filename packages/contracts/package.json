@@ -9,15 +9,23 @@
       "types": "./dist/index.d.ts",
       "browser": "./src/index.ts",
       "default": "./dist/index.js"
+    },
+    "./text-diff": {
+      "types": "./dist/text-diff.d.ts",
+      "browser": "./src/text-diff.ts",
+      "default": "./dist/text-diff.js"
     }
   },
-  "scripts": { "build": "tsc -p tsconfig.json" },
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "private": true,
   "dependencies": {
-    "zod": "^4.6.7"
+    "zod": "^4.6.7",
+    "diff": "^4.0.4"
   }
 }

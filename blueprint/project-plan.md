@@ -103,8 +103,19 @@ English and French remain future candidates. Russian is the initial acceptance t
 - **Selected-correction explanations:** explicitly request an explanation for a
   changed word or phrase, including relevant grammar, spelling or punctuation.
   Do not explain the whole result or generate explanations automatically. Save
-  requested explanations for reuse to avoid repeated cost. Selection and request
-  controls remain to be designed; an Explain button is allowed.
+  requested explanations for reuse across visits to avoid repeated cost. The first
+  phase supports Strict results in both workspace and History, using the existing
+  Changes selection and an explicit Explain button. Use the correcting model,
+  full original/result context and exact selected fragments. Return one Russian
+  explanation of at most five sentences; no Explain more. Implement the actual explain-v1
+  prompts verbatim; evaluate their quality manually. Rewrite Explain is the second phase
+  of this same feature, after Strict evaluation and user approval. It shares the
+  core prompt and explains both language corrections and alternative wording,
+  including changes in nuance or emphasis. Explanation metrics/cost reporting
+  remain a separate follow-up. See the
+  [agreed V2.4 handoff](context/v2.4-explain-handoff.md). Gemini
+  explanations use minimal reasoning and accept reasoning metadata; Gemma app
+  explanations retain their response guard. Correction settings are unchanged.
 - **Soft-delete history:** remove deleted records from normal history views while
   retaining them in storage. Delete a whole original and all its attempts after
   confirmation. No Trash or restore screen in V2.5 (user decision, 2026-10-21).

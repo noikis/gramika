@@ -1,3 +1,4 @@
+import { explainBenchmarkCommand } from './explain-cli'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { parseArgs } from 'node:util'
@@ -10,7 +11,13 @@ import { STRICT_PROMPT_VERSION, REWRITE_PROMPT_VERSION } from '../correction'
 
 // Human-only entry point. Never import or invoke this command from checks or startup.
 async function main() {
-  let values: { cases?: string; models?: string; variants?: string; execute?: boolean }
+  let values: {
+    cases?: string
+    models?: string
+    variants?: string
+    execute?: boolean
+    'explain-run'?: string
+  }
   try {
     values = parseArgs({
       options: {
@@ -18,13 +25,19 @@ async function main() {
         models: { type: 'string' },
         variants: { type: 'string' },
         execute: { type: 'boolean' },
+        'explain-run': { type: 'string' },
       },
       allowPositionals: false,
     }).values
   } catch {
     throw new BenchmarkInputError(
-      'Usage: npm run benchmark -w apps/server -- --cases <file.json> (--models <id,id> | --variants <model:mode,model:mode>) [--execute]',
+      'Usage: npm run benchmark -w apps/server -- --cases <file.json> (--models <id,id> | --variants <model:mode,model:mode>) [--execute], or --explain-run <existing-run-folder> [--execute]',
     )
+  }
+  if (values['explain-run'] !== undefined) {
+    if (values.cases || values.models || values.variants)
+      throw new BenchmarkInputError('Use --explain-run alone, optionally with --execute.')
+    return explainBenchmarkCommand(values['explain-run'], values.execute)
   }
   if (!values.cases || (!values.models && !values.variants) || (values.models && values.variants))
     throw new BenchmarkInputError(

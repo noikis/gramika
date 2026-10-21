@@ -1,5 +1,3 @@
-import type { ChangeSegment } from './text-diff'
-
 const runs = /(?:\r\n)+| +|\t+|\n+|\r+|\u00a0+|\s/gu
 
 function describeRun(run: string) {
@@ -56,10 +54,4 @@ export function correctionDescription(original: string, corrected: string, spaci
   return 'Text change'
 }
 
-export function whitespaceComparison(segment: ChangeSegment, following?: ChangeSegment) {
-  // Diff units omit a shared trailing separator. Put it and the following word
-  // back in the comparison so a 2-to-1 change is not displayed as 1-to-0.
-  const context =
-    following?.kind === 'equal' ? (following.corrected.match(/^\s+\S*/u)?.[0] ?? '') : ''
-  return { original: segment.original + context, corrected: segment.corrected + context }
-}
+export { whitespaceComparison } from '@gramota/contracts/text-diff'

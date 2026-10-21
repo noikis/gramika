@@ -1,3 +1,5 @@
+import { createExplanationService } from './explanation'
+import { explanationRoutes } from './routes/explanations'
 import type { FastifyPluginAsync, FastifyServerOptions } from 'fastify'
 import { createAppResources, type AppResourcesOptions } from './app-resources'
 import { createCorrectionService } from './correction'
@@ -41,6 +43,15 @@ const app: FastifyPluginAsync<AppOptions> = async (fastify, opts): Promise<void>
   fastify.register(rootRoutes, { frontendRoot: opts.frontendRoot })
   await healthRoutes(fastify, database, config.available)
   await correctionRoutes(fastify, correct)
+  await explanationRoutes(
+    fastify,
+    createExplanationService({
+      repository: database?.explanations ?? null,
+      transport,
+      isAvailable: config.available,
+      timeoutMs: opts.correction?.timeoutMs,
+    }),
+  )
   await historyRoutes(fastify, database?.history ?? null)
   await modelSettingsRoutes(fastify, database?.modelPreferences ?? null, config.available)
 }

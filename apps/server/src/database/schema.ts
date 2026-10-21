@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm'
-import { check, integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core'
+import { check, integer, primaryKey, real, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 import type { HistoryDetail, HistoryRequest } from '@gramota/contracts'
 
 export const corrections = sqliteTable(
@@ -97,4 +97,38 @@ export const modelPreference = sqliteTable(
     modelId: text('model_id').notNull(),
   },
   (table) => [check('model_preference_singleton', sql`${table.id} = 1`)],
+)
+
+export const explanations = sqliteTable(
+  'explanations',
+  {
+    requestId: text('request_id')
+      .notNull()
+      .references(() => modelRequests.id),
+    originalStart: integer('original_start').notNull(),
+    originalEnd: integer('original_end').notNull(),
+    correctedStart: integer('corrected_start').notNull(),
+    correctedEnd: integer('corrected_end').notNull(),
+    explanation: text('explanation').notNull(),
+  },
+  (table) => [
+    primaryKey({
+      columns: [
+        table.requestId,
+        table.originalStart,
+        table.originalEnd,
+        table.correctedStart,
+        table.correctedEnd,
+      ],
+    }),
+    check(
+      'explanation_original_range',
+      sql`${table.originalStart} >= 0 AND ${table.originalEnd} >= ${table.originalStart}`,
+    ),
+    check(
+      'explanation_corrected_range',
+      sql`${table.correctedStart} >= 0 AND ${table.correctedEnd} >= ${table.correctedStart}`,
+    ),
+    check('explanation_nonempty', sql`length(trim(${table.explanation})) > 0`),
+  ],
 )

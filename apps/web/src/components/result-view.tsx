@@ -1,3 +1,4 @@
+import { ExplanationPanel } from './explanation-panel'
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import type { CorrectionResult } from '@gramota/contracts'
@@ -9,7 +10,7 @@ import { Button } from './ui/button'
 export type ResultViewMode = 'text' | 'changes'
 
 type Props = {
-  result: Pick<CorrectionResult, 'originalText' | 'correctedText'>
+  result: Pick<CorrectionResult, 'originalText' | 'correctedText' | 'requestId' | 'mode'>
   view: ResultViewMode
   onViewChange: (view: ResultViewMode) => void
   labelId: string
@@ -19,12 +20,7 @@ type Props = {
 }
 
 export function ResultView(props: Props) {
-  return (
-    <ResultContent
-      key={JSON.stringify([props.result.originalText, props.result.correctedText])}
-      {...props}
-    />
-  )
+  return <ResultContent key={props.result.requestId} {...props} />
 }
 
 function passage(text: string, empty: string) {
@@ -59,6 +55,20 @@ function ResultContent({
     current && spacingOnly
       ? whitespaceComparison(current, segments[segments.indexOf(current) + 1])
       : current
+  const explanationSelection =
+    current && comparison
+      ? {
+          requestId: result.requestId,
+          originalRange: {
+            start: current.originalRange.start,
+            end: current.originalRange.start + comparison.original.length,
+          },
+          correctedRange: {
+            start: current.correctedRange.start,
+            end: current.correctedRange.start + comparison.corrected.length,
+          },
+        }
+      : null
   const description = comparison
     ? correctionDescription(comparison.original, comparison.corrected, spacingOnly)
     : ''
@@ -225,6 +235,12 @@ function ResultContent({
               </div>
             </dl>
           </div>
+          {result.mode === 'strict' && explanationSelection && (
+            <ExplanationPanel
+              key={JSON.stringify(explanationSelection)}
+              selection={explanationSelection}
+            />
+          )}
         </div>
       )}
     </>

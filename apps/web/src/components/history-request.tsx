@@ -123,7 +123,12 @@ export function HistoryRequest({
     <section className="history-request" aria-labelledby={labelId}>
       {success ? (
         <ResultView
-          result={{ originalText: original, correctedText: request.correctedText! }}
+          result={{
+            originalText: original,
+            correctedText: request.correctedText!,
+            requestId: request.id,
+            mode: request.mode,
+          }}
           view={view}
           onViewChange={setView}
           labelId={labelId}
