@@ -9,6 +9,7 @@ import Database from 'better-sqlite3'
 import { drizzle } from 'drizzle-orm/better-sqlite3'
 import { readMigrationFiles } from 'drizzle-orm/migrator'
 import { DEFAULT_MODEL_ID, MODELS, ExplanationInput, type CorrectionMode } from '@gramota/contracts'
+import { diffText, explanationSelection } from '@gramota/contracts/text-diff'
 import { SqliteDatabase } from '../src/database'
 import { migrateDatabase } from '../src/database/migrations'
 import { CorrectionError, type CorrectionTransport } from '../src/correction'
@@ -54,11 +55,7 @@ function seed(
   })
   return {
     ...ids,
-    selection: {
-      requestId: ids.requestId,
-      originalRange: { start: 6, end: 11 },
-      correctedRange: { start: 6, end: 12 },
-    },
+    selection: explanationSelection(ids.requestId, diffText(originalText, correctedText).groups[0]),
   }
 }
 function transport(
@@ -113,10 +110,10 @@ for (const mode of ['strict', 'gentle-rewrite'] as const) {
         assert.equal(input.mode, mode)
         assert.equal(input.originalText, 'Нужна помощ. Нужна помощ.')
         assert.equal(input.editedText, 'Нужна помощь. Нужна помощь.')
-        assert.equal(input.selectedChange.originalFragment, 'помощ')
-        assert.equal(input.selectedChange.editedFragment, 'помощь')
-        assert.deepEqual(input.selectedChange.originalRange, selection.originalRange)
-        assert.deepEqual(input.selectedChange.editedRange, selection.correctedRange)
+        assert.equal(input.selectedChange.originalFragments[0].text, 'помощ')
+        assert.equal(input.selectedChange.editedFragments[0].text, 'помощь')
+        assert.deepEqual(input.comparisonContext.originalRange, selection.originalRange)
+        assert.deepEqual(input.comparisonContext.editedRange, selection.correctedRange)
         return { correctedText: answer, errorCode: null, details: { costUsd: 0.5 } }
       })
       assert.deepEqual(explain.lookup(selection), { result: null })
@@ -126,11 +123,10 @@ for (const mode of ['strict', 'gentle-rewrite'] as const) {
       assert.equal(explain.lookup(selection).result?.explanation, answer)
       assert.equal(calls, 1)
       assert.deepEqual(db.db.prepare('SELECT * FROM model_requests').all(), before)
-      const second = {
-        ...selection,
-        originalRange: { start: 18, end: 23 },
-        correctedRange: { start: 19, end: 25 },
-      }
+      const second = explanationSelection(
+        selection.requestId,
+        diffText('Нужна помощ. Нужна помощ.', 'Нужна помощь. Нужна помощь.').groups[1],
+      )
       assert.equal(explain.lookup(second).result, null)
     }
   })
@@ -203,33 +199,34 @@ for (const mode of ['strict', 'gentle-rewrite'] as const) {
   test(`insertions, deletions, spacing and grouped phrases retain exact UTF-16 context (${mode})`, async (t) => {
     const db = new SqliteDatabase(':memory:')
     t.after(() => db.close())
-    for (const [original, corrected, originalRange, correctedRange] of [
-      ['Аня привет', 'Аня, привет', { start: 3, end: 3 }, { start: 3, end: 4 }],
-      ['Привет!!', 'Привет!', { start: 7, end: 8 }, { start: 7, end: 7 }],
-      ['😀  привет', '😀 привет', { start: 2, end: 10 }, { start: 2, end: 9 }],
-      [
-        'никого подтверждение',
-        'никакого подтверждения',
-        { start: 0, end: 20 },
-        { start: 0, end: 22 },
-      ],
-    ] as const) {
+    for (const [original, corrected] of [
+      ['Аня привет', 'Аня, привет'],
+      ['Привет!!', 'Привет!'],
+      ['😀  привет', '😀 привет'],
+      ['никого подтверждение', 'никакого подтверждения'],
+    ]) {
       const { requestId } = seed(db, DEFAULT_MODEL_ID, mode, original, corrected)
-      const selection = { requestId, originalRange, correctedRange }
-      const explain = service(db, async (body) => {
-        const data = JSON.parse((body as { messages: { content: string }[] }).messages[1].content)
-        assert.equal(
-          data.selectedChange.originalFragment,
-          original.slice(originalRange.start, originalRange.end),
-        )
-        assert.equal(
-          data.selectedChange.editedFragment,
-          corrected.slice(correctedRange.start, correctedRange.end),
-        )
-        return { correctedText: answer, errorCode: null, details: {} }
-      })
-      await explain.explain(selection)
-      if (original.startsWith('😀')) {
+      for (const group of diffText(original, corrected).groups) {
+        const selection = explanationSelection(requestId, group)
+        const explain = service(db, async (body) => {
+          const data = JSON.parse((body as { messages: { content: string }[] }).messages[1].content)
+          assert.deepEqual(
+            data.selectedChange.originalFragments,
+            selection.originalSpans.map((range) => ({
+              range,
+              text: original.slice(range.start, range.end),
+            })),
+          )
+          assert.deepEqual(
+            data.selectedChange.editedFragments,
+            selection.correctedSpans.map((range) => ({
+              range,
+              text: corrected.slice(range.start, range.end),
+            })),
+          )
+          return { correctedText: answer, errorCode: null, details: {} }
+        })
+        await explain.explain(selection)
         await assert.rejects(
           explain.explain({ ...selection, originalRange: { start: 1, end: 2 } }),
           hasCode('INVALID_INPUT'),
@@ -341,7 +338,7 @@ for (const mode of ['strict', 'gentle-rewrite'] as const) {
       answer,
     )
     assert.equal((await post('/api/explanations', {})).statusCode, 400)
-    assert.equal((await post('/api/explanations', { text: 'x'.repeat(5000) })).statusCode, 413)
+    assert.equal((await post('/api/explanations', { text: 'x'.repeat(70000) })).statusCode, 413)
     db.explanations.get = () => {
       throw Error('private database path')
     }
@@ -474,11 +471,10 @@ test('unknown saved modes are rejected for lookup and generation without a model
     }),
     isAvailable: true,
   })
-  const selection = {
-    requestId: randomUUID(),
-    originalRange: { start: 5, end: 5 },
-    correctedRange: { start: 5, end: 6 },
-  }
+  const selection = explanationSelection(
+    randomUUID(),
+    diffText(source.originalText, source.correctedText).groups[0],
+  )
   assert.throws(() => explain.lookup(selection), hasCode('INVALID_INPUT'))
   await assert.rejects(explain.explain(selection), hasCode('INVALID_INPUT'))
   assert.equal(calls, 0)
@@ -490,11 +486,10 @@ for (const mode of ['strict', 'gentle-rewrite'] as const) {
     t.after(() => db.close())
     for (const model of MODELS) {
       const { selection, correctionId } = seed(db, model.id, mode)
-      const second = {
-        ...selection,
-        originalRange: { start: 18, end: 23 },
-        correctedRange: { start: 19, end: 25 },
-      }
+      const second = explanationSelection(
+        selection.requestId,
+        diffText('Нужна помощ. Нужна помощ.', 'Нужна помощь. Нужна помощь.').groups[1],
+      )
       let calls = 0
       const explain = service(db, async () => {
         calls++
@@ -567,7 +562,24 @@ test('legacy explanation metrics stay unavailable and recorded metrics survive r
     rmSync(directory, { recursive: true, force: true })
   })
   const legacy = seed(db).selection
-  db.explanations.save(legacy, answer)
+  db.db
+    .prepare(
+      'INSERT INTO explanations (request_id, original_start, original_end, corrected_start, corrected_end, explanation, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    )
+    .run(
+      legacy.requestId,
+      legacy.originalRange.start,
+      legacy.originalRange.end,
+      legacy.correctedRange.start,
+      legacy.correctedRange.end,
+      answer,
+      at,
+    )
+  const legacySelection = {
+    requestId: legacy.requestId,
+    originalRange: legacy.originalRange,
+    correctedRange: legacy.correctedRange,
+  }
   const tracked = seed(db).selection
   await service(db, async () => ({
     correctedText: answer,
@@ -605,12 +617,12 @@ test('legacy explanation metrics stay unavailable and recorded metrics survive r
   assert.equal(before.attempts[0].outputTokens, null)
   assert.deepEqual(offline.metrics({ requestId: legacy.requestId }), {
     attempts: [],
-    legacySelections: [legacy],
+    legacySelections: [legacySelection],
   })
-  await offline.explain(legacy)
+  await assert.rejects(offline.explain(legacy), hasCode('NOT_CONFIGURED'))
   assert.deepEqual(offline.metrics({ requestId: legacy.requestId }), {
     attempts: [],
-    legacySelections: [legacy],
+    legacySelections: [legacySelection],
   })
 })
 
@@ -642,8 +654,9 @@ test('metrics API validates identifiers and never generates an explanation', asy
   assert.equal((await post({ requestId })).statusCode, 400)
 })
 
-test('metrics migration preserves saved explanations and their missing metrics', () => {
+test('multi-span migration soft-deletes saved content once and preserves missing-metrics evidence', () => {
   const raw = new Database(':memory:')
+  raw.pragma('foreign_keys = ON')
   try {
     const migrations = readMigrationFiles({ migrationsFolder: join(__dirname, '../drizzle') })
     raw.exec(
@@ -675,9 +688,106 @@ test('metrics migration preserves saved explanations and their missing metrics',
     const before = raw.prepare('SELECT * FROM explanations').all()
     migrateDatabase(drizzle(raw))
     migrateDatabase(drizzle(raw))
-    assert.deepEqual(raw.prepare('SELECT * FROM explanations').all(), before)
+    const after = raw.prepare('SELECT * FROM explanations').all() as Record<string, unknown>[]
+    assert.equal(after.length, before.length)
+    assert.ok(after[0].deleted_at)
+    assert.equal(after[0].selection_key, 'legacy')
+    assert.equal(after[0].explanation, answer)
+    const deletedAt = after[0].deleted_at
+    migrateDatabase(drizzle(raw))
+    assert.equal(
+      (raw.prepare('SELECT deleted_at FROM explanations').get() as { deleted_at: string })
+        .deleted_at,
+      deletedAt,
+    )
     assert.deepEqual(raw.prepare('SELECT * FROM explanation_attempts').all(), [])
   } finally {
     raw.close()
   }
+})
+
+test('movement payload identifies exact moved words separately from context; no automatic explanation', async (t) => {
+  const db = new SqliteDatabase(':memory:')
+  t.after(() => db.close())
+  const original = 'Я пока не могу точно обещать.'
+  const corrected = 'Я не могу пока точно обещать.'
+  const { selection } = seed(db, DEFAULT_MODEL_ID, 'gentle-rewrite', original, corrected)
+  let calls = 0
+  const explain = service(db, async (body) => {
+    calls++
+    const payload = JSON.parse((body as { messages: { content: string }[] }).messages[1].content)
+    assert.equal(payload.selectedChange.kind, 'move')
+    assert.deepEqual(payload.selectedChange.originalFragments, [
+      { range: { start: 2, end: 6 }, text: 'пока' },
+    ])
+    assert.deepEqual(payload.selectedChange.editedFragments, [
+      { range: { start: 10, end: 14 }, text: 'пока' },
+    ])
+    assert.equal(payload.comparisonContext.originalFragment, 'пока не могу')
+    assert.equal(payload.comparisonContext.editedFragment, 'не могу пока')
+    assert.equal(payload.selectedChange.originalFragment, undefined)
+    return { correctedText: 'Изменилось положение слова «пока».', errorCode: null, details: {} }
+  })
+  assert.equal(explain.lookup(selection).result, null)
+  assert.equal(calls, 0)
+  for (const invalid of [
+    { ...selection, version: 1 },
+    { ...selection, kind: 'replace' },
+    { ...selection, originalSpans: [{ start: 2, end: 14 }] },
+    { ...selection, originalSpans: [...selection.originalSpans, ...selection.originalSpans] },
+    { ...selection, correctedSpans: [] },
+  ])
+    await assert.rejects(explain.explain(invalid), hasCode('INVALID_INPUT'))
+  assert.equal(calls, 0)
+  await explain.explain(selection)
+  await explain.explain(selection)
+  assert.equal(calls, 1)
+  assert.deepEqual(
+    explain.metrics({ requestId: selection.requestId }).attempts[0].selection,
+    selection,
+  )
+})
+
+test('saved identities distinguish exact selections sharing context and do not reuse soft-deleted content', (t) => {
+  const db = new SqliteDatabase(':memory:')
+  t.after(() => db.close())
+  const { requestId } = seed(db)
+  const groups = diffText('Нужна помощ. Нужна помощ.', 'Нужна помощь. Нужна помощь.').groups
+  const selections = groups.map((group) => ({
+    ...explanationSelection(requestId, group),
+    originalRange: { start: 0, end: 24 },
+    correctedRange: { start: 0, end: 26 },
+  }))
+  db.explanations.save(selections[0], 'Первое объяснение.')
+  db.explanations.save(selections[1], 'Второе объяснение.')
+  assert.equal(db.explanations.get(selections[0]), 'Первое объяснение.')
+  assert.equal(db.explanations.get(selections[1]), 'Второе объяснение.')
+  db.db.prepare('UPDATE explanations SET deleted_at=?').run(at)
+  assert.equal(db.explanations.get(selections[0]), null)
+  assert.equal(db.explanations.get(selections[1]), null)
+})
+
+test('historical range-only attempt records remain readable with their real usage', async (t) => {
+  const db = new SqliteDatabase(':memory:')
+  t.after(() => db.close())
+  const { selection } = seed(db)
+  const explain = service(db, async () => ({
+    correctedText: answer,
+    errorCode: null,
+    details: { costUsd: 0.02, inputTokens: 50 },
+  }))
+  await explain.explain(selection)
+  const attempt = explain.metrics({ requestId: selection.requestId }).attempts[0]
+  const historical = {
+    ...attempt,
+    selection: {
+      requestId: selection.requestId,
+      originalRange: selection.originalRange,
+      correctedRange: selection.correctedRange,
+    },
+  }
+  db.db
+    .prepare('UPDATE explanation_attempts SET record_json=? WHERE id=?')
+    .run(JSON.stringify(historical), attempt.id)
+  assert.deepEqual(explain.metrics({ requestId: selection.requestId }).attempts, [historical])
 })

@@ -1,5 +1,9 @@
 import { and, eq, isNull } from 'drizzle-orm'
-import { ExplanationMetrics, type ExplanationInput } from '@gramota/contracts'
+import {
+  ExplanationMetrics,
+  explanationSelectionKey,
+  type ExplanationInput,
+} from '@gramota/contracts'
 import type { ExplanationRepository } from '../../explanation'
 import type { DatabaseClient } from '../sqlite-database'
 import { corrections, explanations, explanationAttempts, modelRequests } from '../schema'
@@ -11,6 +15,8 @@ function columns(selection: ExplanationInput) {
     originalEnd: selection.originalRange.end,
     correctedStart: selection.correctedRange.start,
     correctedEnd: selection.correctedRange.end,
+    selectionKey: explanationSelectionKey(selection),
+    selection,
   }
 }
 
@@ -22,6 +28,8 @@ function matches(selection: ExplanationInput) {
     eq(explanations.originalEnd, value.originalEnd),
     eq(explanations.correctedStart, value.correctedStart),
     eq(explanations.correctedEnd, value.correctedEnd),
+    eq(explanations.selectionKey, value.selectionKey),
+    isNull(explanations.deletedAt),
   )
 }
 
@@ -46,6 +54,7 @@ export function createExplanationRepository(db: DatabaseClient): ExplanationRepo
         .from(explanations)
         .where(eq(explanations.requestId, requestId))
         .all()
+        .filter((row) => row.selectionKey === 'legacy')
         .map((row) => ({
           requestId,
           originalRange: { start: row.originalStart, end: row.originalEnd },
@@ -56,7 +65,11 @@ export function createExplanationRepository(db: DatabaseClient): ExplanationRepo
             !attempts.some(
               (attempt) =>
                 attempt.status === 'succeeded' &&
-                JSON.stringify(attempt.selection) === JSON.stringify(selection),
+                !('version' in attempt.selection) &&
+                attempt.selection.originalRange.start === selection.originalRange.start &&
+                attempt.selection.originalRange.end === selection.originalRange.end &&
+                attempt.selection.correctedRange.start === selection.correctedRange.start &&
+                attempt.selection.correctedRange.end === selection.correctedRange.end,
             ),
         )
       return ExplanationMetrics.parse({ attempts, legacySelections })

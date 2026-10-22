@@ -8,6 +8,7 @@ const paths = {
   paste: 'M9 5H5v16h14V5h-4 M9 3h6v5H9z',
   plus: 'M12 5v14 M5 12h14',
   minus: 'M5 12h14',
+  sparkles: 'M12 3l2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5Z M20 2v4 M18 4h4',
   history: 'M3 11a9 9 0 1 1 2 7 M3 4v7h7 M12 7v5l3 2',
   trash: 'M4 7h16 M9 7V4h6v3 M7 7l1 14h8l1-14 M10 11v6 M14 11v6',
   info: 'M12 11v6 M12 7h.01',

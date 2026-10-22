@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import {
   ExplanationMetrics,
   EXPLANATION_ERROR_MESSAGES,
-  type ExplanationInput,
+  type RecordedExplanationSelection,
   type HistoryRequest,
 } from '@gramota/contracts'
 import { formatCost, formatDate, formatTime } from '../lib/history-format'
@@ -15,7 +15,7 @@ function SelectionFragments({
   original,
   corrected,
 }: {
-  selection: ExplanationInput
+  selection: RecordedExplanationSelection
   original: string
   corrected: string
 }) {
@@ -23,6 +23,20 @@ function SelectionFragments({
   const after = corrected.slice(selection.correctedRange.start, selection.correctedRange.end)
   return (
     <dl className="explanation-fragments">
+      {'version' in selection && (
+        <div>
+          <dt>{selection.kind === 'move' ? 'Moved' : 'Selected change'}</dt>
+          <dd lang="ru">
+            {selection.originalSpans
+              .map((range) => original.slice(range.start, range.end))
+              .join(' · ') || '(nothing)'}{' '}
+            →{' '}
+            {selection.correctedSpans
+              .map((range) => corrected.slice(range.start, range.end))
+              .join(' · ') || '(nothing)'}
+          </dd>
+        </div>
+      )}
       <div>
         <dt>Original</dt>
         <dd lang="ru">{before || '(nothing)'}</dd>
@@ -148,7 +162,7 @@ export function ExplanationRequestMetrics({
               <summary>
                 <Icon name="plus" className="disclosure-plus" />
                 <Icon name="minus" className="disclosure-minus" />
-                Saved explanation · metrics not recorded
+                Previous explanation · metrics not recorded
               </summary>
               <SelectionFragments
                 selection={selection}

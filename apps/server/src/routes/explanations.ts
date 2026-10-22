@@ -12,7 +12,7 @@ import { CorrectionError } from '../correction'
 import type { createExplanationService } from '../explanation'
 import { HTTP_STATUS } from '../http-status'
 
-const MAX_EXPLANATION_BODY_BYTES = 4096
+const MAX_EXPLANATION_BODY_BYTES = 64 * 1024
 const statuses = {
   INVALID_INPUT: HTTP_STATUS.BAD_REQUEST,
   PAYLOAD_TOO_LARGE: HTTP_STATUS.PAYLOAD_TOO_LARGE,

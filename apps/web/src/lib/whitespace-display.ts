@@ -53,5 +53,3 @@ export function correctionDescription(original: string, corrected: string, spaci
   }
   return 'Text change'
 }
-
-export { whitespaceComparison } from '@gramota/contracts/text-diff'

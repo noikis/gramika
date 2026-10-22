@@ -8,11 +8,7 @@ import {
   TIMEOUT_MS,
   type ExplanationInput,
 } from '@gramota/contracts'
-import {
-  diffText,
-  isWhitespaceOnlyChange,
-  whitespaceComparison,
-} from '@gramota/contracts/text-diff'
+import { diffText, explanationSelection } from '@gramota/contracts/text-diff'
 import { openBenchmarkSource } from '../database'
 import { CorrectionError, type CorrectionTransport, type Outcome } from '../correction'
 import {
@@ -127,35 +123,19 @@ export function prepareExplanationBenchmark(
         )
           throw new Error('Source manifest and database disagree')
         result.correctedText = saved.correctedText
-        const segments = diffText(originalText, saved.correctedText)
-        result.changes = segments.flatMap((segment, index) => {
-          if (segment.kind !== 'correction') return []
-          const comparison = isWhitespaceOnlyChange(segment.original, segment.corrected)
-            ? whitespaceComparison(segment, segments[index + 1])
-            : segment
-          return [
-            {
-              selection: {
-                requestId: attempt.requestId!,
-                originalRange: {
-                  start: segment.originalRange.start,
-                  end: segment.originalRange.start + comparison.original.length,
-                },
-                correctedRange: {
-                  start: segment.correctedRange.start,
-                  end: segment.correctedRange.start + comparison.corrected.length,
-                },
-              },
-              original: comparison.original,
-              corrected: comparison.corrected,
-              status: 'not-run' as const,
-              explanation: null,
-              errorCode: null,
-              details: {},
-              durationMs: null,
-            },
-          ]
-        })
+        result.changes = diffText(originalText, saved.correctedText).groups.map((group) => ({
+          selection: explanationSelection(attempt.requestId!, group),
+          original: originalText.slice(group.originalRange.start, group.originalRange.end),
+          corrected: saved.correctedText.slice(
+            group.correctedRange.start,
+            group.correctedRange.end,
+          ),
+          status: 'not-run' as const,
+          explanation: null,
+          errorCode: null,
+          details: {},
+          durationMs: null,
+        }))
       }
       return result
     })

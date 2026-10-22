@@ -3,11 +3,13 @@ import {
   CorrectionMode,
   ErrorCode,
   ExplanationInput,
+  explanationSelectionKey,
   ExplanationAttempt,
   ExplanationMetricsInput,
   ModelId,
   TIMEOUT_MS,
 } from '@gramota/contracts'
+import { diffText, explanationSelection } from '@gramota/contracts/text-diff'
 import { CorrectionError, type CorrectionTransport } from '../correction'
 import {
   EXPLAIN_PROMPT_VERSION,
@@ -70,7 +72,14 @@ export function createExplanationService(deps: Dependencies) {
       selection.correctedRange.start,
       selection.correctedRange.end,
     )
-    if (original === corrected) throw new CorrectionError(ErrorCode.enum.INVALID_INPUT)
+    const key = explanationSelectionKey(selection)
+    if (
+      !diffText(source.originalText, source.correctedText).groups.some(
+        (group) =>
+          explanationSelectionKey(explanationSelection(selection.requestId, group)) === key,
+      )
+    )
+      throw new CorrectionError(ErrorCode.enum.INVALID_INPUT)
     return { selection, source, original, corrected }
   }
 
@@ -159,11 +168,22 @@ export function createExplanationService(deps: Dependencies) {
                   originalText: source.originalText,
                   editedText: source.correctedText,
                   selectedChange: {
+                    kind: selection.kind,
+                    originalFragments: selection.originalSpans.map((range) => ({
+                      range,
+                      text: source.originalText.slice(range.start, range.end),
+                    })),
+                    editedFragments: selection.correctedSpans.map((range) => ({
+                      range,
+                      text: source.correctedText.slice(range.start, range.end),
+                    })),
+                    positionEncoding: 'UTF-16, zero-based, end-exclusive',
+                  },
+                  comparisonContext: {
                     originalFragment: original,
                     editedFragment: corrected,
                     originalRange: selection.originalRange,
                     editedRange: selection.correctedRange,
-                    positionEncoding: 'UTF-16, zero-based, end-exclusive',
                   },
                 }),
               },
@@ -226,7 +246,10 @@ export function createExplanationService(deps: Dependencies) {
     const value = read(input)
     const saved = readStorage(() => deps.repository!.get(value.selection))
     if (saved !== null) return { selection: value.selection, explanation: saved }
-    const key = JSON.stringify(value.selection)
+    const key = JSON.stringify([
+      value.selection.requestId,
+      explanationSelectionKey(value.selection),
+    ])
     let task = pending.get(key)
     if (!task) {
       task = generate(value)

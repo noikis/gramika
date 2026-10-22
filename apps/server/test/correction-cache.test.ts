@@ -62,6 +62,10 @@ test('reuses persisted success without another attempt or cost; touches only las
   const result = await f.correct(original)
   const before = db.history.get(result.correctionId)!
   const selection = {
+    version: 2 as const,
+    kind: 'replace' as const,
+    originalSpans: [{ start: 0, end: 1 }],
+    correctedSpans: [{ start: 0, end: 1 }],
     requestId: result.requestId,
     originalRange: { start: 0, end: 1 },
     correctedRange: { start: 0, end: 1 },

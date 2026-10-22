@@ -854,3 +854,19 @@ h2 {
     font-size: 18px;
   }
 }
+
+@media (min-width: 721px) {
+  .correction-workspace .result-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  }
+  .correction-workspace .result-actions > .result-toggle {
+    justify-self: start;
+  }
+  .correction-workspace .workspace-copy-action {
+    justify-self: center;
+  }
+  .correction-workspace .regenerate-action {
+    justify-self: end;
+  }
+}

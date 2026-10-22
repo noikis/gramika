@@ -69,8 +69,8 @@ test('default preview stays Strict, Rewrite preview selects both models, and sou
   assert.deepEqual(
     plan.results[0].changes.map((change) => [change.original, change.corrected]),
     [
-      ['Превет,', 'Привет,'],
-      ['помощ.', 'помощь.'],
+      ['Превет', 'Привет'],
+      ['помощ', 'помощь'],
     ],
   )
   const rewrite = prepareExplanationBenchmark(saved.folder, 'gentle-rewrite')
@@ -112,9 +112,9 @@ for (const mode of ['strict', 'gentle-rewrite'] as const) {
           assert.equal(context.mode, mode)
           assert.equal(context.originalText, result.originalText)
           assert.equal(context.editedText, result.correctedText)
-          assert.equal(context.selectedChange.originalFragment, change.original)
-          assert.equal(context.selectedChange.editedFragment, change.corrected)
-          assert.deepEqual(context.selectedChange.originalRange, change.selection.originalRange)
+          assert.equal(context.comparisonContext.originalFragment, change.original)
+          assert.equal(context.comparisonContext.editedFragment, change.corrected)
+          assert.deepEqual(context.comparisonContext.originalRange, change.selection.originalRange)
           return {
             correctedText: 'Синтетическое объяснение </script><img src=x onerror=alert(1)>.',
             errorCode: null,

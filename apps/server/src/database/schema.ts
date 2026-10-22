@@ -1,6 +1,11 @@
 import { sql } from 'drizzle-orm'
 import { check, integer, primaryKey, real, sqliteTable, text } from 'drizzle-orm/sqlite-core'
-import type { ExplanationAttempt, HistoryDetail, HistoryRequest } from '@gramota/contracts'
+import type {
+  ExplanationAttempt,
+  ExplanationInput,
+  HistoryDetail,
+  HistoryRequest,
+} from '@gramota/contracts'
 
 export const corrections = sqliteTable(
   'corrections',
@@ -111,6 +116,9 @@ export const explanations = sqliteTable(
     correctedStart: integer('corrected_start').notNull(),
     correctedEnd: integer('corrected_end').notNull(),
     explanation: text('explanation').notNull(),
+    deletedAt: text('deleted_at'),
+    selectionKey: text('selection_key').notNull().default('legacy'),
+    selection: text('selection_json', { mode: 'json' }).$type<ExplanationInput>(),
   },
   (table) => [
     primaryKey({
@@ -120,6 +128,7 @@ export const explanations = sqliteTable(
         table.originalEnd,
         table.correctedStart,
         table.correctedEnd,
+        table.selectionKey,
       ],
     }),
     check(
@@ -131,6 +140,10 @@ export const explanations = sqliteTable(
       sql`${table.correctedStart} >= 0 AND ${table.correctedEnd} >= ${table.correctedStart}`,
     ),
     check('explanation_nonempty', sql`length(trim(${table.explanation})) > 0`),
+    check(
+      'explanation_selection_json',
+      sql`${table.selection} IS NULL OR json_valid(${table.selection})`,
+    ),
   ],
 )
 

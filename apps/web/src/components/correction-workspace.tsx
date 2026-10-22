@@ -300,18 +300,7 @@ export function CorrectionWorkspace({ draft, correction, onNew, isBusy }: Worksp
                   <>
                     <Button
                       type="button"
-                      variant="secondary"
-                      disabled={!correction.canRegenerate}
-                      onClick={() => correction.regenerate(result.modelId)}
-                      aria-label={`Generate ${result.modelId === DEFAULT_MODEL_ID ? 'Gemma' : 'Gemini'} again. New paid request`}
-                    >
-                      {correction.pendingModel === result.modelId
-                        ? 'Generating...'
-                        : 'Generate again'}
-                      <span className="opinion-button-cost">New paid request</span>
-                    </Button>
-                    <Button
-                      type="button"
+                      className="workspace-copy-action"
                       variant="secondary"
                       disabled={correction.copying}
                       onClick={correction.copy}
@@ -319,6 +308,20 @@ export function CorrectionWorkspace({ draft, correction, onNew, isBusy }: Worksp
                     >
                       <Icon name="copy" />
                       {correction.copying ? 'Copying...' : 'Copy'}
+                    </Button>
+                    <Button
+                      type="button"
+                      className="regenerate-action"
+                      title="New paid request"
+                      variant="secondary"
+                      disabled={!correction.canRegenerate}
+                      onClick={() => correction.regenerate(result.modelId)}
+                      aria-label={`Generate ${result.modelId === DEFAULT_MODEL_ID ? 'Gemma' : 'Gemini'} again. New paid request`}
+                    >
+                      <Icon name="sparkles" />
+                      {correction.pendingModel === result.modelId
+                        ? 'Generating...'
+                        : 'Generate again'}
                     </Button>
                   </>
                 }

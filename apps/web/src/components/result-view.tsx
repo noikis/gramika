@@ -2,8 +2,8 @@ import { ExplanationPanel } from './explanation-panel'
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import type { CorrectionResult } from '@gramota/contracts'
-import { diffText, isWhitespaceOnlyChange } from '../lib/text-diff'
-import { correctionDescription, whitespaceComparison } from '../lib/whitespace-display'
+import { diffText, explanationSelection, type TextDiff } from '../lib/text-diff'
+import { correctionDescription } from '../lib/whitespace-display'
 import { Textarea } from './ui/textarea'
 import { Button } from './ui/button'
 import { Icon } from './ui/icon'
@@ -30,6 +30,26 @@ function passage(text: string, empty: string) {
   return text
 }
 
+function displayParts(diff: TextDiff) {
+  const points = [
+    ...new Set([
+      ...diff.correctedRuns.flatMap((run) => [run.range.start, run.range.end]),
+      ...diff.markers.map((marker) => marker.correctedOffset),
+    ]),
+  ].sort((a, b) => a - b)
+  const parts: { start: number; end: number; groupId: string | null; marker?: string }[] = []
+  let runIndex = 0
+  points.forEach((start, index) => {
+    for (const marker of diff.markers.filter((value) => value.correctedOffset === start))
+      parts.push({ start, end: start, groupId: marker.groupId, marker: marker.kind })
+    const end = points[index + 1]
+    if (end === undefined) return
+    while (diff.correctedRuns[runIndex]?.range.end <= start) runIndex++
+    parts.push({ start, end, groupId: diff.correctedRuns[runIndex]?.groupId ?? null })
+  })
+  return parts
+}
+
 function ResultContent({
   result,
   view,
@@ -45,39 +65,47 @@ function ResultContent({
   const [selected, setSelected] = useState(0)
   const container = useRef<HTMLDivElement>(null)
   const selectedElement = useRef<HTMLSpanElement>(null)
-  const segments = useMemo(
+  const diff = useMemo(
     () => diffText(result.originalText, result.correctedText),
     [result.originalText, result.correctedText],
   )
-  const corrections = segments.filter((segment) => segment.kind === 'correction')
+  const corrections = diff.groups
+  const parts = useMemo(() => displayParts(diff), [diff])
   const current = corrections[selected]
-  const spacingOnly =
-    current !== undefined && isWhitespaceOnlyChange(current.original, current.corrected)
-  const comparison =
-    current && spacingOnly
-      ? whitespaceComparison(current, segments[segments.indexOf(current) + 1])
-      : current
-  const explanationSelection =
-    current && comparison
-      ? {
-          requestId: result.requestId,
-          originalRange: {
-            start: current.originalRange.start,
-            end: current.originalRange.start + comparison.original.length,
-          },
-          correctedRange: {
-            start: current.correctedRange.start,
-            end: current.correctedRange.start + comparison.corrected.length,
-          },
-        }
-      : null
+  const spacingOnly = current?.kind === 'whitespace'
+  const comparison = current
+    ? {
+        original: result.originalText.slice(current.originalRange.start, current.originalRange.end),
+        corrected: result.correctedText.slice(
+          current.correctedRange.start,
+          current.correctedRange.end,
+        ),
+      }
+    : null
+  const selection = current ? explanationSelection(result.requestId, current) : null
   const description = comparison
-    ? correctionDescription(comparison.original, comparison.corrected, spacingOnly)
+    ? current.kind === 'move'
+      ? 'Moved: ' +
+        current.originalSpans
+          .map((range) => result.originalText.slice(range.start, range.end))
+          .join(' · ')
+      : correctionDescription(comparison.original, comparison.corrected, spacingOnly)
     : ''
 
+  function select(index: number, element?: HTMLSpanElement) {
+    selectedElement.current = element ?? null
+    setSelected(index)
+  }
+
   useEffect(() => {
-    if (view !== 'changes' || !container.current || !selectedElement.current) return
+    if (view !== 'changes' || !container.current || !current) return
     const box = container.current
+    if (
+      !selectedElement.current?.isConnected ||
+      selectedElement.current.dataset.change !== current.id
+    )
+      selectedElement.current = box.querySelector<HTMLSpanElement>(`[data-change="${current.id}"]`)
+    if (!selectedElement.current) return
     const bounds = box.getBoundingClientRect()
     const target = selectedElement.current.getBoundingClientRect()
     const inset = 12
@@ -85,9 +113,8 @@ function ResultContent({
     const bottom = bounds.top + box.clientTop + box.clientHeight - inset
     if (target.top < top || target.height > bottom - top) box.scrollTop += target.top - top
     else if (target.bottom > bottom) box.scrollTop += target.bottom - bottom
-  }, [selected, view])
+  }, [selected, view, current])
 
-  let correctionIndex = 0
   const viewToggle = (
     <fieldset className="result-toggle">
       <legend className="sr-only">
@@ -118,7 +145,7 @@ function ResultContent({
           className="previous-correction"
           type="button"
           variant="secondary"
-          onClick={() => setSelected(selected - 1)}
+          onClick={() => select(selected - 1)}
           aria-label="Previous correction"
           disabled={selected === 0}
         >
@@ -137,7 +164,7 @@ function ResultContent({
           className="next-correction"
           type="button"
           variant="secondary"
-          onClick={() => setSelected(selected + 1)}
+          onClick={() => select(selected + 1)}
           aria-label="Next correction"
           disabled={selected === corrections.length - 1}
         >
@@ -186,34 +213,51 @@ function ResultContent({
           lang="ru"
           ref={container}
         >
-          {segments.map((segment, index) => {
-            if (segment.kind === 'equal') return segment.corrected
-            const unitIndex = correctionIndex++
+          {parts.map((part, index) => {
+            const text = result.correctedText.slice(part.start, part.end)
+            if (!part.groupId) return text
+            const unitIndex = corrections.findIndex((group) => group.id === part.groupId)
+            const group = corrections[unitIndex]
             const active = unitIndex === selected
-            const spacing = isWhitespaceOnlyChange(segment.original, segment.corrected)
-            const accessibleComparison = spacing
-              ? whitespaceComparison(segment, segments[index + 1])
-              : segment
+            const spacing = group.kind === 'whitespace'
+            const before = result.originalText.slice(
+              group.originalRange.start,
+              group.originalRange.end,
+            )
+            const after = result.correctedText.slice(
+              group.correctedRange.start,
+              group.correctedRange.end,
+            )
+            const label =
+              group.kind === 'move'
+                ? part.marker
+                  ? 'Movement source'
+                  : 'Movement destination'
+                : correctionDescription(before, after, spacing)
             return (
               <span
                 key={index}
-                ref={active ? selectedElement : undefined}
+                data-change={group.id}
                 role="button"
                 tabIndex={0}
-                className={`correction-highlight${segment.corrected ? '' : ' correction-deletion'}${/^\s+$/u.test(segment.corrected) ? ' correction-whitespace' : ''}${spacing ? ' correction-spacing-only' : ''}`}
+                className={`correction-highlight${part.marker ? ' correction-deletion' : ''}${/^\s+$/u.test(text) ? ' correction-whitespace' : ''}${spacing ? ' correction-spacing-only' : ''}`}
                 aria-pressed={active}
                 aria-controls={panelId}
-                aria-label={`Correction ${unitIndex + 1} of ${corrections.length}. ${correctionDescription(accessibleComparison.original, accessibleComparison.corrected, spacing)} Original: ${passage(accessibleComparison.original, 'No original text')}. Corrected: ${passage(accessibleComparison.corrected, 'Removed text')}`}
+                aria-label={`Correction ${unitIndex + 1} of ${corrections.length}. ${label}. Original context: ${passage(before, 'No original text')}. Corrected context: ${passage(after, 'Removed text')}`}
                 title={spacing ? 'Spacing only — select to compare' : undefined}
-                onClick={() => setSelected(unitIndex)}
+                onClick={(event) => select(unitIndex, event.currentTarget)}
                 onKeyDown={(event) => {
                   if (event.key === 'Enter' || event.key === ' ') {
                     event.preventDefault()
-                    setSelected(unitIndex)
+                    select(unitIndex, event.currentTarget)
                   }
                 }}
               >
-                {segment.corrected || <span aria-hidden="true">−</span>}
+                {part.marker ? (
+                  <span aria-hidden="true">{part.marker === 'move-source' ? '↪' : '−'}</span>
+                ) : (
+                  text
+                )}
               </span>
             )
           })}
@@ -242,6 +286,26 @@ function ResultContent({
             </span>
             {!isHistory && <p className="correction-kind">{description}</p>}
             <dl>
+              {(current.originalSpans.length > 1 ||
+                current.correctedSpans.length > 1 ||
+                current.kind === 'move') && (
+                <div>
+                  <dt>Selected change</dt>
+                  <dd>
+                    {current.originalSpans
+                      .map((range) =>
+                        passage(result.originalText.slice(range.start, range.end), ''),
+                      )
+                      .join(' · ') || '(nothing)'}{' '}
+                    →{' '}
+                    {current.correctedSpans
+                      .map((range) =>
+                        passage(result.correctedText.slice(range.start, range.end), ''),
+                      )
+                      .join(' · ') || '(nothing)'}
+                  </dd>
+                </div>
+              )}
               <div>
                 <dt>Original</dt>
                 <dd>{passage(comparison.original, 'No original text')}</dd>
@@ -252,12 +316,7 @@ function ResultContent({
               </div>
             </dl>
           </div>
-          {explanationSelection && (
-            <ExplanationPanel
-              key={JSON.stringify(explanationSelection)}
-              selection={explanationSelection}
-            />
-          )}
+          {selection && <ExplanationPanel key={JSON.stringify(selection)} selection={selection} />}
         </div>
       )}
     </>
