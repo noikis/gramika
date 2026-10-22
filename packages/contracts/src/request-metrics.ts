@@ -1,9 +1,14 @@
-import { z } from 'zod'
+import { z } from "zod";
 
-const NullableCount = z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).nullable()
-const NullableAmount = z.number().finite().nonnegative().nullable()
-const NullableText = z.string().nullable()
-const Timestamp = z.iso.datetime({ precision: 3 })
+const NullableCount = z
+  .number()
+  .int()
+  .nonnegative()
+  .max(Number.MAX_SAFE_INTEGER)
+  .nullable();
+const NullableAmount = z.number().finite().nonnegative().nullable();
+const NullableText = z.string().nullable();
+const Timestamp = z.iso.datetime({ precision: 3 });
 
 export const RequestMetrics = z.object({
   requestedModel: z.string(),
@@ -31,5 +36,5 @@ export const RequestMetrics = z.object({
   routingAttempt: NullableCount,
   isByok: z.boolean().nullable(),
   finishReason: NullableText,
-})
-export type RequestMetrics = z.infer<typeof RequestMetrics>
+});
+export type RequestMetrics = z.infer<typeof RequestMetrics>;

@@ -1,1 +1,1 @@
-export * from './text-diff.js'
+export * from "./text-diff.js";
