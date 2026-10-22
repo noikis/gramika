@@ -167,12 +167,13 @@ Previously generated offline reports remain self-contained and readable.
 
 ## Explain every change in an existing run
 
-Strict Explain can be evaluated against saved correction results without paying
+Strict and Rewrite Explain can be evaluated against saved correction results without paying
 for corrections again. Use an existing version-2 correction benchmark folder
 containing `run.json` and `records.sqlite`. The source files stay unchanged.
-This command supports successful Strict results; Rewrite Explain awaits approval.
-Failed/not-run results and Rewrite results are shown as skipped. Unchanged Strict
-results need no explanation request. Each detected change gets its own request,
+The command defaults to Strict. Add `--explain-mode gentle-rewrite` to explain
+successful Gentle Rewrite results instead, using the same model that rewrote them.
+Failed/not-run results and results from the other mode are shown as skipped.
+Unchanged results need no explanation request. Each detected change gets its own request,
 using the correcting model and full original/result context. Adjacent grouped
 corrections and whitespace context match the app's Changes inspector. Missed
 errors cannot be explained because they did not produce a change.
@@ -183,9 +184,21 @@ Preview it yourself from the repository root, replacing the example folder:
 npm run benchmark -w apps/server -- --explain-run benchmark-data/runs/YOUR-RUN-FOLDER
 ```
 
+To preview Rewrite explanations from an existing mixed-mode or Rewrite run:
+
+```powershell
+npm run benchmark -w apps/server -- --explain-run benchmark-data/runs/YOUR-RUN-FOLDER --explain-mode gentle-rewrite
+```
+
+Add `--execute` to that command when ready; type the displayed `RUN N`
+confirmation yourself. It explains each detected change in every successful
+Rewrite result in that source folder, including both models when present. It does
+not generate new rewrites. For a small evaluation, use a source run with a small
+set of cases. A Strict-only source has no eligible Rewrite changes.
+
 The preview opens only the supplied source database read-only. It does not read
 credentials, send requests, create output files or run migrations. It prints the
-exact explanation count for this source snapshot. Do not combine `--explain-run`
+selected mode, prompt version and exact explanation count for this source snapshot. Do not combine `--explain-run`
 with `--cases`, `--models` or `--variants`.
 
 Add `--execute` when ready to spend and type the displayed `RUN N` confirmation
@@ -195,7 +208,9 @@ changes, execution sends no requests. Repeating this command creates a fresh
 Explain run and may charge for the same changes again; it does not reuse app
 history explanations or prior Explain benchmarks.
 
-Requests use the actual `explain-v1` prompts and the application's existing
+Requests use the actual application prompts: `explain-v1` for Strict and
+`explain-rewrite-v1` (unchanged shared core plus the approved Rewrite prompt) for
+Gentle Rewrite, along with the application's existing
 request settings. Gemini explanations explicitly use `reasoning: { effort: 'minimal' }`
 in both the app and benchmark; Gemma explanations still use disabled reasoning.
 Like correction benchmarks, Explain
@@ -211,7 +226,7 @@ Provider-reported unknown costs remain unavailable, including on failed calls.
 A new folder under `apps/server/benchmark-data/explain-runs/` contains:
 
 - `run.json`: the source folder, exact source texts and change positions, model
-  identities, prompt/version, request settings, per-change status, explanation,
+  identities, selected mode, exact prompt/version, request settings, per-change status, explanation,
   reported metadata, cost and duration. These are local benchmark records only;
   application explanation accounting remains deferred.
 - `report.html`: a self-contained offline report. Choose a correction result to

@@ -1,6 +1,12 @@
-import { ErrorCode, ExplanationInput, ModelId, TIMEOUT_MS } from '@gramota/contracts'
+import {
+  CorrectionMode,
+  ErrorCode,
+  ExplanationInput,
+  ModelId,
+  TIMEOUT_MS,
+} from '@gramota/contracts'
 import { CorrectionError, type CorrectionTransport } from '../correction'
-import { STRICT_EXPLAIN_PROMPT } from './prompt'
+import { REWRITE_EXPLAIN_PROMPT, STRICT_EXPLAIN_PROMPT } from './prompt'
 import type { ExplanationRepository } from './types'
 
 import { explanationRequestParameters, GEMINI_EXPLANATION_MODEL_ID } from './constants'
@@ -43,7 +49,7 @@ export function createExplanationService(deps: Dependencies) {
     const source = readStorage(() => deps.repository!.getSource(selection.requestId))
     if (
       !source ||
-      source.mode !== 'strict' ||
+      !CorrectionMode.safeParse(source.mode).success ||
       !isValidRange(source.originalText, selection.originalRange) ||
       !isValidRange(source.correctedText, selection.correctedRange)
     )
@@ -86,7 +92,13 @@ export function createExplanationService(deps: Dependencies) {
           {
             ...explanationRequestParameters(source.modelId),
             messages: [
-              { role: 'system', content: STRICT_EXPLAIN_PROMPT },
+              {
+                role: 'system',
+                content:
+                  source.mode === CorrectionMode.enum.strict
+                    ? STRICT_EXPLAIN_PROMPT
+                    : REWRITE_EXPLAIN_PROMPT,
+              },
               {
                 role: 'user',
                 content: JSON.stringify({

@@ -29,12 +29,13 @@ const changes = run.results.flatMap(result => result.changes);
 const sent = changes.filter(change => change.status !== 'not-run');
 const known = sent.filter(change => change.details.costUsd != null);
 const cost = known.length ? known.reduce((sum, change) => sum + change.details.costUsd, 0).toPrecision(8) + ' USD known' : 'Cost unavailable';
-document.getElementById('status').textContent = run.prompt.version + ' · ' + run.status + (run.errorCode ? ' · ' + run.errorCode : '');
+document.getElementById('status').textContent = run.mode + ' · ' + run.prompt.version + ' · ' + run.status + (run.errorCode ? ' · ' + run.errorCode : '');
 document.getElementById('summary').textContent = changes.filter(change => change.status === 'succeeded').length + ' explained / ' + run.maxRequests + ' changes · ' + cost + ' · ' + (sent.length - known.length) + ' costs unavailable';
 function element(tag, text) { const node = document.createElement(tag); node.textContent = text; return node; }
 function passage(text) { const node = element('pre', text || '(Empty fragment)'); node.lang = 'ru'; node.tabIndex = 0; return node; }
 const select = document.getElementById('result');
 run.results.forEach((result,index) => { const option = element('option', result.caseId + ' · ' + result.modelId + ' · ' + result.mode); option.value = index; select.append(option); });
+select.value = String(Math.max(0, run.results.findIndex(result => !result.skipped)));
 function render() {
   const result = run.results[Number(select.value)];
   const content = document.getElementById('content'); content.replaceChildren();

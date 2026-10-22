@@ -1,26 +1,33 @@
 import { resolve } from 'node:path'
 import { createInterface } from 'node:readline/promises'
 import { stdin, stdout } from 'node:process'
+import { CorrectionMode } from '@gramota/contracts'
 import { parseConfig, readEnvironment } from '../config'
 import { createTransport } from '../openrouter'
 import { BenchmarkInputError } from './run'
 import { prepareExplanationBenchmark, runExplanationBenchmark } from './explain-run'
-import { EXPLAIN_PROMPT_VERSION } from '../explanation/prompt'
+import { EXPLAIN_PROMPT_VERSION, REWRITE_EXPLAIN_PROMPT_VERSION } from '../explanation/prompt'
 
-export async function explainBenchmarkCommand(folder: string, isExecute = false) {
-  const plan = prepareExplanationBenchmark(folder)
+export async function explainBenchmarkCommand(
+  folder: string,
+  isExecute = false,
+  mode: CorrectionMode = CorrectionMode.enum.strict,
+) {
+  const plan = prepareExplanationBenchmark(folder, mode)
+  const promptVersion =
+    mode === CorrectionMode.enum.strict ? EXPLAIN_PROMPT_VERSION : REWRITE_EXPLAIN_PROMPT_VERSION
   console.log(
-    `Prompt: ${EXPLAIN_PROMPT_VERSION}\nCorrection results: ${plan.results.length}\nMaximum explanation requests: ${plan.maxRequests}`,
+    `Mode: ${mode}\nPrompt: ${promptVersion}\nCorrection results: ${plan.results.length}\nMaximum explanation requests: ${plan.maxRequests}`,
   )
   console.log(
-    'One request per detected Strict change, using the correcting model. No new corrections, retries or dollar cap. Source run stays unchanged.',
+    'One request per detected change in the selected mode, using the correcting model. No new corrections, retries or dollar cap. Source run stays unchanged.',
   )
   if (!isExecute) {
     console.log('Preview only. No network calls or output files created.')
     return
   }
   if (!plan.maxRequests) {
-    console.log('No Strict changes to explain. No requests sent.')
+    console.log('No changes in the selected mode to explain. No requests sent.')
     return
   }
   if (!stdin.isTTY || !stdout.isTTY)

@@ -2,6 +2,7 @@ import { explainBenchmarkCommand } from './explain-cli'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { parseArgs } from 'node:util'
+import { CorrectionMode } from '@gramota/contracts'
 import { createInterface } from 'node:readline/promises'
 import { stdin, stdout } from 'node:process'
 import { BenchmarkInputError, prepareBenchmark, parseBenchmarkVariants, runBenchmark } from './run'
@@ -17,6 +18,7 @@ async function main() {
     variants?: string
     execute?: boolean
     'explain-run'?: string
+    'explain-mode'?: string
   }
   try {
     values = parseArgs({
@@ -26,19 +28,24 @@ async function main() {
         variants: { type: 'string' },
         execute: { type: 'boolean' },
         'explain-run': { type: 'string' },
+        'explain-mode': { type: 'string' },
       },
       allowPositionals: false,
     }).values
   } catch {
     throw new BenchmarkInputError(
-      'Usage: npm run benchmark -w apps/server -- --cases <file.json> (--models <id,id> | --variants <model:mode,model:mode>) [--execute], or --explain-run <existing-run-folder> [--execute]',
+      'Usage: npm run benchmark -w apps/server -- --cases <file.json> (--models <id,id> | --variants <model:mode,model:mode>) [--execute], or --explain-run <existing-run-folder> [--explain-mode strict|gentle-rewrite] [--execute]',
     )
   }
   if (values['explain-run'] !== undefined) {
     if (values.cases || values.models || values.variants)
-      throw new BenchmarkInputError('Use --explain-run alone, optionally with --execute.')
-    return explainBenchmarkCommand(values['explain-run'], values.execute)
+      throw new BenchmarkInputError('Use --explain-run with optional --explain-mode and --execute.')
+    const mode = CorrectionMode.safeParse(values['explain-mode'] ?? CorrectionMode.enum.strict)
+    if (!mode.success) throw new BenchmarkInputError('Use --explain-mode strict or gentle-rewrite.')
+    return explainBenchmarkCommand(values['explain-run'], values.execute, mode.data)
   }
+  if (values['explain-mode'] !== undefined)
+    throw new BenchmarkInputError('--explain-mode requires --explain-run.')
   if (!values.cases || (!values.models && !values.variants) || (values.models && values.variants))
     throw new BenchmarkInputError(
       'Provide --cases and exactly one of --models or --variants. No default models are selected.',

@@ -110,9 +110,12 @@ English and French remain future candidates. Russian is the initial acceptance t
   explanation of at most five sentences; no Explain more. Implement the actual explain-v1
   prompts verbatim; evaluate their quality manually. V2.4 was closed by the user
   on 2026-10-22 with Strict Explain and its benchmark tooling shipped. Rewrite
-  Explain remains deferred and unimplemented; its retained requirements share
-  the core prompt and cover both language corrections and alternative wording,
-  including changes in nuance or emphasis. Application explanation metrics/cost
+  Explain V1 is approved as V2.4a and implemented for workspace and History,
+  using the current shared core unchanged plus the user-supplied REWRITE_EXPLAIN
+  verbatim (explain-rewrite-v1). It explains actual linguistic effects, including
+  language corrections, valid alternatives and changes in nuance or meaning,
+  without assuming every rewrite is better. Manual app/linguistic acceptance is
+  pending; Explain Run now supports explicit Rewrite mode for human evaluation. Application explanation metrics/cost
   reporting also remain a separate follow-up. See the
   [agreed V2.4 handoff](context/v2.4-explain-handoff.md). Gemini
   explanations use minimal reasoning and accept reasoning metadata; Gemma app

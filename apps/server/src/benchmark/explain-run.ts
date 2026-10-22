@@ -20,7 +20,12 @@ import {
   explanationRequestParameters,
   type ExplanationSource,
 } from '../explanation'
-import { EXPLAIN_PROMPT_VERSION, STRICT_EXPLAIN_PROMPT } from '../explanation/prompt'
+import {
+  EXPLAIN_PROMPT_VERSION,
+  STRICT_EXPLAIN_PROMPT,
+  REWRITE_EXPLAIN_PROMPT_VERSION,
+  REWRITE_EXPLAIN_PROMPT,
+} from '../explanation/prompt'
 import { BenchmarkInputError } from './run'
 import { renderExplanationReport } from './explain-report'
 
@@ -63,6 +68,7 @@ export type ExplanationBenchmarkResult = {
 }
 export type ExplanationBenchmarkPlan = {
   sourceFolder: string
+  mode: CorrectionMode
   maxRequests: number
   results: ExplanationBenchmarkResult[]
 }
@@ -80,11 +86,13 @@ export type ExplanationBenchmarkRun = ExplanationBenchmarkPlan & {
 }
 
 // Read-only preparation. No migrations, credentials, transport or output files.
-export function prepareExplanationBenchmark(folder: string): ExplanationBenchmarkPlan {
+export function prepareExplanationBenchmark(
+  folder: string,
+  mode: CorrectionMode = CorrectionMode.enum.strict,
+): ExplanationBenchmarkPlan {
   let source: ReturnType<typeof openBenchmarkSource> | undefined
   try {
-    if (EXPLAIN_PROMPT_VERSION !== 'explain-v1')
-      throw new Error('Unexpected Explain prompt version')
+    CorrectionMode.parse(mode)
     const sourceFolder = resolve(folder)
     const manifest = SourceManifest.parse(
       JSON.parse(readFileSync(join(sourceFolder, 'run.json'), 'utf8')),
@@ -106,8 +114,7 @@ export function prepareExplanationBenchmark(folder: string): ExplanationBenchmar
         skipped: null,
         changes: [],
       }
-      if (attempt.mode !== CorrectionMode.enum.strict)
-        result.skipped = 'Rewrite Explain awaits approval.'
+      if (attempt.mode !== mode) result.skipped = `Not selected for this ${mode} Explain run.`
       else if (attempt.status !== 'succeeded') result.skipped = 'No successful correction result.'
       else {
         if (!attempt.requestId || !attempt.correctionId) throw new Error('Missing source identity')
@@ -154,6 +161,7 @@ export function prepareExplanationBenchmark(folder: string): ExplanationBenchmar
     })
     return {
       sourceFolder,
+      mode,
       results,
       maxRequests: results.reduce((sum, result) => sum + result.changes.length, 0),
     }
@@ -189,7 +197,10 @@ export async function runExplanationBenchmark(options: Options) {
       schemaVersion: 1,
       kind: 'explanation',
       isRejectReasoning: false,
-      prompt: { version: EXPLAIN_PROMPT_VERSION, text: STRICT_EXPLAIN_PROMPT },
+      prompt:
+        options.plan.mode === CorrectionMode.enum.strict
+          ? { version: EXPLAIN_PROMPT_VERSION, text: STRICT_EXPLAIN_PROMPT }
+          : { version: REWRITE_EXPLAIN_PROMPT_VERSION, text: REWRITE_EXPLAIN_PROMPT },
       parameters: Object.fromEntries(
         options.plan.results
           .filter((result) => !result.skipped)

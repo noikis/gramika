@@ -3,7 +3,7 @@
 <!-- blueprint:source-hash 41165cdc61bb3c1cf7d090f83c3dce4c214941277cefebf6d85911c9deecc9a5 -->
 
 Derived from [project-plan.md](../project-plan.md) and [build-plan.md](../build-plan.md).
-Updated 2026-10-20 to reflect completed work and user decisions. Implementation
+Updated 2026-10-22 for Rewrite Explain V1 (manual acceptance pending). Implementation
 contracts and history remain in current-feature.md and blueprint/history/.
 
 ## Product and scope
@@ -13,8 +13,13 @@ objective grammar, spelling and punctuation with minimal changes, preserving
 meaning, voice, names, numbers, links, emoji and whitespace. Return only complete
 corrected text; already-correct input stays unchanged.
 
-One user, primarily on a phone, with production running as reported by the user. Strict is the
-only mode. English/French, explanations, tone controls, document uploads,
+One user, primarily on a phone, with production running as reported by the user.
+Strict is the default; Gentle Rewrite is also available. Selected-change Explain
+supports both modes in workspace and History with the correcting model and saved
+reuse. Rewrite Explain V1 preserves the shared core and adds its dedicated prompt.
+Application metrics remain deferred; Explain Run supports explicit Strict or Rewrite selection. Gemma Explain
+requests disabled reasoning; Gemini Explain uses minimal reasoning.
+English/French, tone controls, document uploads,
 application authentication and further access features remain deferred. There is no monetization.
 
 [Unreviewed ideas](../../docs/ideas.md) are retained for discussion only. They

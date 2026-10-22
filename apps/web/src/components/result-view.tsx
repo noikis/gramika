@@ -252,7 +252,7 @@ function ResultContent({
               </div>
             </dl>
           </div>
-          {result.mode === 'strict' && explanationSelection && (
+          {explanationSelection && (
             <ExplanationPanel
               key={JSON.stringify(explanationSelection)}
               selection={explanationSelection}
