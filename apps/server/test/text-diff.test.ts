@@ -1,6 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { diffText, explanationSelection, resolveWordMoves } from '@gramota/contracts/text-diff'
+import { explanationSelection } from '@gramota/contracts/text-diff'
+import { diffText, resolveWordMoves } from '@gramota/text-diff'
 import { ExplanationInput, explanationSelectionKey } from '@gramota/contracts'
 
 const graphemes = new Intl.Segmenter('ru', { granularity: 'grapheme' })

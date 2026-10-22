@@ -9,7 +9,8 @@ import {
   ModelId,
   TIMEOUT_MS,
 } from '@gramota/contracts'
-import { diffText, explanationSelection } from '@gramota/contracts/text-diff'
+import { explanationSelection } from '@gramota/contracts/text-diff'
+import { diffText } from '@gramota/text-diff'
 import { CorrectionError, type CorrectionTransport } from '../correction'
 import {
   EXPLAIN_PROMPT_VERSION,

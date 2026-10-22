@@ -26,6 +26,6 @@
   "private": true,
   "dependencies": {
     "zod": "^4.6.7",
-    "diff": "^4.0.4"
+    "@gramota/text-diff": "^1.0.0"
   }
 }

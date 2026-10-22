@@ -15,6 +15,15 @@ Use the ordinary checkout; preserve pre-existing UI refinements.
 
 ## Verification and review handoff
 
+Package organization refinement: moved the complete diff engine (text-diff, tokenize, align, movement resolver, types and diff declarations) into the standalone `@gramota/text-diff` workspace package. Contracts retains only the Explain selection adapter and re-exports for compatibility. Workspace dependencies, lockfile, and Docker package copies were updated.
+
+Organization refinement: extracted tokenization/sentence boundaries into
+`packages/contracts/src/diff/tokenize.ts` and alignment into `diff/align.ts`.
+The main function and its nested helpers remain together. All 15 function bodies
+match the pre-refactor version exactly; 1,043 complete diff outputs match, and all
+151 server tests pass before and after. No package, build or container setup was
+changed. Existing test expectations were not changed.
+
 151 server tests pass, including generated Unicode/repeated-token cases, ambiguous
 movement, minimal relocation, exact multi-span Explain payloads, cache separation,
 soft-delete migration with foreign keys enabled, and historical metrics.

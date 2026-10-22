@@ -1,6 +1,6 @@
 export {
   diffText,
-  explanationSelection,
   isWhitespaceOnlyChange,
-} from '@gramota/contracts/text-diff'
-export type { ChangeGroup, TextDiff } from '@gramota/contracts/text-diff'
+} from '@gramota/text-diff'
+export { explanationSelection } from '@gramota/contracts/text-diff'
+export type { ChangeGroup, TextDiff } from '@gramota/text-diff'

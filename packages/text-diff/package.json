@@ -1,0 +1,16 @@
+{
+  "name": "@gramota/text-diff",
+  "version": "1.0.0",
+  "description": "Deterministic word-aware text diff engine for Gramota",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "browser": "./src/index.ts", "default": "./dist/index.js" },
+    "./text-diff": { "types": "./dist/text-diff.d.ts", "browser": "./src/text-diff.ts", "default": "./dist/text-diff.js" }
+  },
+  "scripts": { "build": "tsc -p tsconfig.json" },
+  "license": "ISC",
+  "type": "commonjs",
+  "private": true,
+  "dependencies": { "diff": "^4.0.4", "zod": "^4.6.7" }
+}

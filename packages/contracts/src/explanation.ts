@@ -1,7 +1,7 @@
 import { RequestMetrics } from './request-metrics.js'
 import { z } from 'zod'
 import { ErrorCode } from './correction.js'
-import { ChangeKind, TextRange, MAX_CHANGE_SPANS } from './diff-types.js'
+import { ChangeKind, TextRange, MAX_CHANGE_SPANS } from '@gramota/text-diff'
 
 // Half-open UTF-16 offsets match JavaScript strings and the local diff.
 export const ExplanationRange = TextRange

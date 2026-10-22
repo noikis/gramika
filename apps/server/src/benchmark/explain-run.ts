@@ -8,7 +8,8 @@ import {
   TIMEOUT_MS,
   type ExplanationInput,
 } from '@gramota/contracts'
-import { diffText, explanationSelection } from '@gramota/contracts/text-diff'
+import { explanationSelection } from '@gramota/contracts/text-diff'
+import { diffText } from '@gramota/text-diff'
 import { openBenchmarkSource } from '../database'
 import { CorrectionError, type CorrectionTransport, type Outcome } from '../correction'
 import {

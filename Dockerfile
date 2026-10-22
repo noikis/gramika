@@ -5,12 +5,14 @@ COPY package.json package-lock.json ./
 COPY apps/server/package.json apps/server/package.json
 COPY apps/web/package.json apps/web/package.json
 COPY packages/contracts/package.json packages/contracts/package.json
+COPY packages/text-diff/package.json packages/text-diff/package.json
 RUN npm ci
 COPY packages/contracts/ packages/contracts/
+COPY packages/text-diff/ packages/text-diff/
 COPY apps/server/ apps/server/
 COPY apps/web/ apps/web/
 RUN npm run build:ts -w apps/server && npm run build -w apps/web
-RUN npm prune --omit=dev --workspace=server --workspace=@gramota/contracts
+RUN npm prune --omit=dev --workspace=server --workspace=@gramota/contracts --workspace=@gramota/text-diff
 
 FROM node:24-bookworm-slim AS runtime
 ENV NODE_ENV=production
@@ -19,6 +21,8 @@ COPY --from=build /app/package.json /app/package-lock.json ./
 COPY --from=build /app/node_modules/ node_modules/
 COPY --from=build /app/packages/contracts/package.json packages/contracts/package.json
 COPY --from=build /app/packages/contracts/dist/ packages/contracts/dist/
+COPY --from=build /app/packages/text-diff/package.json packages/text-diff/package.json
+COPY --from=build /app/packages/text-diff/dist/ packages/text-diff/dist/
 COPY --from=build /app/apps/server/package.json apps/server/package.json
 COPY --from=build /app/apps/server/dist/ apps/server/dist/
 COPY --from=build /app/apps/server/drizzle/ apps/server/drizzle/
