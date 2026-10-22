@@ -42,6 +42,7 @@ type Dependencies = {
   uuid?: () => string
   timeoutMs?: number
   onRepositoryFailure?: (error: unknown, stage: 'begin' | 'finish') => void
+  onReasoningViolation?: (requestId: string, modelId: string) => void
   isRejectReasoning?: boolean
 }
 
@@ -101,6 +102,7 @@ export function createCorrectionService(deps: Dependencies) {
     let timer: ReturnType<typeof setTimeout> | undefined
     let responseDetails: Partial<Outcome> = {}
     let correctedText: string | null = null
+    let isReasoningViolation = false
     let errorCode: ErrorCode | null = null
 
     try {
@@ -128,7 +130,10 @@ export function createCorrectionService(deps: Dependencies) {
       // Wait for either the correction response or the timeout to occur
       const response = await Promise.race([correctionPromise, timeoutPromise])
       responseDetails = response.details
-      if (response.errorCode) throw new CorrectionError(response.errorCode)
+      isReasoningViolation =
+        response.errorCode === ErrorCode.enum.REASONING_NOT_DISABLED &&
+        response.correctedText !== null
+      if (response.errorCode && !isReasoningViolation) throw new CorrectionError(response.errorCode)
 
       correctedText = response.correctedText
     } catch (error) {
@@ -158,6 +163,8 @@ export function createCorrectionService(deps: Dependencies) {
     }
 
     if (errorCode) throw new AttemptError(errorCode, ids)
+
+    if (isReasoningViolation) deps.onReasoningViolation?.(ids.requestId, input.data.modelId)
 
     return {
       ...ids,

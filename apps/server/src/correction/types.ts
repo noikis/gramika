@@ -60,7 +60,10 @@ export class CorrectionError extends Error {
 
 export type CorrectionReply = {
   details: Partial<Outcome>
-} & ({ correctedText: string; errorCode: null } | { correctedText: null; errorCode: ErrorCode })
+} & (
+  | { correctedText: string; errorCode: null | 'REASONING_NOT_DISABLED' }
+  | { correctedText: null; errorCode: ErrorCode }
+)
 
 export interface CorrectionTransport {
   send(body: object, signal: AbortSignal, isRejectReasoning?: boolean): Promise<CorrectionReply>

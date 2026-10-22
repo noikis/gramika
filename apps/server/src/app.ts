@@ -10,6 +10,7 @@ import { modelSettingsRoutes } from './routes/model-settings'
 import { healthRoutes } from './routes/health'
 import { LogOperation, loggingOptions } from './logging'
 import { HTTP_STATUS } from './http-status'
+import { ErrorCode } from '@gramota/contracts'
 
 export interface AppOptions extends FastifyServerOptions, RootOptions {
   correction?: AppResourcesOptions
@@ -38,6 +39,16 @@ const app: FastifyPluginAsync<AppOptions> = async (fastify, opts): Promise<void>
     transport,
     isAvailable: config.available,
     timeoutMs: opts.correction?.timeoutMs,
+    onReasoningViolation: (requestId, modelId) =>
+      fastify.log.warn(
+        {
+          operation: LogOperation.enum['correction-api'],
+          code: ErrorCode.enum.REASONING_NOT_DISABLED,
+          attemptId: requestId,
+          modelId,
+        },
+        'Model returned reasoning despite the disabled setting',
+      ),
   })
 
   fastify.register(rootRoutes, { frontendRoot: opts.frontendRoot })

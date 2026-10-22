@@ -42,8 +42,9 @@ Do not assume Next.js, Prisma, or Clerk.
 Gemma 4 26B A4B is the default; Gemini 3.1 Flash Lite is the only alternative.
 The shared registry in packages/contracts/src/index.ts controls both the app and
 benchmark choices. Use the existing strict-v3 prompt for all styles. Requests ask
-for disabled reasoning; application corrections reject reasoning-bearing results,
-while manual benchmarks accept valid outputs and retain reported usage.
+for disabled reasoning; application corrections display complete valid output
+normally even if reasoning is returned, logging the setting violation only.
+Never store or display internal reasoning. Manual benchmarks retain reported usage.
 
 ## Manual benchmarks
 

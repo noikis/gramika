@@ -203,27 +203,6 @@ test('upstream failures are recorded without fabricated output or metrics', asyn
       200,
       'INVALID_RESPONSE',
     ],
-    [
-      {
-        ...output(),
-        choices: [
-          {
-            finish_reason: 'stop',
-            message: { role: 'assistant', content: 'text', reasoning: 'private' },
-          },
-        ],
-      },
-      200,
-      'REASONING_NOT_DISABLED',
-    ],
-    [
-      {
-        ...output(),
-        usage: { completion_tokens: 8, completion_tokens_details: { reasoning_tokens: 2 } },
-      },
-      200,
-      'REASONING_NOT_DISABLED',
-    ],
     [{ error: { message: 'sensitive upstream text' } }, 429, 'UPSTREAM_ERROR'],
   ]
   for (const [data, status, code] of cases) {

@@ -237,7 +237,8 @@ Strict correction uses the shared strict-v3 prompt for every style. User checks 
 phrases and styles did not establish a need for separate prompts. Requests set
 reasoning.enabled=false, stream=false, max_tokens=8192,
 provider.require_parameters=true and provider.allow_fallbacks=false. Application
-corrections reject reasoning fields or positive reasoning token counts; the
+corrections accept complete valid output despite reasoning fields or positive
+reasoning token counts and log the setting violation only; the
 manual benchmark accepts otherwise valid outputs and records reported usage.
 No automatic retry, fallback model, second-model verification or correction-result
 cache. V2 second opinions are explicitly requested, and saved explanations are
@@ -447,7 +448,7 @@ with the user before adding any idea to this plan or the build roadmap.
 ## Approved V2 follow-ups (2026-10-22)
 
 - V2.9: fix history model options and filter correctness, including showing only matching requests in expanded entries and consistent combined model/result filtering.
-- V2.10: fix failed-request handling and preserve/display usable returned correction text despite reasoning-setting violations, with honest warnings, costs and diagnostics. Current rejection behavior remains until this change is specified and implemented; do not claim recovery of output never saved.
+- V2.10: show complete valid returned correction text normally despite reasoning-setting violations. Per user clarification on 2026-10-22, log the setting violation only, without a user-facing warning or failed status. Retain costs and diagnostics; do not claim recovery of output never saved.
 - V2.11: implement caching and local storage, with exact reuse, persistence, expiration, clearing and privacy behavior decided in its spec. This is separate from minimal PWA installation and does not automatically authorize offline correction.
 
 These are approved delivery commitments, not optional ideas. See the build-plan contracts for scope; implementation has not started.

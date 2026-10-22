@@ -108,26 +108,11 @@ function readResponseMetadata(data: unknown): Partial<Outcome> {
   }
 }
 
-function readCorrectionText(
-  data: unknown,
-  reasoningTokens: number | null | undefined,
-  isRejectReasoning = true,
-): string {
+function readCorrectionMessage(data: unknown) {
   const parsed = Success.safeParse(data)
   if (!parsed.success) throw new CorrectionError(ErrorCode.enum.INVALID_RESPONSE)
 
-  const message = parsed.data.choices[0].message
-  if (
-    isRejectReasoning &&
-    (message.reasoning ||
-      message.reasoning_content ||
-      message.reasoning_details?.length ||
-      (reasoningTokens ?? 0) > 0)
-  ) {
-    throw new CorrectionError(ErrorCode.enum.REASONING_NOT_DISABLED)
-  }
-
-  return message.content
+  return parsed.data.choices[0].message
 }
 
 export type OpenRouterReply = { status: number; data: unknown }
@@ -141,8 +126,23 @@ export function parseOpenRouterReply(
   try {
     if (reply.status !== HTTP_STATUS.OK) throw new CorrectionError(ErrorCode.enum.UPSTREAM_ERROR)
 
+    const message = readCorrectionMessage(reply.data)
+    if (
+      isRejectReasoning &&
+      (message.reasoning ||
+        message.reasoning_content ||
+        message.reasoning_details?.length ||
+        (details.reasoningTokens ?? 0) > 0)
+    ) {
+      return {
+        correctedText: message.content,
+        details,
+        errorCode: ErrorCode.enum.REASONING_NOT_DISABLED,
+      }
+    }
+
     return {
-      correctedText: readCorrectionText(reply.data, details.reasoningTokens, isRejectReasoning),
+      correctedText: message.content,
       details,
       errorCode: null,
     }

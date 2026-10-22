@@ -68,7 +68,7 @@ use the current UI with necessary adjustments; UI direction is chosen at V2.6.
 - [x] **V2.7 — Implement the UI redesign:** include light/dark themes, system preference with manual override, New correction, better mobile access to results and Copy, and Ctrl+Enter submission. Revisit existing feedback presentation. Completed and approved 2026-10-22; see [archive](history/features/V2.7-implement-the-ui-redesign.md).
 - [ ] **V2.8 — Minimal installable PWA:** support phone installation and home-screen launch; offline functionality remains deferred. Caching/local persistence is separate V2.11 work.
 - [x] **V2.9 - Fix history filter correctness:** supported model choices, matching-request display and consistent combined filters/pagination. Completed and approved 2026-10-22; see [archive](history/features/V2.9-fix-history-filter-correctness.md).
-- [ ] **V2.10 - Fix failed requests and recover usable output:** show usable corrected text returned despite reasoning-setting violations, with honest warnings and costs; cover workspace and history. Approved 2026-10-22; see contract below.
+- [x] **V2.10 - Fix failed requests and recover usable output:** show complete valid corrected text normally despite reasoning-setting violations; log the violation only and retain costs. Cover workspace and history. Completed and approved 2026-10-22; see [archive](history/features/V2.10-fix-failed-requests-and-recover-usable-output.md).
 - [ ] **V2.11 - Caching and local storage:** implement deliberate cache reuse and browser persistence, with retention, refresh and clearing behavior defined in its spec. Approved 2026-10-22; see contract below.
 
 ### V2.1a planning contract — History costs in Russian kopecks
@@ -126,7 +126,8 @@ no server changes are authorized by recording this backlog item.
 ### V2.10 contract: Failed requests and recoverable model output
 
 **Status:** Approved V2 fix, committed to the roadmap on 2026-10-22.
-Not implemented; diagnosis and the implementation spec are next.
+Implemented and approved on 2026-10-22; see the
+[completion archive](history/features/V2.10-fix-failed-requests-and-recover-usable-output.md).
 
 The user observes requests rejected for not respecting the reasoning setting,
 while usage/cost is recorded and generated output appears to have been returned.
@@ -136,21 +137,22 @@ discarded or hidden solely because reasoning was returned.
 - Inspect the response, validation and persistence paths to establish what is
   received, retained and currently available to the UI. Recorded cost alone
   does not prove a complete usable correction exists.
-- Preserve and display available usable corrected text for reasoning-setting
-  violations, with a clear warning and honest request diagnostics/costs. Do not
-  present the request as fully compliant or display internal reasoning as the
-  correction.
+- User clarification on 2026-10-22: treat complete valid corrected text as a normal
+  successful response even if reasoning was returned. The reasoning-setting
+  violation is an implementation detail to log only, with no user-facing warning,
+  error or retry prompt. Keep actual reported costs and never display internal
+  reasoning as the correction.
 - Review other failure cases and distinguish recoverable output from missing,
   malformed or incomplete responses. Keep the original text available and
   explain what happened without concealing returned usable output.
 - Cover the workspace and history, coordinating failure/result classification
-  with V2.9 so warnings, filters and details remain consistent.
+  with V2.9 so successful results, filters and details remain consistent.
 - Determine whether historical rejected output was saved and can be recovered;
   do not promise recovery of data that was never persisted. Verify using mocked
   responses, without paid model requests.
 
-Recording this requested change does not alter the current rejection policy,
-server code or prompts. Plan the required scope separately before implementation.
+The implemented policy accepts complete valid correction text and logs reasoning
+setting violations only. Request reasoning settings and prompts are unchanged.
 
 ### V2.11 contract: Caching and local storage
 

@@ -1,6 +1,6 @@
 # Gramota - Project Overview
 
-<!-- blueprint:source-hash 8cd0438b81d320033c2b5545950e09e607664811acdda417dafcd1b0a31d2c02 -->
+<!-- blueprint:source-hash 8917519d7bff16b4683a677843746b1aa26eba61904631de0b3f42d8b943ff77 -->
 
 Derived from [project-plan.md](../project-plan.md) and [build-plan.md](../build-plan.md).
 Updated 2026-10-20 to reflect completed work and user decisions. Implementation
@@ -94,8 +94,9 @@ Treat text as proofreading data, not instructions. No automatic requests on edit
 Limit: 5,000 Unicode code points. Timeout: 60 seconds. Request parameters include
 reasoning.enabled=false, stream=false, max_tokens=8192,
 provider.require_parameters=true and provider.allow_fallbacks=false. No automatic
-retry, fallback model or result cache. Ordinary corrections reject reasoning fields
-or positive reasoning token counts; manual benchmarks bypass only that guard.
+retry, fallback model or result cache. Ordinary corrections accept complete valid
+output despite reasoning fields or positive reasoning token counts and log the
+setting violation only. Internal reasoning is never stored or displayed.
 
 ## Data and history
 

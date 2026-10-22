@@ -19,7 +19,6 @@ import {
 } from '../src/benchmark'
 
 import {
-  AttemptError,
   createCorrectionService,
   OPENROUTER_REQUEST_DEFAULTS,
   STRICT_PROMPT,
@@ -54,7 +53,7 @@ test('only the selected Gemma and Gemini models are available to benchmarks and 
   }
 })
 
-test('benchmarks accept reasoning-bearing outputs and retain usage while ordinary corrections reject them', async (t) => {
+test('benchmarks and ordinary corrections retain complete output and reported reasoning usage', async (t) => {
   let calls = 0
   const transport: CorrectionTransport = mockOpenRouterTransport({
     async send(body) {
@@ -104,10 +103,9 @@ test('benchmarks accept reasoning-bearing outputs and retain usage while ordinar
       transport,
       isAvailable: true,
     })
-    await assert.rejects(
-      ordinary(cases[0]!.text, models[0]),
-      (error: unknown) => error instanceof AttemptError && error.code === 'REASONING_NOT_DISABLED',
-    )
+    const ordinaryResult = await ordinary(cases[0]!.text, models[0])
+    assert.equal(ordinaryResult.correctedText, 'Привет, мир!')
+    assert.equal(database.history.get(ordinaryResult.correctionId)!.requests[0].status, 'succeeded')
   } finally {
     database.close()
   }
