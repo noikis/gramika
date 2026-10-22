@@ -51,7 +51,6 @@ export function useHistory(query: HistorySearchQuery) {
   const current = response?.key === key ? response : null
   return {
     data: current?.error ? null : (current?.data ?? null),
-    models: response?.data?.models ?? [],
     loading: current === null,
     error: current?.error ?? '',
     retry: () => setAttempt((value) => value + 1),

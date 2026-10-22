@@ -1,6 +1,6 @@
 # Gramota - Project Overview
 
-<!-- blueprint:source-hash a407108e7223d880372b320bb585a796c627dacea1d503d0c2999fb728f9d775 -->
+<!-- blueprint:source-hash 8cd0438b81d320033c2b5545950e09e607664811acdda417dafcd1b0a31d2c02 -->
 
 Derived from [project-plan.md](../project-plan.md) and [build-plan.md](../build-plan.md).
 Updated 2026-10-20 to reflect completed work and user decisions. Implementation

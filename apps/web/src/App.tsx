@@ -33,8 +33,8 @@ function App() {
   return (
     <div className="shell">
       <header className="app-header">
-        <span className="brand">
-          <span className="brand-mark">Г</span> Gramota
+        <span className="brand" role="img" aria-label="Грамика" lang="ru">
+          <span className="brand-mark">Г</span> рамика
         </span>
         <nav aria-label="Main navigation">
           <Button

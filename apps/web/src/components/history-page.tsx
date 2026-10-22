@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState } from 'react'
 import {
   HISTORY_PAGE_SIZE,
   MAX_INPUT_CHARACTERS,
+  MODELS,
   HistoryDetail,
   type HistorySummary,
   type HistorySearchQuery,
@@ -20,17 +21,33 @@ function HistoryEntry({
   rate,
   onDeleted,
   onCopyingChange,
+  filters,
 }: {
   item: HistorySummary
   rate: number | null
   onDeleted: (id: string) => void
   onCopyingChange: (isCopying: boolean) => void
+  filters: Pick<HistorySearchQuery, 'model' | 'result'>
 }) {
   const [detail, setDetail] = useState<HistoryDetail | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const controller = useRef<AbortController | null>(null)
   const originalId = useId()
+  const requests =
+    detail?.requests.filter((request) => {
+      if (filters.model && request.requestedModel !== filters.model) return false
+      if (filters.result === 'all') return true
+      if (filters.result === 'corrected' || filters.result === 'unchanged') {
+        return (
+          request.status === 'succeeded' &&
+          (filters.result === 'unchanged'
+            ? request.correctedText === detail.originalText
+            : request.correctedText !== detail.originalText)
+        )
+      }
+      return request.status === filters.result
+    }) ?? []
   useEffect(
     () => () => {
       controller.current?.abort()
@@ -88,9 +105,7 @@ function HistoryEntry({
         <span className="expand-control" aria-hidden="true" />
       </summary>
       <div className="history-detail" aria-busy={loading}>
-        {(!detail || detail.requests.length === 0) && (
-          <HistoryDelete id={item.id} onDeleted={onDeleted} />
-        )}
+        {(!detail || requests.length === 0) && <HistoryDelete id={item.id} onDeleted={onDeleted} />}
         {loading && (
           <p className="clipboard-feedback" role="status">
             Loading correction...
@@ -120,7 +135,7 @@ function HistoryEntry({
             >
               {detail.originalText}
             </div>
-            {detail.requests.map((request, index) => (
+            {requests.map((request, index) => (
               <HistoryRequest
                 key={request.id}
                 request={request}
@@ -130,11 +145,13 @@ function HistoryEntry({
                 entryAction={
                   index === 0 ? <HistoryDelete id={item.id} onDeleted={onDeleted} /> : undefined
                 }
-                multipleResults={detail.requests.length > 1}
+                multipleResults={requests.length > 1}
               />
             ))}
-            {detail.requests.length === 0 && (
-              <p className="clipboard-feedback">No recorded requests.</p>
+            {requests.length === 0 && (
+              <p className="clipboard-feedback">
+                {detail.requests.length === 0 ? 'No recorded requests.' : 'No matching requests.'}
+              </p>
             )}
           </>
         )}
@@ -185,9 +202,6 @@ export function HistoryPage({
     to: dateBoundary(filters.to, true),
   })
   const { data, loading, error } = history
-  const models = [...history.models].sort((a, b) =>
-    shortModelName(a).localeCompare(shortModelName(b)),
-  )
   const page = data?.page ?? 1
   const total = data?.total ?? 0
   const pageCount = Math.max(1, Math.ceil(total / HISTORY_PAGE_SIZE))
@@ -280,7 +294,7 @@ export function HistoryPage({
               onChange={(event) => updateFilters({ model: event.target.value })}
             >
               <option value="">All models</option>
-              {models.map((id) => (
+              {MODELS.map(({ id }) => (
                 <option key={id} value={id}>
                   {shortModelName(id)}
                 </option>
@@ -367,6 +381,7 @@ export function HistoryPage({
                   <HistoryEntry
                     key={item.id}
                     item={item}
+                    filters={filters}
                     rate={rate}
                     onCopyingChange={onCopyingChange}
                     onDeleted={(id) => {

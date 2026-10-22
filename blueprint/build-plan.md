@@ -67,7 +67,7 @@ use the current UI with necessary adjustments; UI direction is chosen at V2.6.
 - [x] **V2.6 — Choose the UI direction:** explore and approve the visual design and interactions after the preceding features are usable. Completed and approved 2026-10-22; see [archive](history/features/V2.6-choose-the-ui-direction.md).
 - [x] **V2.7 — Implement the UI redesign:** include light/dark themes, system preference with manual override, New correction, better mobile access to results and Copy, and Ctrl+Enter submission. Revisit existing feedback presentation. Completed and approved 2026-10-22; see [archive](history/features/V2.7-implement-the-ui-redesign.md).
 - [ ] **V2.8 — Minimal installable PWA:** support phone installation and home-screen launch; offline functionality remains deferred. Caching/local persistence is separate V2.11 work.
-- [ ] **V2.9 - Fix history filter correctness:** supported model choices, matching-request display and consistent combined filters/pagination. Approved 2026-10-22; see contract below.
+- [x] **V2.9 - Fix history filter correctness:** supported model choices, matching-request display and consistent combined filters/pagination. Completed and approved 2026-10-22; see [archive](history/features/V2.9-fix-history-filter-correctness.md).
 - [ ] **V2.10 - Fix failed requests and recover usable output:** show usable corrected text returned despite reasoning-setting violations, with honest warnings and costs; cover workspace and history. Approved 2026-10-22; see contract below.
 - [ ] **V2.11 - Caching and local storage:** implement deliberate cache reuse and browser persistence, with retention, refresh and clearing behavior defined in its spec. Approved 2026-10-22; see contract below.
 
@@ -104,9 +104,9 @@ execution order can be chosen separately, including prioritizing fixes before PW
 
 ### V2.9 contract: History filter correctness
 
-**Status:** Approved V2 fix, committed to the roadmap on 2026-10-22.
-Not implemented; reproduction and the implementation spec are next. Separate
-from the completed V2.7 visual redesign.
+**Status:** Implemented, verified and approved on 2026-10-22. See the
+[completion archive](history/features/V2.9-fix-history-filter-correctness.md).
+Separate from the completed V2.7 visual redesign.
 
 - The model filter offers DeepSeek and Qwen despite those models no longer
   being available in the app. Review the source of options and restrict the

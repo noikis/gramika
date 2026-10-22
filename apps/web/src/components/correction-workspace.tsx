@@ -261,7 +261,7 @@ export function CorrectionWorkspace({
     <>
       <div className="workspace-intro">
         <h1 className="sr-only">Correction</h1>
-        <p>A little clearer. Still your words.</p>
+        <p>Write with confidence.</p>
       </div>
       <div className="editors correction-workspace">
         <OriginalEditor draft={draft} correction={correction} />
