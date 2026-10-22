@@ -1,51 +1,46 @@
 @import 'tailwindcss';
 
 @font-face {
-  font-family: Roboto;
+  font-family: Manrope;
+  font-style: normal;
+  font-weight: 200 800;
+  font-display: swap;
+  src: url('/fonts/manrope-variable.ttf') format('truetype');
+}
+@font-face {
+  font-family: Spectral;
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url('/fonts/roboto-400.ttf') format('truetype');
-}
-
-@font-face {
-  font-family: Roboto;
-  font-style: normal;
-  font-weight: 500;
-  font-display: swap;
-  src: url('/fonts/roboto-500.ttf') format('truetype');
+  src: url('/fonts/spectral-400.ttf') format('truetype');
 }
 @font-face {
-  font-family: Roboto;
-  font-style: normal;
-  font-weight: 600;
-  font-display: swap;
-  src: url('/fonts/roboto-600.ttf') format('truetype');
-}
-@font-face {
-  font-family: Roboto;
+  font-family: Spectral;
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url('/fonts/roboto-700.ttf') format('truetype');
+  src: url('/fonts/spectral-700.ttf') format('truetype');
 }
 
 :root {
-  color-scheme: dark;
-  --bg: #0b141a;
-  --surface: #111b21;
-  --surface-raised: #202c33;
-  --border: #2a3942;
-  --text: #e9edef;
-  --muted: #aebac1;
-  --faint: #8696a0;
-  --accent: #00d477;
-  --accent-ink: #062418;
-  --added: #b7f1c6;
-  --added-bg: #254b33;
-  --removed: #ffb8bc;
-  --removed-bg: #502c31;
-  --font-sans: Roboto, Arial, sans-serif;
+  color-scheme: light;
+  --bg: #f5f3ec;
+  --surface: #fffefa;
+  --surface-raised: #eee9dd;
+  --border: #7d8d80;
+  --line: #dfe3dc;
+  --text: #24332d;
+  --muted: #5b6861;
+  --faint: #5b6861;
+  --accent: #176b4c;
+  --accent-ink: #ffffff;
+  --added: #24332d;
+  --added-bg: #dbeade;
+  --removed: #9b3539;
+  --removed-bg: #f5dfdc;
+  --overlay: #14251cb3;
+  --font-sans: Manrope, Arial, sans-serif;
+  --font-writing: Spectral, Georgia, serif;
   --font-mono: ui-monospace, Consolas, monospace;
   --text-xs: 0.75rem;
   --text-sm: 0.875rem;
@@ -60,19 +55,56 @@
   --space-5: 1.5rem;
   --space-6: 2rem;
   --space-7: 3rem;
-  --radius: 1rem;
-  --radius-sm: 0.5rem;
+  --radius: 1.375rem;
+  --radius-sm: 0.75rem;
   --radius-pill: 100rem;
-  --line: 1.65;
-  --control: 2.875rem;
-  --page-width: 70rem;
-  --editor-height: 19rem;
-  --editor-height-mobile: 15rem;
+  --line-height: 1.65;
+  --control: 3rem;
+  --page-width: 75rem;
+  --editor-height: 10rem;
+  --editor-height-mobile: 11.25rem;
   --heading-height: 3rem;
   --border-width: 1px;
   --focus-width: 2px;
 }
-
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #161819;
+  --surface: #222627;
+  --surface-raised: #2c3231;
+  --border: #65766e;
+  --line: #39423e;
+  --text: #eef0ed;
+  --muted: #a9b2ad;
+  --faint: #a9b2ad;
+  --accent: #79d3ae;
+  --accent-ink: #102a20;
+  --added: #eef0ed;
+  --added-bg: #29493d;
+  --removed: #ffb8bc;
+  --removed-bg: #502c31;
+  --overlay: #080e0ccc;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']):not([data-theme='dark']) {
+    color-scheme: dark;
+    --bg: #161819;
+    --surface: #222627;
+    --surface-raised: #2c3231;
+    --border: #65766e;
+    --line: #39423e;
+    --text: #eef0ed;
+    --muted: #a9b2ad;
+    --faint: #a9b2ad;
+    --accent: #79d3ae;
+    --accent-ink: #102a20;
+    --added: #eef0ed;
+    --added-bg: #29493d;
+    --removed: #ffb8bc;
+    --removed-bg: #502c31;
+    --overlay: #080e0ccc;
+  }
+}
 @theme inline {
   --color-background: var(--bg);
   --color-foreground: var(--text);
@@ -83,9 +115,8 @@
   --color-secondary: var(--surface-raised);
   --color-muted-foreground: var(--muted);
   --color-ring: var(--accent);
-  --font-sans: Roboto, Arial, sans-serif;
+  --font-sans: Manrope, Arial, sans-serif;
 }
-
 @layer base {
   * {
     box-sizing: border-box;
@@ -96,11 +127,12 @@
     color: var(--text);
     font-family: var(--font-sans);
     font-size: var(--text-base);
-    line-height: var(--line);
+    line-height: var(--line-height);
   }
   button,
   select,
-  textarea {
+  textarea,
+  input {
     font: inherit;
   }
   button:not(:disabled),
@@ -109,18 +141,30 @@
   }
   button,
   select,
-  textarea {
+  textarea,
+  input {
     -webkit-tap-highlight-color: transparent;
   }
   :focus-visible {
     outline: var(--focus-width) solid var(--accent);
     outline-offset: var(--space-1);
   }
+  ::selection {
+    background: var(--added-bg);
+    color: var(--text);
+  }
+  textarea,
+  input {
+    caret-color: var(--accent);
+  }
+  * {
+    scrollbar-color: var(--border) var(--surface);
+    scrollbar-width: thin;
+  }
 }
-
 .shell input:not([type='radio']):focus,
 .shell select:focus,
 .shell textarea:focus {
-  outline: none;
-  border-color: var(--accent);
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }

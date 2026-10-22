@@ -208,7 +208,18 @@ export function useCorrection(text: string, draftRevision: number) {
     }
   }
 
+  function reset() {
+    if (sending.current || writing.current) return false
+    requestGeneration.current += 1
+    association.current = null
+    setPair(null)
+    setError(null)
+    setActiveModel(DEFAULT_MODEL_ID)
+    return true
+  }
+
   return {
+    reset,
     forgetHistoryEntry,
     mode,
     selectMode,

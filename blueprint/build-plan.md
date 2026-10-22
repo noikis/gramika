@@ -60,11 +60,16 @@ use the current UI with necessary adjustments; UI direction is chosen at V2.6.
 - [ ] **V2.1a — History costs in Russian kopecks:** next small follow-up before V2.2. Convert all displayed history costs from their stored USD values to kopecks in the frontend using a free USD/RUB exchange-rate API; use a Russian kopeck unit label. If the API is unavailable or conversion fails, show the USD amount instead. Planning only; not implemented. See the contract below.
 - [x] **V2.2 - Rewrite mode:** explicitly request alternative wording, adapting the extent of rewriting to the text while preserving meaning and voice; retain Strict as the default. Working UI label: Gentle rewrite. Completed 2026-10-21; rewrite-v1 accepted by the user and unchanged. See [archive](history/features/V2.2-rewrite-mode.md).
 - [x] **V2.3 — Another opinion:** replace the model selector with Gemma as the normal correction action and an explicit Gemini second opinion; retain both results.
-- [ ] **V2.4 — Selected-correction explanations:** deliver Strict Explain first, then Rewrite Explain after Strict evaluation and user approval, using a shared core and mode-specific prompts. Both phases support workspace and History, use the correcting model and save explanations across visits. Implement the actual phase-1 explain-v1 prompts verbatim; explanation metrics are a separate follow-up. V2.4 is complete only after both phases. See the [agreed handoff](context/v2.4-explain-handoff.md).
+- [x] **V2.4 - Selected-correction explanations:** completed and closed at the user's request on 2026-10-22. Shipped Strict Explain in workspace and History, saved reuse, Explain Run benchmarks, and Gemini minimal reasoning. See [completion record](history/features/V2.4-selected-correction-explanations.md).
+  - [x] **Strict Explain and Explain Run:** implemented, tested and pushed by the user. See [implementation archive](history/features/V2.4-phase-1-strict-explain-and-benchmarks.md).
+  - Deferred work: Rewrite Explain and application explanation metrics/cost reporting. Rewrite support is not implemented; retain its requirements in the [handoff](context/v2.4-explain-handoff.md).
 - [x] **V2.5 — Soft-delete history:** allow history records to be removed from normal views while retaining them in storage. Completed at the user's request on 2026-10-21. See [archive](history/features/V2.5-soft-delete-history.md). Whole-entry deletion, no Trash/restore screen.
-- [ ] **V2.6 — Choose the UI direction:** explore and approve the visual design and interactions after the preceding features are usable.
-- [ ] **V2.7 — Implement the UI redesign:** include light/dark themes, system preference with manual override, New correction, better mobile access to results and Copy, and Ctrl+Enter submission. Revisit existing feedback presentation.
-- [ ] **V2.8 — Minimal installable PWA:** support phone installation and home-screen launch; defer offline functionality and local-storage decisions.
+- [x] **V2.6 — Choose the UI direction:** explore and approve the visual design and interactions after the preceding features are usable. Completed and approved 2026-10-22; see [archive](history/features/V2.6-choose-the-ui-direction.md).
+- [x] **V2.7 — Implement the UI redesign:** include light/dark themes, system preference with manual override, New correction, better mobile access to results and Copy, and Ctrl+Enter submission. Revisit existing feedback presentation. Completed and approved 2026-10-22; see [archive](history/features/V2.7-implement-the-ui-redesign.md).
+- [ ] **V2.8 — Minimal installable PWA:** support phone installation and home-screen launch; offline functionality remains deferred. Caching/local persistence is separate V2.11 work.
+- [ ] **V2.9 - Fix history filter correctness:** supported model choices, matching-request display and consistent combined filters/pagination. Approved 2026-10-22; see contract below.
+- [ ] **V2.10 - Fix failed requests and recover usable output:** show usable corrected text returned despite reasoning-setting violations, with honest warnings and costs; cover workspace and history. Approved 2026-10-22; see contract below.
+- [ ] **V2.11 - Caching and local storage:** implement deliberate cache reuse and browser persistence, with retention, refresh and clearing behavior defined in its spec. Approved 2026-10-22; see contract below.
 
 ### V2.1a planning contract — History costs in Russian kopecks
 
@@ -90,3 +95,84 @@ readable-diff branch if still active when implementation is requested.
 - Select and verify a free browser-compatible API, rounding precision, rate
   freshness/reuse and the loading display when writing the implementation spec.
   Verify both successful conversion and USD fallback with mocked responses.
+
+## Approved V2 follow-ups
+
+V2.9-V2.11 are committed delivery scope, not optional ideas. Define and review
+each implementation spec before coding. Their IDs preserve the existing roadmap;
+execution order can be chosen separately, including prioritizing fixes before PWA.
+
+### V2.9 contract: History filter correctness
+
+**Status:** Approved V2 fix, committed to the roadmap on 2026-10-22.
+Not implemented; reproduction and the implementation spec are next. Separate
+from the completed V2.7 visual redesign.
+
+- The model filter offers DeepSeek and Qwen despite those models no longer
+  being available in the app. Review the source of options and restrict the
+  picker to the supported model choices. Preserve existing historical records.
+- Filtering by Failed can return an entry with multiple model requests and
+  display both failed and successful requests. Expanded entries should show
+  only requests matching the selected result/model filters, while retaining
+  the original text and access to matching request details.
+- Verify model and result filters together against the same request, plus
+  search, date bounds, sorting, pagination, reset and empty-result behavior.
+  Use synthetic history fixtures with mixed request outcomes and models.
+
+This is a correctness fix, not another filter styling pass. Diagnose frontend
+display and backend search behavior before choosing the implementation scope;
+no server changes are authorized by recording this backlog item.
+
+### V2.10 contract: Failed requests and recoverable model output
+
+**Status:** Approved V2 fix, committed to the roadmap on 2026-10-22.
+Not implemented; diagnosis and the implementation spec are next.
+
+The user observes requests rejected for not respecting the reasoning setting,
+while usage/cost is recorded and generated output appears to have been returned.
+They want the response shown when usable corrected text exists, rather than
+discarded or hidden solely because reasoning was returned.
+
+- Inspect the response, validation and persistence paths to establish what is
+  received, retained and currently available to the UI. Recorded cost alone
+  does not prove a complete usable correction exists.
+- Preserve and display available usable corrected text for reasoning-setting
+  violations, with a clear warning and honest request diagnostics/costs. Do not
+  present the request as fully compliant or display internal reasoning as the
+  correction.
+- Review other failure cases and distinguish recoverable output from missing,
+  malformed or incomplete responses. Keep the original text available and
+  explain what happened without concealing returned usable output.
+- Cover the workspace and history, coordinating failure/result classification
+  with V2.9 so warnings, filters and details remain consistent.
+- Determine whether historical rejected output was saved and can be recovered;
+  do not promise recovery of data that was never persisted. Verify using mocked
+  responses, without paid model requests.
+
+Recording this requested change does not alter the current rejection policy,
+server code or prompts. Plan the required scope separately before implementation.
+
+### V2.11 contract: Caching and local storage
+
+**Status:** Approved V2 feature, committed to the roadmap on 2026-10-22.
+Not implemented; exact persistence, reuse, retention and clear behavior will
+be decided in its specification.
+
+Review caching and browser-local persistence together, while distinguishing
+temporary reuse from data that should survive reloads or reopening the app.
+
+- Inspect existing behavior first, including drafts, saved explanations, model
+  preferences and the cached exchange rate. Avoid duplicating existing caches.
+- Decide what should persist locally, what should only be cached temporarily,
+  and when data should expire, refresh or be cleared. Coordinate draft retention
+  and recovery with UX-01 and UX-02.
+- Define cache identity and invalidation for any correction/explanation reuse,
+  including text, selected change, mode, model and relevant versions. Choose
+  this only where reuse is actually wanted; do not silently change paid actions.
+- Decide how local storage relates to server history and deletion. Do not
+  introduce local copies of personal text or history until retention and clear
+  behavior are agreed. Handle unavailable browser storage without losing the
+  current editing session.
+- Reconcile any chosen persistence changes with the existing session-only theme
+  override and V2.8's minimal installation scope. This backlog item does not
+  automatically add offline correction or offline history to the PWA.

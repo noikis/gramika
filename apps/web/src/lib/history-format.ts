@@ -5,6 +5,10 @@ export function modelName(id: string) {
   return MODELS.find((model) => model.id === id)?.name ?? id
 }
 
+export function shortModelName(id: string) {
+  return id === MODELS[0].id ? 'Gemma 4' : modelName(id)
+}
+
 export function formatDate(value: string | null) {
   return value === null
     ? 'Unavailable'

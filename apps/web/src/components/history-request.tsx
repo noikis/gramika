@@ -1,19 +1,52 @@
-import { useId, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
+import type { PointerEvent, ReactNode } from 'react'
 import type { HistoryRequest as SavedRequest } from '@gramota/contracts'
 import {
   formatCost,
   formatCount,
   formatDate,
   formatTime,
-  modelName,
+  shortModelName,
   modeLabels,
 } from '../lib/history-format'
 import { writeClipboardText } from '../lib/clipboard'
 import { notify } from '../lib/notifications'
 import { ResultView, type ResultViewMode } from './result-view'
 import { Button } from './ui/button'
+import { Icon } from './ui/icon'
 
-export function RequestMetrics({ request, rate }: { request: SavedRequest; rate: number | null }) {
+function isOutsideDialog(event: PointerEvent<HTMLDialogElement>) {
+  const bounds = event.currentTarget.getBoundingClientRect()
+  return (
+    event.target === event.currentTarget &&
+    (event.clientX < bounds.left ||
+      event.clientX > bounds.right ||
+      event.clientY < bounds.top ||
+      event.clientY > bounds.bottom)
+  )
+}
+
+export function RequestMetrics({
+  request,
+  rate,
+  actions,
+  entryAction,
+}: {
+  request: SavedRequest
+  rate: number | null
+  actions?: ReactNode
+  entryAction?: ReactNode
+}) {
+  const dialog = useRef<HTMLDialogElement>(null)
+  const opener = useRef<HTMLButtonElement>(null)
+  const isBackdropStart = useRef(false)
+  const titleId = useId()
+  useEffect(() => {
+    const element = dialog.current
+    return () => {
+      element?.close()
+    }
+  }, [])
   const primary = [
     ['Generation time', formatTime(request.generationTimeMs)],
     ['Input tokens', formatCount(request.inputTokens)],
@@ -49,19 +82,56 @@ export function RequestMetrics({ request, rate }: { request: SavedRequest; rate:
   ]
   return (
     <>
-      <dl className="request-metrics">
-        {primary.map(([label, value]) => (
-          <div key={label}>
-            <dt>{label}</dt>
-            <dd>{value}</dd>
+      <div className="request-actions">
+        {actions}
+        <Button
+          type="button"
+          variant="secondary"
+          ref={opener}
+          onClick={() => dialog.current?.showModal()}
+        >
+          <Icon name="info" /> Details
+        </Button>
+        {entryAction}
+      </div>
+      <dialog
+        ref={dialog}
+        className="request-sheet"
+        aria-labelledby={titleId}
+        onPointerDown={(event) => {
+          isBackdropStart.current = isOutsideDialog(event)
+        }}
+        onPointerUp={(event) => {
+          if (isBackdropStart.current && isOutsideDialog(event)) event.currentTarget.close()
+          isBackdropStart.current = false
+        }}
+        onPointerCancel={() => {
+          isBackdropStart.current = false
+        }}
+        onClose={() => {
+          if (opener.current?.isConnected) opener.current.focus()
+        }}
+      >
+        <header className="sheet-heading">
+          <div>
+            <h2 id={titleId}>{shortModelName(request.requestedModel)}</h2>
+            <p>Request details · {modeLabels[request.mode]}</p>
           </div>
-        ))}
-      </dl>
-      <details className="request-more">
-        <summary>
-          Request details
-          <span className="disclosure-sign" aria-hidden="true" />
-        </summary>
+          <Button type="button" variant="secondary" onClick={() => dialog.current?.close()}>
+            <Icon name="close" /> Close
+          </Button>
+        </header>
+        <section className="request-summary" aria-label="Request summary">
+          <h3>Summary</h3>
+          <dl className="request-metrics">
+            {primary.map(([label, value]) => (
+              <div key={label}>
+                <dt>{label}</dt>
+                <dd>{value}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
         <div className="detail-groups">
           {[
             { title: 'Model & routing', facts: routing },
@@ -85,7 +155,7 @@ export function RequestMetrics({ request, rate }: { request: SavedRequest; rate:
             <pre className="request-parameters">{JSON.stringify(request.parameters, null, 2)}</pre>
           </section>
         </div>
-      </details>
+      </dialog>
     </>
   )
 }
@@ -94,10 +164,16 @@ export function HistoryRequest({
   request,
   original,
   rate,
+  onCopyingChange,
+  entryAction,
+  multipleResults = false,
 }: {
   request: SavedRequest
   original: string
   rate: number | null
+  onCopyingChange: (isCopying: boolean) => void
+  entryAction?: ReactNode
+  multipleResults?: boolean
 }) {
   const labelId = useId()
   const [view, setView] = useState<ResultViewMode>('changes')
@@ -108,6 +184,7 @@ export function HistoryRequest({
   async function copy() {
     if (!success || writing.current) return
     writing.current = true
+    onCopyingChange(true)
     setCopying(true)
     try {
       const outcome = await writeClipboardText(request.correctedText!)
@@ -115,12 +192,31 @@ export function HistoryRequest({
       notify(outcome.message, outcome.success)
     } finally {
       writing.current = false
+      onCopyingChange(false)
       setCopying(false)
     }
   }
 
+  const requestActions = (
+    <RequestMetrics
+      request={request}
+      rate={rate}
+      entryAction={entryAction}
+      actions={
+        success && (
+          <Button type="button" disabled={copying} onClick={copy}>
+            <Icon name="copy" /> {copying ? 'Copying...' : 'Copy'}
+          </Button>
+        )
+      }
+    />
+  )
+
   return (
-    <section className="history-request" aria-labelledby={labelId}>
+    <section
+      className={`history-request${multipleResults ? ' multiple-results' : ''}${request.status === 'failed' ? ' request-failed' : ''}`}
+      aria-labelledby={labelId}
+    >
       {success ? (
         <ResultView
           result={{
@@ -132,14 +228,24 @@ export function HistoryRequest({
           view={view}
           onViewChange={setView}
           labelId={labelId}
-          title={`${modelName(request.requestedModel)} · ${modeLabels[request.mode]}`}
+          title={shortModelName(request.requestedModel)}
+          actions={requestActions}
         />
       ) : (
         <>
-          <div className="editor-heading">
-            <h2 id={labelId}>
-              {modelName(request.requestedModel)} · {modeLabels[request.mode]}
-            </h2>
+          <div className="result-toolbar">
+            <div className="editor-heading request-outcome-heading">
+              {request.status === 'failed' && (
+                <span className="request-outcome-badge">
+                  <Icon name="error" /> Failed
+                </span>
+              )}
+              <h2 id={labelId}>
+                {shortModelName(request.requestedModel)}
+                <span className="request-mode"> · {modeLabels[request.mode]}</span>
+              </h2>
+            </div>
+            {requestActions}
           </div>
           <p className="history-status">{request.status === 'pending' ? 'Pending' : 'Failed'}</p>
           {request.errorMessage && <p className="history-error">{request.errorMessage}</p>}
@@ -148,16 +254,6 @@ export function HistoryRequest({
       {success && original === request.correctedText && (
         <p className="clipboard-feedback">No changes.</p>
       )}
-      {success && (
-        <>
-          <div className="result-actions">
-            <Button type="button" disabled={copying} onClick={copy}>
-              {copying ? 'Copying...' : 'Copy text'}
-            </Button>
-          </div>
-        </>
-      )}
-      <RequestMetrics request={request} rate={rate} />
     </section>
   )
 }

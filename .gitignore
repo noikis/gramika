@@ -5,6 +5,7 @@ dist/
 !.env.example
 *.tsbuildinfo
 coverage/
+prototypes/
 
 # Generated output and local files
 logs/

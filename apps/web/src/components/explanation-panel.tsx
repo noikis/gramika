@@ -6,6 +6,7 @@ import {
   type ExplanationInput,
 } from '@gramota/contracts'
 import { Button } from './ui/button'
+import { Icon } from './ui/icon'
 
 type Outcome = { explanation: string | null; error: string | null }
 
@@ -66,17 +67,22 @@ export function ExplanationPanel({ selection }: { selection: ExplanationInput })
   return (
     <div className="explanation-panel" aria-busy={outcome === null}>
       {outcome?.explanation ? (
-        <p className="explanation-text" lang="ru" role="status">
-          {outcome.explanation}
-        </p>
+        <>
+          <p className="explanation-label">Explanation</p>
+          <p className="explanation-text" lang="ru" role="status">
+            {outcome.explanation}
+          </p>
+        </>
       ) : (
         <>
           <Button
+            className="explain-button"
             type="button"
             variant="secondary"
             disabled={outcome === null}
             onClick={() => request(outcome?.error ? attempt.isGenerate : true)}
           >
+            <Icon name="info" />
             {outcome === null
               ? attempt.isGenerate
                 ? 'Explaining...'

@@ -105,8 +105,8 @@
 ## Styling
 
 Styling uses Tailwind CSS and local CSS in App.css, index.css and components/.
-Local shadcn-style UI components and Sonner are installed. Preserve the approved
-blue-black theme, green accents, local Roboto fonts and English interface.
+Local shadcn-style UI components and Sonner are installed. For the V2.7 redesign, follow docs/DESIGN.md: warm light mode, Charcoal & jade
+dark mode, local Manrope/Spectral fonts and the English interface.
 Preserve accessible controls, keyboard interaction, and mobile usability.
 
 ## Data, validation, and errors

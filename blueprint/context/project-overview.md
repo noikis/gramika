@@ -1,6 +1,6 @@
 # Gramota - Project Overview
 
-<!-- blueprint:source-hash ae27dd1b68743bd0f09ea017e9f83cae37f4d9f8d59f48255a437501148f3d41 -->
+<!-- blueprint:source-hash a407108e7223d880372b320bb585a796c627dacea1d503d0c2999fb728f9d775 -->
 
 Derived from [project-plan.md](../project-plan.md) and [build-plan.md](../build-plan.md).
 Updated 2026-10-20 to reflect completed work and user decisions. Implementation
@@ -153,3 +153,11 @@ nginx-proxy-manager_default network; Nginx Proxy Manager targets http://gramota:
 Container logs rotate and restart policy is unless-stopped. Backup/restore is deferred. Actual container VPN routing and
 secure phone access remain unverified. See
 docs/container.md.
+
+## Approved V2 follow-ups (2026-10-22)
+
+V2.9 history filter correctness, V2.10 failed-request recovery with usable
+output despite reasoning-setting violations, and V2.11 caching/local storage
+are approved roadmap work, not optional ideas. Their implementation has not
+started; current request rejection and persistence behavior remains until the
+owning specs change it. See project-plan.md and build-plan.md for contracts.

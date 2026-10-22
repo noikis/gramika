@@ -1,3 +1,10 @@
+## V2.7 approved design direction
+
+For the redesign, follow [docs/DESIGN.md](../docs/DESIGN.md) and the locally exported
+Figma Make reference in Redesign Gramota App/. It supersedes the older visual
+guidance below while retaining the real application behavior. The exported
+dark palette and mocked data are not production requirements.
+
 # Approved UI prototypes
 
 ## V2.3 Another opinion (approved)

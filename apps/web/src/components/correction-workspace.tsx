@@ -1,19 +1,65 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useLayoutEffect, useRef } from 'react'
 import type { PointerEvent } from 'react'
-import { CorrectionMode, DEFAULT_MODEL_ID } from '@gramota/contracts'
+import { CorrectionMode, DEFAULT_MODEL_ID, MAX_INPUT_CHARACTERS } from '@gramota/contracts'
 import type { useCorrectionDraft } from '../hooks/use-correction-draft'
 import type { useCorrection } from '../hooks/use-correction'
 import { Button } from './ui/button'
 import { Textarea } from './ui/textarea'
 import { ResultView } from './result-view'
 import { modeLabels } from '../lib/history-format'
+import { Icon } from './ui/icon'
 
 type Draft = ReturnType<typeof useCorrectionDraft>
 type Correction = ReturnType<typeof useCorrection>
 const MIN_SWIPE_DISTANCE_PX = 48
+const MOBILE_LAYOUT_QUERY = '(max-width: 720px)'
+
+function ModeControl({ correction }: { correction: Correction }) {
+  return (
+    <div className="model-control">
+      <fieldset className="mode-switch">
+        <legend className="sr-only">Correction mode</legend>
+        {CorrectionMode.options.map((mode) => (
+          <label key={mode}>
+            <input
+              type="radio"
+              name="correction-mode"
+              value={mode}
+              checked={correction.mode === mode}
+              disabled={correction.pending}
+              onChange={() => correction.selectMode(mode)}
+            />
+            {modeLabels[mode]}
+          </label>
+        ))}
+      </fieldset>
+      {correction.configFailed && (
+        <Button type="button" variant="secondary" onClick={correction.reloadConfig}>
+          Retry connection
+        </Button>
+      )}
+    </div>
+  )
+}
 
 function OriginalEditor({ draft, correction }: { draft: Draft; correction: Correction }) {
   const { text, edit, paste, pending, inputRef } = draft
+
+  useLayoutEffect(() => {
+    const input = inputRef.current
+    if (!input) return
+    const resize = () => {
+      input.style.height = 'auto'
+      input.style.height = `${input.scrollHeight}px`
+    }
+    resize()
+    window.addEventListener('resize', resize)
+    document.fonts.addEventListener('loadingdone', resize)
+    return () => {
+      window.removeEventListener('resize', resize)
+      document.fonts.removeEventListener('loadingdone', resize)
+    }
+  }, [text, inputRef])
   return (
     <section className="editor original-editor" aria-labelledby="original-title">
       <div className="editor-heading">
@@ -21,6 +67,7 @@ function OriginalEditor({ draft, correction }: { draft: Draft; correction: Corre
           <label htmlFor="original">Original</label>
         </h2>
         <Button type="button" variant="secondary" onClick={paste} disabled={pending}>
+          <Icon name="paste" />
           {pending ? 'Pasting...' : 'Paste'}
         </Button>
       </div>
@@ -31,15 +78,30 @@ function OriginalEditor({ draft, correction }: { draft: Draft; correction: Corre
         onChange={(event) => edit(event.target.value)}
         ref={inputRef}
         placeholder="Type or paste your text"
-        aria-describedby="input-feedback"
+        aria-describedby="input-feedback character-count"
         aria-invalid={Boolean(correction.validationMessage)}
         lang="ru"
         spellCheck={false}
+        onKeyDown={(event) => {
+          if (
+            (event.ctrlKey || event.metaKey) &&
+            event.key === 'Enter' &&
+            !event.nativeEvent.isComposing
+          ) {
+            event.preventDefault()
+            if (correction.canCorrect && !pending) void correction.correct()
+          }
+        }}
       />
       <p id="input-feedback" className="clipboard-feedback" role="status">
         {correction.validationMessage}
       </p>
       <div className="editor-actions">
+        <ModeControl correction={correction} />
+        <span id="character-count" className="character-count">
+          {Array.from(text.trim()).length.toLocaleString('en-US')} /{' '}
+          {MAX_INPUT_CHARACTERS.toLocaleString('en-US')} characters
+        </span>
         <Button
           type="button"
           disabled={!correction.canCorrect}
@@ -62,7 +124,16 @@ function ResultHeading({ correction }: { correction: Correction }) {
   const visibleRequestId = correction.visibleResult?.requestId
 
   useEffect(() => {
-    if (visibleRequestId) headingRef.current?.focus({ preventScroll: true })
+    if (!visibleRequestId) return
+    headingRef.current?.focus({ preventScroll: true })
+    if (window.matchMedia(MOBILE_LAYOUT_QUERY).matches) {
+      headingRef.current?.scrollIntoView({
+        block: 'start',
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+          ? 'instant'
+          : 'smooth',
+      })
+    }
   }, [visibleRequestId])
 
   function switchResult(isNext: boolean) {
@@ -143,8 +214,6 @@ function OpinionAction({ correction }: { correction: Correction }) {
   if (!correction.results.length || correction.results.length === 2) return null
   return (
     <div className="opinion-action">
-      <p className="opinion-label">Second opinion</p>
-      <p id="opinion-cost">Higher cost</p>
       <Button
         type="button"
         variant="secondary"
@@ -154,12 +223,12 @@ function OpinionAction({ correction }: { correction: Correction }) {
       >
         <span>
           {correction.isOpinionPending
-            ? 'Requesting Gemini...'
+            ? 'Requesting second opinion...'
             : correction.opinionError
-              ? 'Retry Gemini'
-              : correction.opinionModelName}
+              ? 'Retry second opinion'
+              : 'Second opinion'}
         </span>
-        <span className="opinion-button-model" aria-hidden="true">
+        <span id="opinion-cost" className="opinion-button-cost" aria-hidden="true">
           Higher cost
         </span>
       </Button>
@@ -190,28 +259,11 @@ export function CorrectionWorkspace({
 }) {
   return (
     <>
-      <h1 className="sr-only">Correction</h1>
+      <div className="workspace-intro">
+        <h1 className="sr-only">Correction</h1>
+        <p>A little clearer. Still your words.</p>
+      </div>
       <div className="editors correction-workspace">
-        <div className="model-control">
-          <label htmlFor="mode">Mode</label>
-          <select
-            id="mode"
-            value={correction.mode}
-            disabled={correction.pending}
-            onChange={(event) => correction.selectMode(event.target.value)}
-          >
-            {CorrectionMode.options.map((mode) => (
-              <option key={mode} value={mode}>
-                {modeLabels[mode]}
-              </option>
-            ))}
-          </select>
-          {correction.configFailed && (
-            <Button type="button" variant="secondary" onClick={correction.reloadConfig}>
-              Retry connection
-            </Button>
-          )}
-        </div>
         <OriginalEditor draft={draft} correction={correction} />
         <section className="editor result-editor" aria-labelledby="result-title">
           <ResultHeading correction={correction} />
@@ -238,6 +290,7 @@ export function CorrectionWorkspace({
                     onClick={correction.copy}
                     aria-label={`Copy ${result.modelId === DEFAULT_MODEL_ID ? 'Gemma' : 'Gemini'} result`}
                   >
+                    <Icon name="copy" />
                     {correction.copying ? 'Copying...' : 'Copy'}
                   </Button>
                 }
@@ -271,6 +324,13 @@ export function CorrectionWorkspace({
           <OpinionAction correction={correction} />
         </div>
       </div>
+      {correction.visibleResult && (
+        <div className="mobile-copy-bar">
+          <Button type="button" disabled={correction.copying} onClick={correction.copy}>
+            <Icon name="copy" /> {correction.copying ? 'Copying...' : 'Copy result'}
+          </Button>
+        </div>
+      )}
     </>
   )
 }

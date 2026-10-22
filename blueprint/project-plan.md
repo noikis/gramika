@@ -108,11 +108,12 @@ English and French remain future candidates. Russian is the initial acceptance t
   Changes selection and an explicit Explain button. Use the correcting model,
   full original/result context and exact selected fragments. Return one Russian
   explanation of at most five sentences; no Explain more. Implement the actual explain-v1
-  prompts verbatim; evaluate their quality manually. Rewrite Explain is the second phase
-  of this same feature, after Strict evaluation and user approval. It shares the
-  core prompt and explains both language corrections and alternative wording,
-  including changes in nuance or emphasis. Explanation metrics/cost reporting
-  remain a separate follow-up. See the
+  prompts verbatim; evaluate their quality manually. V2.4 was closed by the user
+  on 2026-10-22 with Strict Explain and its benchmark tooling shipped. Rewrite
+  Explain remains deferred and unimplemented; its retained requirements share
+  the core prompt and cover both language corrections and alternative wording,
+  including changes in nuance or emphasis. Application explanation metrics/cost
+  reporting also remain a separate follow-up. See the
   [agreed V2.4 handoff](context/v2.4-explain-handoff.md). Gemini
   explanations use minimal reasoning and accept reasoning metadata; Gemma app
   explanations retain their response guard. Correction settings are unchanged.
@@ -420,7 +421,8 @@ acceptance criteria are defined one feature at a time in build-plan order.
 - Application authentication and further access features; no current
   authorization to introduce accounts, ownership fields or new access infrastructure.
 - English/French support, future evaluation budgets, numerical quality/latency
-  thresholds and whether caching is useful. These are not approved features.
+  thresholds. These are not approved features; caching and local storage are
+  approved separately in V2.11, with detailed behavior still to be specified.
 
 Backup/restore (former feature 6c) is deferred, not an outstanding delivery task.
 Revisit only if the user decides the saved history has become important.
@@ -441,3 +443,11 @@ approval and its reason recorded in this plan.
 [docs/ideas.md](../docs/ideas.md) retains suggestions from another agent. They
 are not approved requirements, priorities or implementation instructions. Review
 with the user before adding any idea to this plan or the build roadmap.
+
+## Approved V2 follow-ups (2026-10-22)
+
+- V2.9: fix history model options and filter correctness, including showing only matching requests in expanded entries and consistent combined model/result filtering.
+- V2.10: fix failed-request handling and preserve/display usable returned correction text despite reasoning-setting violations, with honest warnings, costs and diagnostics. Current rejection behavior remains until this change is specified and implemented; do not claim recovery of output never saved.
+- V2.11: implement caching and local storage, with exact reuse, persistence, expiration, clearing and privacy behavior decided in its spec. This is separate from minimal PWA installation and does not automatically authorize offline correction.
+
+These are approved delivery commitments, not optional ideas. See the build-plan contracts for scope; implementation has not started.

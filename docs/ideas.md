@@ -9,6 +9,7 @@ appearing here. Section order and IDs do not indicate priority.
 
 - [Direction and status](#direction-and-status)
 - [Current baseline](#current-baseline)
+- [Reported fixes](#reported-fixes)
 - [Everyday workflow](#everyday-workflow)
 - [Reviewing and controlling corrections](#reviewing-and-controlling-corrections)
 - [Optional explanations and learning](#optional-explanations-and-learning)
@@ -16,6 +17,10 @@ appearing here. Section order and IDs do not indicate priority.
 - [Quality observations and future evaluation](#quality-observations-and-future-evaluation)
 - [Ideas to leave aside for now](#ideas-to-leave-aside-for-now)
 - [How to review this backlog](#how-to-review-this-backlog)
+
+History filter correctness, failed-request recovery, and caching/local storage
+were promoted to approved V2.9-V2.11 work on 2026-10-22. Their requirements now
+live in [the V2 roadmap](../blueprint/build-plan.md), not this ideas list.
 
 ## Direction and status
 

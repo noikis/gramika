@@ -6,22 +6,25 @@ import {
   type HistorySummary,
   type HistorySearchQuery,
 } from '@gramota/contracts'
-import { formatDate, modelName } from '../lib/history-format'
+import { formatDate, shortModelName } from '../lib/history-format'
 import { HistoryDelete } from './history-delete'
 import { HistoryRequest } from './history-request'
 import { Button } from './ui/button'
 import { useHistory } from '../hooks/use-history'
 import { useExchangeRate } from '../hooks/use-exchange-rate'
+import { Icon } from './ui/icon'
 import './history.css'
 
 function HistoryEntry({
   item,
   rate,
   onDeleted,
+  onCopyingChange,
 }: {
   item: HistorySummary
   rate: number | null
   onDeleted: (id: string) => void
+  onCopyingChange: (isCopying: boolean) => void
 }) {
   const [detail, setDetail] = useState<HistoryDetail | null>(null)
   const [loading, setLoading] = useState(false)
@@ -64,9 +67,14 @@ function HistoryEntry({
       className="history-entry"
       onToggle={(event) => {
         if (event.currentTarget.open && !detail && !error) void load()
+        if (!event.currentTarget.open)
+          event.currentTarget
+            .querySelectorAll('dialog[open]')
+            .forEach((dialog) => (dialog as HTMLDialogElement).close())
       }}
     >
       <summary>
+        <Icon name="history" className="history-entry-icon" />
         <span className="history-entry-summary">
           <span className="history-preview" lang="ru">
             {item.preview}
@@ -74,13 +82,15 @@ function HistoryEntry({
           <span className="history-meta">
             <time dateTime={item.createdAt}>{formatDate(item.createdAt)}</time>
             {' · '}
-            {item.models.map(modelName).join(', ') || 'Unavailable'}
+            {item.models.map(shortModelName).join(', ') || 'Unavailable'}
           </span>
         </span>
         <span className="expand-control" aria-hidden="true" />
       </summary>
       <div className="history-detail" aria-busy={loading}>
-        <HistoryDelete id={item.id} onDeleted={onDeleted} />
+        {(!detail || detail.requests.length === 0) && (
+          <HistoryDelete id={item.id} onDeleted={onDeleted} />
+        )}
         {loading && (
           <p className="clipboard-feedback" role="status">
             Loading correction...
@@ -110,12 +120,17 @@ function HistoryEntry({
             >
               {detail.originalText}
             </div>
-            {detail.requests.map((request) => (
+            {detail.requests.map((request, index) => (
               <HistoryRequest
                 key={request.id}
                 request={request}
                 original={detail.originalText}
                 rate={rate}
+                onCopyingChange={onCopyingChange}
+                entryAction={
+                  index === 0 ? <HistoryDelete id={item.id} onDeleted={onDeleted} /> : undefined
+                }
+                multipleResults={detail.requests.length > 1}
               />
             ))}
             {detail.requests.length === 0 && (
@@ -145,17 +160,34 @@ function dateBoundary(value: string, nextDay = false) {
   return date.toISOString()
 }
 
-export function HistoryPage({ onDeleted }: { onDeleted: (id: string) => void }) {
+export function HistoryPage({
+  onDeleted,
+  onCopyingChange,
+}: {
+  onDeleted: (id: string) => void
+  onCopyingChange: (isCopying: boolean) => void
+}) {
   const rate = useExchangeRate()
   const [search, setSearch] = useState('')
   const [filters, setFilters] = useState(initialFilters)
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false)
+  const filterPanelId = useId()
+  const filterTrigger = useRef<HTMLButtonElement>(null)
+  const activeFilterCount = [
+    filters.model,
+    filters.result !== 'all',
+    filters.from,
+    filters.to,
+  ].filter(Boolean).length
   const history = useHistory({
     ...filters,
     from: dateBoundary(filters.from),
     to: dateBoundary(filters.to, true),
   })
   const { data, loading, error } = history
-  const models = [...history.models].sort((a, b) => modelName(a).localeCompare(modelName(b)))
+  const models = [...history.models].sort((a, b) =>
+    shortModelName(a).localeCompare(shortModelName(b)),
+  )
   const page = data?.page ?? 1
   const total = data?.total ?? 0
   const pageCount = Math.max(1, Math.ceil(total / HISTORY_PAGE_SIZE))
@@ -186,80 +218,109 @@ export function HistoryPage({ onDeleted }: { onDeleted: (id: string) => void }) 
 
   return (
     <section className="history-page" aria-labelledby="history-title" aria-busy={loading}>
-      <h1 id="history-title">History</h1>
-      <small className="history-cost-note">
-        Approximate costs. <a href="https://www.exchangerate-api.com">Rates By Exchange Rate API</a>
-      </small>
+      <h1 id="history-title">
+        <Icon name="history" /> History
+      </h1>
       <form
         className="history-tools"
         onSubmit={(event) => event.preventDefault()}
-        onReset={resetFilters}
+        onReset={(event) => {
+          event.preventDefault()
+          resetFilters()
+          filterTrigger.current?.focus()
+        }}
       >
         <label className="history-field search-field">
-          Search history
+          <span className="sr-only">Search history</span>
+          <Icon name="search" />
           <input
             type="search"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             maxLength={MAX_INPUT_CHARACTERS}
-            placeholder="Search original or corrected text"
+            placeholder="Search history"
           />
         </label>
-        <details className="filter-panel">
-          <summary>Filters</summary>
-          <div className="filter-fields">
-            <label className="history-field">
-              Model
-              <select
-                value={filters.model}
-                onChange={(event) => updateFilters({ model: event.target.value })}
-              >
-                <option value="">All models</option>
-                {models.map((id) => (
-                  <option key={id} value={id}>
-                    {modelName(id)}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="history-field">
-              Result
-              <select
-                value={filters.result}
-                onChange={(event) =>
-                  updateFilters({ result: event.target.value as HistorySearchQuery['result'] })
-                }
-              >
-                <option value="all">All results</option>
-                <option value="corrected">Corrected</option>
-                <option value="unchanged">No changes</option>
-                <option value="failed">Failed</option>
-                <option value="pending">Pending</option>
-              </select>
-            </label>
-            <label className="history-field">
-              From
-              <input
-                type="date"
-                value={filters.from}
-                max={filters.to || undefined}
-                onChange={(event) => updateFilters({ from: event.target.value })}
-              />
-            </label>
-            <label className="history-field">
-              To
-              <input
-                type="date"
-                value={filters.to}
-                min={filters.from || undefined}
-                onChange={(event) => updateFilters({ to: event.target.value })}
-              />
-            </label>
-            <Button className="reset" type="reset" variant="secondary">
-              Reset filters
+        <div className="history-toolbar-actions">
+          <Button
+            ref={filterTrigger}
+            type="button"
+            variant="secondary"
+            className="filter-trigger"
+            aria-expanded={isFiltersOpen}
+            aria-controls={filterPanelId}
+            onClick={() => setIsFiltersOpen((value) => !value)}
+          >
+            <Icon name="filters" /> Filters
+            {activeFilterCount > 0 && <span className="filter-count">{activeFilterCount}</span>}
+          </Button>
+          {(activeFilters || search.trim()) && (
+            <Button type="reset" variant="secondary" aria-label="Reset filters" className="reset">
+              <Icon name="reset" /> Reset
             </Button>
-          </div>
-        </details>
+          )}
+          <label className="history-field sort-field">
+            <span className="sr-only">Sort by</span>
+            <select
+              value={filters.sort}
+              onChange={(event) =>
+                updateFilters({ sort: event.target.value as HistorySearchQuery['sort'] })
+              }
+            >
+              <option value="newest">Newest first</option>
+              <option value="oldest">Oldest first</option>
+            </select>
+          </label>
+        </div>
+        <div className="filter-fields" id={filterPanelId} hidden={!isFiltersOpen}>
+          <label className="history-field">
+            Model
+            <select
+              value={filters.model}
+              onChange={(event) => updateFilters({ model: event.target.value })}
+            >
+              <option value="">All models</option>
+              {models.map((id) => (
+                <option key={id} value={id}>
+                  {shortModelName(id)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="history-field">
+            Result
+            <select
+              value={filters.result}
+              onChange={(event) =>
+                updateFilters({ result: event.target.value as HistorySearchQuery['result'] })
+              }
+            >
+              <option value="all">All results</option>
+              <option value="corrected">Corrected</option>
+              <option value="unchanged">No changes</option>
+              <option value="failed">Failed</option>
+              <option value="pending">Pending</option>
+            </select>
+          </label>
+          <label className="history-field">
+            From
+            <input
+              type="date"
+              value={filters.from}
+              max={filters.to || undefined}
+              onChange={(event) => updateFilters({ from: event.target.value })}
+            />
+          </label>
+          <label className="history-field">
+            To
+            <input
+              type="date"
+              value={filters.to}
+              min={filters.from || undefined}
+              onChange={(event) => updateFilters({ to: event.target.value })}
+            />
+          </label>
+        </div>
       </form>
       {loading && (
         <p className="clipboard-feedback" role="status">
@@ -284,18 +345,6 @@ export function HistoryPage({ onDeleted }: { onDeleted: (id: string) => void }) 
                 ? `${start + 1}-${Math.min(start + HISTORY_PAGE_SIZE, total)} of ${total} corrections`
                 : '0 corrections'}
             </small>
-            <label className="history-field sort-field">
-              Sort by
-              <select
-                value={filters.sort}
-                onChange={(event) =>
-                  updateFilters({ sort: event.target.value as HistorySearchQuery['sort'] })
-                }
-              >
-                <option value="newest">Newest first</option>
-                <option value="oldest">Oldest first</option>
-              </select>
-            </label>
           </div>
           {data.items.length === 0 ? (
             <section className="history-empty">
@@ -319,6 +368,7 @@ export function HistoryPage({ onDeleted }: { onDeleted: (id: string) => void }) 
                     key={item.id}
                     item={item}
                     rate={rate}
+                    onCopyingChange={onCopyingChange}
                     onDeleted={(id) => {
                       onDeleted(id)
                       history.retry()
@@ -354,6 +404,9 @@ export function HistoryPage({ onDeleted }: { onDeleted: (id: string) => void }) 
           )}
         </>
       )}
+      <small className="history-cost-note">
+        Approximate costs. <a href="https://www.exchangerate-api.com">Rates By Exchange Rate API</a>
+      </small>
     </section>
   )
 }

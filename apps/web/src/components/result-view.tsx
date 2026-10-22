@@ -6,6 +6,7 @@ import { diffText, isWhitespaceOnlyChange } from '../lib/text-diff'
 import { correctionDescription, whitespaceComparison } from '../lib/whitespace-display'
 import { Textarea } from './ui/textarea'
 import { Button } from './ui/button'
+import { Icon } from './ui/icon'
 
 export type ResultViewMode = 'text' | 'changes'
 
@@ -40,6 +41,7 @@ function ResultContent({
 }: Props) {
   const groupName = useId()
   const panelId = useId()
+  const isHistory = !compact && Boolean(actions)
   const [selected, setSelected] = useState(0)
   const container = useRef<HTMLDivElement>(null)
   const selectedElement = useRef<HTMLSpanElement>(null)
@@ -105,35 +107,42 @@ function ResultContent({
       ))}
     </fieldset>
   )
-  const correctionNavigation = corrections.length > 1 && (
+  const correctionNavigation = (corrections.length > 1 || (isHistory && current)) && (
     <div
       className="correction-navigation"
       aria-label={`${title} correction navigation`}
       role="group"
     >
-      {selected > 0 && (
+      {(selected > 0 || isHistory) && (
         <Button
           className="previous-correction"
           type="button"
           variant="secondary"
           onClick={() => setSelected(selected - 1)}
           aria-label="Previous correction"
+          disabled={selected === 0}
         >
-          Previous
+          {isHistory && <Icon name="chevronLeft" />}
+          <span className="navigation-label">Previous</span>
         </Button>
       )}
       <span className="correction-counter">
-        {selected + 1} / {corrections.length}
+        <span>
+          {selected + 1} / {corrections.length}
+        </span>
+        {isHistory && <span className="navigation-description">{description}</span>}
       </span>
-      {selected < corrections.length - 1 && (
+      {(selected < corrections.length - 1 || isHistory) && (
         <Button
           className="next-correction"
           type="button"
           variant="secondary"
           onClick={() => setSelected(selected + 1)}
           aria-label="Next correction"
+          disabled={selected === corrections.length - 1}
         >
-          Next
+          <span className="navigation-label">Next</span>
+          {isHistory && <Icon name="chevronRight" />}
         </Button>
       )}
     </div>
@@ -145,6 +154,14 @@ function ResultContent({
         <h3 id={labelId} className="sr-only">
           {title}
         </h3>
+      ) : actions ? (
+        <div className="result-toolbar">
+          <div className="editor-heading">
+            <h2 id={labelId}>{title}</h2>
+            {viewToggle}
+          </div>
+          {actions}
+        </div>
       ) : (
         <div className="editor-heading">
           <h2 id={labelId}>{title}</h2>
@@ -223,7 +240,7 @@ function ResultContent({
             <span className="sr-only">
               Correction {selected + 1} of {corrections.length}.
             </span>
-            <p className="correction-kind">{description}</p>
+            {!isHistory && <p className="correction-kind">{description}</p>}
             <dl>
               <div>
                 <dt>Original</dt>
