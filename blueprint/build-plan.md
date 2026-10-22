@@ -66,12 +66,12 @@ use the current UI with necessary adjustments; UI direction is chosen at V2.6.
 - [x] **V2.5 — Soft-delete history:** allow history records to be removed from normal views while retaining them in storage. Completed at the user's request on 2026-10-21. See [archive](history/features/V2.5-soft-delete-history.md). Whole-entry deletion, no Trash/restore screen.
 - [x] **V2.6 — Choose the UI direction:** explore and approve the visual design and interactions after the preceding features are usable. Completed and approved 2026-10-22; see [archive](history/features/V2.6-choose-the-ui-direction.md).
 - [x] **V2.7 — Implement the UI redesign:** include light/dark themes, system preference with manual override, New correction, better mobile access to results and Copy, and Ctrl+Enter submission. Revisit existing feedback presentation. Completed and approved 2026-10-22; see [archive](history/features/V2.7-implement-the-ui-redesign.md).
-- [ ] **V2.8 — Minimal installable PWA:** support phone installation and home-screen launch; offline functionality remains deferred. Caching/local persistence is separate V2.11 work.
+- [x] **V2.8 — Minimal installable PWA:** implemented and accepted by the user on 2026-10-22, with Грамика branding, install icons, manifest, installation guidance and the approved UI refinements. Automated web checks passed; real Android/Brave and iPhone OS installation remains unverified. Offline functionality remains deferred. See [archive](history/features/V2.8-minimal-installable-pwa.md) and [scope](../docs/pwa.md).
 - [x] **V2.9 - Fix history filter correctness:** supported model choices, matching-request display and consistent combined filters/pagination. Completed and approved 2026-10-22; see [archive](history/features/V2.9-fix-history-filter-correctness.md).
 - [x] **V2.10 - Fix failed requests and recover usable output:** show complete valid corrected text normally despite reasoning-setting violations; log the violation only and retain costs. Cover workspace and history. Completed and approved 2026-10-22; see [archive](history/features/V2.10-fix-failed-requests-and-recover-usable-output.md).
-- [ ] **V2.11 - Caching and local storage:** approved follow-ups, split by the user on 2026-10-22.
+- [x] **V2.11 - Caching and local storage:** completed and accepted by the user on 2026-10-22.
   - [x] **V2.11a - Correction caching:** reuse compatible successful SQLite history, explicit paid regeneration, and last-used history dates. Completed and approved 2026-10-22; see [archive](history/features/V2.11a-correction-caching.md).
-  - [ ] **V2.11b - Browser persistence:** retention, draft recovery, preferences and clearing behavior remain to be planned separately.
+  - [x] **V2.11b - Browser persistence:** completed and accepted by the user on 2026-10-22. Restore one local workspace, immediate clear, no expiry or automatic replay; reopening always selects Strict. See [archive](history/features/V2.11b-browser-persistence.md).
 
 ### V2.1a planning contract — History costs in Russian kopecks
 
@@ -159,7 +159,7 @@ setting violations only. Request reasoning settings and prompts are unchanged.
 ### V2.11 contract: Caching and local storage
 
 **Status:** Approved V2 feature, committed to the roadmap on 2026-10-22.
-V2.11a is implemented, verified and approved on 2026-10-22: SQLite history reuse, no expiry until deletion or configuration changes, explicit paid regeneration and last-used dates. V2.11b browser persistence remains unimplemented and requires its own specification.
+V2.11a and V2.11b are completed and accepted on 2026-10-22. SQLite history reuse has no expiry until deletion or configuration changes, with explicit paid regeneration and last-used dates. Browser persistence stores the current draft/results, active result/view, theme and interrupted-request marker locally until New correction or Clear local data. Selected mode is session-only; reopening always starts Strict, preserving saved results' actual mode.
 
 Review caching and browser-local persistence together, while distinguishing
 temporary reuse from data that should survive reloads or reopening the app.
@@ -176,6 +176,6 @@ temporary reuse from data that should survive reloads or reopening the app.
   introduce local copies of personal text or history until retention and clear
   behavior are agreed. Handle unavailable browser storage without losing the
   current editing session.
-- Reconcile any chosen persistence changes with the existing session-only theme
-  override and V2.8's minimal installation scope. This backlog item does not
+- Reconcile any chosen persistence changes with the theme
+  override (persisted by V2.11b) and V2.8's minimal installation scope. This backlog item does not
   automatically add offline correction or offline history to the PWA.

@@ -1,6 +1,6 @@
 # Gramota - Project Overview
 
-<!-- blueprint:source-hash f98e673039fd8b3f389572d00168f92afc46fd34e2c2172e114039cb3080fadd -->
+<!-- blueprint:source-hash 41165cdc61bb3c1cf7d090f83c3dce4c214941277cefebf6d85911c9deecc9a5 -->
 
 Derived from [project-plan.md](../project-plan.md) and [build-plan.md](../build-plan.md).
 Updated 2026-10-20 to reflect completed work and user decisions. Implementation
@@ -51,6 +51,12 @@ no remote deployment verification was run.
 
 ## Implemented architecture
 
+- V2.8 is implemented and accepted on 2026-10-22. Real phone OS installation
+  remains unverified. App/browser/installed branding is Грамика, with the approved italic
+  speech-bubble/check icon and Literata Bold Italic wordmark. A root manifest
+  enables standalone launch; installation guidance follows the first successful
+  correction and remembers dismissal. No service worker or offline loading.
+  See [PWA scope and evidence](../../docs/pwa.md).
 - npm workspaces: apps/web, apps/server, packages/contracts; root lockfile.
 - React/Vite/TypeScript, Tailwind CSS, local shadcn-style components, Sonner.
   App.tsx, components/, use-correction*.ts, use-history.ts and lib/ own the UI.
@@ -157,4 +163,9 @@ docs/container.md.
 
 ## Approved V2 follow-ups (2026-10-22)
 
-V2.9 history filter correctness and V2.10 complete valid correction output with logging-only reasoning violations are complete. V2.11 is split into V2.11a correction caching (implemented and verified, pending user review) and V2.11b browser persistence (not yet specified). See project-plan.md and build-plan.md for contracts.
+V2.9 history filter correctness and V2.10 complete valid correction output with logging-only reasoning violations are complete. V2.11a correction caching and V2.11b browser persistence are completed and accepted. See project-plan.md and build-plan.md for contracts.
+
+
+## Browser workspace persistence (V2.11b)
+
+Native localStorage under gramota.workspace stores one validated version-1 snapshot: the untrimmed draft, visible Gemma/Gemini results and IDs, active model, per-result view, theme and pending marker. Selected correction mode is session-only; reopening always starts Strict, including older saved Rewrite preferences. Saved results retain their actual mode. Restore automatically; never replay a model request. New correction clears the workspace but keeps session preferences; immediate Clear local data resets both and retains server history and the separate exchange-rate cache. History deletion in this app removes associated local results and retains the draft. Interrupted requests offer Check history. Tabs remain independent and latest save wins for reopening. Storage failures report a warning without blocking editing. No expiry, local history database, dependencies or offline loading.

@@ -8,8 +8,8 @@ function clipboardErrorMessage(error: unknown) {
   return 'Could not read the clipboard. Paste manually into Original.'
 }
 
-export function useCorrectionDraft() {
-  const [text, setText] = useState('')
+export function useDraft(initialText = '') {
+  const [text, setText] = useState(initialText)
   const [pending, setPending] = useState(false)
   const [draftRevision, setDraftRevision] = useState(0)
   const inputRef = useRef<HTMLTextAreaElement>(null)

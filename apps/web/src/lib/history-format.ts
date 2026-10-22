@@ -34,5 +34,5 @@ export function formatTime(value: number | null) {
 
 export const modeLabels: Record<CorrectionMode, string> = {
   strict: 'Strict',
-  'gentle-rewrite': 'Gentle rewrite',
+  'gentle-rewrite': 'Rewrite',
 }

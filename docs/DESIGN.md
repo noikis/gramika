@@ -36,6 +36,15 @@ rounded:
 
 # Gramota design direction
 
+## V2.8 branding
+
+The user approved Грамика as the app name on 2026-10-22. The navbar uses the
+approved green speech-bubble icon with an ivory italic Г and check mark, followed
+by рамика in Literata Bold Italic. Tighten the gap so they read as one name.
+The icon has a transparent exterior with green/ivory artwork in both themes;
+the wordmark text follows the theme. Other interface typography is unchanged.
+See [PWA scope and evidence](pwa.md).
+
 ## Overview
 
 Recorded on 2026-10-22 for the V2.6 design handoff and subsequent V2.7

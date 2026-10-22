@@ -2,22 +2,32 @@ import { useEffect, useState } from 'react'
 import { Toaster } from 'sonner'
 import { Button } from './components/ui/button'
 import { CorrectionWorkspace } from './components/correction-workspace'
-import { useCorrectionDraft } from './hooks/use-correction-draft'
-import { useCorrection } from './hooks/use-correction'
+import { useWorkspacePersistence } from './hooks/use-workspace-persistence'
 import { HistoryPage } from './components/history-page'
 import { Icon } from './components/ui/icon'
+import { AppSettings } from './components/app-settings'
+import { notify } from './lib/notifications'
+import { InstallApp } from './components/install-app'
 import './App.css'
 
 function App() {
+  const { draft, correction, theme, setTheme, clearStoredWorkspace } = useWorkspacePersistence()
   const [view, setView] = useState<'correction' | 'history'>('correction')
-  const draft = useCorrectionDraft()
-  const correction = useCorrection(draft.text, draft.revision)
-  const [theme, setTheme] = useState<'system' | 'light' | 'dark'>('system')
   const [historyWrites, setHistoryWrites] = useState(0)
   const isBusy = correction.pending || correction.copying || draft.pending || historyWrites > 0
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme
+    const system = window.matchMedia('(prefers-color-scheme: dark)')
+    function updateThemeColor() {
+      const isDark = theme === 'dark' || (theme === 'system' && system.matches)
+      document
+        .querySelector('meta[name="theme-color"]')
+        ?.setAttribute('content', isDark ? '#161819' : '#f5f3ec')
+    }
+    updateThemeColor()
+    system.addEventListener('change', updateThemeColor)
+    return () => system.removeEventListener('change', updateThemeColor)
   }, [theme])
 
   function newCorrection() {
@@ -30,11 +40,23 @@ function App() {
     })
   }
 
+  function clearLocalData() {
+    if (isBusy) return
+    if (!clearStoredWorkspace()) return
+    newCorrection()
+    correction.resetMode()
+    setTheme('system')
+    notify('Local workspace and preferences cleared. Server history was kept.', true)
+  }
+
   return (
     <div className="shell">
       <header className="app-header">
         <span className="brand" role="img" aria-label="Грамика" lang="ru">
-          <span className="brand-mark">Г</span> рамика
+          <img className="brand-mark" src="/gramika-brand.png" width="48" height="48" alt="" />
+          <span className="brand-word" aria-hidden="true">
+            рамика
+          </span>
         </span>
         <nav aria-label="Main navigation">
           <Button
@@ -43,7 +65,7 @@ function App() {
             aria-current={view === 'correction' ? 'page' : undefined}
             onClick={() => setView('correction')}
           >
-            Correction
+            <Icon name="correction" /> Correction
           </Button>
           <Button
             type="button"
@@ -54,34 +76,41 @@ function App() {
             <Icon name="history" /> History
           </Button>
         </nav>
-        <fieldset className="theme-control">
-          <legend className="sr-only">Theme preference</legend>
-          {(['system', 'light', 'dark'] as const).map((value) => (
-            <label key={value}>
-              <input
-                type="radio"
-                name="theme"
-                value={value}
-                checked={theme === value}
-                onChange={() => setTheme(value)}
-              />
-              <Icon name={value} />
-              {value[0].toUpperCase() + value.slice(1)}
-            </label>
-          ))}
-        </fieldset>
-        <Button
-          className="new-correction"
-          variant="ghost"
-          onClick={newCorrection}
-          disabled={isBusy}
-        >
-          <Icon name="plus" /> <span>New correction</span>
-        </Button>
+        <div className="header-actions">
+          <InstallApp hasCompletedCorrection={correction.hasCompletedCorrection} isBusy={isBusy} />
+          <div className="desktop-settings">
+            <AppSettings
+              theme={theme}
+              onThemeChange={setTheme}
+              onClear={clearLocalData}
+              isBusy={isBusy}
+            />
+          </div>
+        </div>
       </header>
       <main>
+        {correction.interrupted && (
+          <aside className="local-data-controls" aria-label="Interrupted request">
+            <p>A request was running when this workspace was closed. It may have finished.</p>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                correction.dismissInterrupted()
+                setView('history')
+              }}
+            >
+              Check history
+            </Button>
+          </aside>
+        )}
         {view === 'correction' ? (
-          <CorrectionWorkspace draft={draft} correction={correction} />
+          <CorrectionWorkspace
+            draft={draft}
+            correction={correction}
+            onNew={newCorrection}
+            isBusy={isBusy}
+          />
         ) : (
           <HistoryPage
             onDeleted={correction.forgetHistoryEntry}

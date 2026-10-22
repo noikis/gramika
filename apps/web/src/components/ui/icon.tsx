@@ -1,6 +1,9 @@
 import type { ComponentProps } from 'react'
 
 const paths = {
+  correction: 'M4 20l4-1 12-12-3-3L5 16z M14 7l3 3 M4 20h16',
+  settings: 'M4 7h16 M4 17h16 M8 4v6 M16 14v6',
+  install: 'M12 3v12 M7 10l5 5 5-5 M4 16v5h16v-5',
   copy: 'M9 9h11v11H9z M15 9V4H4v11h5',
   paste: 'M9 5H5v16h14V5h-4 M9 3h6v5H9z',
   plus: 'M12 5v14 M5 12h14',

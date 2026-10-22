@@ -1,16 +1,22 @@
 import { useEffect, useLayoutEffect, useRef } from 'react'
 import type { PointerEvent } from 'react'
 import { CorrectionMode, DEFAULT_MODEL_ID, MAX_INPUT_CHARACTERS } from '@gramota/contracts'
-import type { useCorrectionDraft } from '../hooks/use-correction-draft'
-import type { useCorrection } from '../hooks/use-correction'
+import type { useDraft } from '../hooks/use-draft'
+import type { useWritingSession } from '../hooks/use-writing-session'
 import { Button } from './ui/button'
 import { Textarea } from './ui/textarea'
 import { ResultView } from './result-view'
 import { modeLabels } from '../lib/history-format'
 import { Icon } from './ui/icon'
 
-type Draft = ReturnType<typeof useCorrectionDraft>
-type Correction = ReturnType<typeof useCorrection>
+type Draft = ReturnType<typeof useDraft>
+type Correction = ReturnType<typeof useWritingSession>
+type WorkspaceProps = {
+  draft: Draft
+  correction: Correction
+  onNew: () => void
+  isBusy: boolean
+}
 const MIN_SWIPE_DISTANCE_PX = 48
 const MOBILE_LAYOUT_QUERY = '(max-width: 720px)'
 
@@ -42,7 +48,7 @@ function ModeControl({ correction }: { correction: Correction }) {
   )
 }
 
-function OriginalEditor({ draft, correction }: { draft: Draft; correction: Correction }) {
+function OriginalEditor({ draft, correction, onNew, isBusy }: WorkspaceProps) {
   const { text, edit, paste, pending, inputRef } = draft
 
   useLayoutEffect(() => {
@@ -63,9 +69,18 @@ function OriginalEditor({ draft, correction }: { draft: Draft; correction: Corre
   return (
     <section className="editor original-editor" aria-labelledby="original-title">
       <div className="editor-heading">
-        <h2 id="original-title">
+        <h2 id="original-title" className="sr-only">
           <label htmlFor="original">Original</label>
         </h2>
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={onNew}
+          disabled={isBusy}
+          aria-label="New correction"
+        >
+          <Icon name="plus" /> New
+        </Button>
         <Button type="button" variant="secondary" onClick={paste} disabled={pending}>
           <Icon name="paste" />
           {pending ? 'Pasting...' : 'Paste'}
@@ -250,13 +265,7 @@ function OpinionAction({ correction }: { correction: Correction }) {
   )
 }
 
-export function CorrectionWorkspace({
-  draft,
-  correction,
-}: {
-  draft: Draft
-  correction: Correction
-}) {
+export function CorrectionWorkspace({ draft, correction, onNew, isBusy }: WorkspaceProps) {
   return (
     <>
       <div className="workspace-intro">
@@ -264,7 +273,7 @@ export function CorrectionWorkspace({
         <p>Write with confidence.</p>
       </div>
       <div className="editors correction-workspace">
-        <OriginalEditor draft={draft} correction={correction} />
+        <OriginalEditor draft={draft} correction={correction} onNew={onNew} isBusy={isBusy} />
         <section className="editor result-editor" aria-labelledby="result-title">
           <ResultHeading correction={correction} />
           {correction.results.map(({ result, view }) => (

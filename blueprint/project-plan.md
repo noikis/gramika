@@ -125,8 +125,15 @@ English and French remain future candidates. Russian is the initial acceptance t
   the system by default with a manual override, a New correction action, easier
   mobile access to results and Copy, and Ctrl+Enter to submit a correction.
 - **Minimal installable PWA:** support installation on a phone and home-screen
-  launch with an app-like experience. Offline functionality and local-storage
-  decisions are deferred.
+  launch with an app-like experience on Android/Brave and iPhone. The user approved
+  Грамика as the app/browser/installed name, the italic Г/check speech-bubble icon,
+  and matching Literata Bold Italic рамика in the navbar. Offer installation after
+  the first successful correction, remember dismissal, and keep manual access to
+  instructions. Use the native browser prompt when available and platform
+  instructions otherwise. Keep icon colors the same in both themes. Offline
+  functionality remains deferred; no service worker is required for this scope.
+  Browser workspace persistence is specified separately in V2.11b.
+  See [installation contract](../docs/pwa.md).
 
 Choose the UI direction at V2.6, immediately before implementing the redesign at
 V2.7. Earlier features use the current UI with necessary adjustments. Existing
@@ -421,7 +428,7 @@ acceptance criteria are defined one feature at a time in build-plan order.
   authorization to introduce accounts, ownership fields or new access infrastructure.
 - English/French support, future evaluation budgets, numerical quality/latency
   thresholds. These are not approved features; caching and local storage are
-  approved separately in V2.11. V2.11a correction caching is specified; V2.11b browser persistence still requires decisions.
+  approved separately in V2.11. V2.11a correction caching is complete; V2.11b browser persistence is approved and specified below.
 
 Backup/restore (former feature 6c) is deferred, not an outstanding delivery task.
 Revisit only if the user decides the saved history has become important.
@@ -449,4 +456,15 @@ with the user before adding any idea to this plan or the build roadmap.
 - V2.10: show complete valid returned correction text normally despite reasoning-setting violations. Per user clarification on 2026-10-22, log the setting violation only, without a user-facing warning or failed status. Retain costs and diagnostics; do not claim recovery of output never saved.
 - V2.11: implement caching and local storage as separate V2.11a correction-cache and V2.11b browser-persistence features, with exact reuse, persistence, expiration, clearing and privacy behavior decided in its spec. This is separate from minimal PWA installation and does not automatically authorize offline correction.
 
-These are approved delivery commitments, not optional ideas. See the build-plan contracts for scope. V2.9 and V2.10 are complete; V2.11a is implemented pending user review, while V2.11b remains to be planned.
+These are approved delivery commitments, not optional ideas. See the build-plan contracts for scope. V2.8, V2.9, V2.10, V2.11a and V2.11b are completed and accepted. Real-device OS installation for the PWA remains unverified.
+
+
+### V2.11b browser persistence (approved 2026-10-22)
+
+Save one versioned current-workspace snapshot in browser localStorage: the exact untrimmed draft, current Gemma/Gemini results and identifiers, active model result, each result's Text/Changes view, theme and a pending-request marker. The selected correction mode lasts only while the app is open. Always select Strict after reload/reopening, including when older saved preferences say Rewrite; preserve each saved result's actual mode. The snapshot's compatibility mode field is saved as Strict. Restore automatically with Workspace restored feedback; never automatically send or replay a model request.
+
+No expiry. New correction clears the draft/results and keeps preferences. Clear local data acts immediately, without confirmation, resetting the local workspace, mode and theme while retaining server history and the separate exchange-rate cache. Deleting the associated history entry in the app clears its local results but preserves the draft. No cross-device deletion synchronization.
+
+If the app closed during a request, restore the previous workspace with an offer to Check history; the server request may have finished. This opens existing history, with no automated reconciliation. Tabs keep independent in-memory edits and the latest saved snapshot is used at the next opening. No cross-tab synchronization or conflict handling.
+
+Unavailable/full storage or invalid snapshots must not crash the editor. Keep the current session usable and report save/clear failures honestly. History and explanations remain server-side; store no credentials or whole-history copy. PWA installation, service workers and offline loading remain separate V2.8 work. No React Query, IndexedDB or new dependency is needed for this feature.
