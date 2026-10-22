@@ -61,6 +61,7 @@ test('opens an explicitly registered baseline, preserving history, preferences, 
   try {
     const first = database.history.get(correctionId)!
     assert.equal(first.originalText, original)
+    assert.equal(first.lastUsedAt, DATE)
     assert.equal(first.requests[0].id, requestId)
     assert.equal(first.requests[0].correctedText, original)
     assert.equal(first.requests[0].totalTokens, 0)

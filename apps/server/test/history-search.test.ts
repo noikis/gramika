@@ -122,7 +122,7 @@ test('model and result filters must match one attempt, retain all details, and n
   }
 })
 
-test('creation boundaries include the entire local day and exclude the next day, regardless of request dates', () => {
+test('last-used boundaries include the local day and move repeated entries to their latest use', () => {
   const db = new SqliteDatabase(':memory:')
   try {
     record(db, 'Перед началом', { createdAt: '2026-10-17T16:59:59.999Z' })
@@ -141,9 +141,9 @@ test('creation boundaries include the entire local day and exclude the next day,
     })
     assert.deepEqual(
       result.items.map((item) => item.id),
-      [first, last],
+      [last],
     )
-    assert.equal(search(db, { from: '2026-10-18T17:00:00.000Z' }).total, 1)
+    assert.equal(search(db, { from: '2026-10-18T17:00:00.000Z' }).total, 2)
     assert.equal(search(db, { to: '2026-10-17T17:00:00.000Z' }).total, 1)
   } finally {
     db.close()

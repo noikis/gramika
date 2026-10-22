@@ -10,6 +10,7 @@ const NullableText = z.string().nullable()
 const Timestamp = z.iso.datetime({ precision: 3 })
 
 export const HistorySummary = z.strictObject({
+  lastUsedAt: Timestamp,
   id: z.uuid(),
   createdAt: Timestamp,
   preview: z.string(),
@@ -101,6 +102,7 @@ export const HistoryList = z.strictObject({
 })
 
 export const HistoryDetail = z.strictObject({
+  lastUsedAt: Timestamp,
   id: z.uuid(),
   createdAt: Timestamp,
   originalText: z.string(),

@@ -7,6 +7,7 @@ export const corrections = sqliteTable(
   {
     id: text('id').primaryKey().notNull(),
     createdAt: text('created_at').notNull(),
+    lastUsedAt: text('last_used_at').notNull().default(''),
     deletedAt: text('deleted_at'),
     originalText: text('original_text').notNull(),
     language: text('language').$type<HistoryDetail['language']>().notNull(),

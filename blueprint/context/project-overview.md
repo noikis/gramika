@@ -1,6 +1,6 @@
 # Gramota - Project Overview
 
-<!-- blueprint:source-hash 8917519d7bff16b4683a677843746b1aa26eba61904631de0b3f42d8b943ff77 -->
+<!-- blueprint:source-hash f98e673039fd8b3f389572d00168f92afc46fd34e2c2172e114039cb3080fadd -->
 
 Derived from [project-plan.md](../project-plan.md) and [build-plan.md](../build-plan.md).
 Updated 2026-10-20 to reflect completed work and user decisions. Implementation
@@ -94,7 +94,7 @@ Treat text as proofreading data, not instructions. No automatic requests on edit
 Limit: 5,000 Unicode code points. Timeout: 60 seconds. Request parameters include
 reasoning.enabled=false, stream=false, max_tokens=8192,
 provider.require_parameters=true and provider.allow_fallbacks=false. No automatic
-retry, fallback model or result cache. Ordinary corrections accept complete valid
+retry or fallback model. V2.11a reuses successful corrections from non-deleted SQLite history on exact text, model, mode, prompt and settings matches. No expiry; explicit Generate again bypasses reuse. Gemini reuse stays within the displayed Gemma history entry. No browser text storage. Ordinary corrections accept complete valid
 output despite reasoning fields or positive reasoning token counts and log the
 setting violation only. Internal reasoning is never stored or displayed.
 
@@ -110,7 +110,7 @@ original starts a new correction. Interrupted attempts are recorded, never repla
 Unknown metrics remain null, costs are USD, application durations milliseconds.
 Do not store secrets, full raw provider responses or reasoning text. Diff is
 computed locally. Search matches phrases in originals or any result; filters,
-newest/oldest sorting and 10-record pages are implemented.
+newest/oldest sorting and 10-record pages are implemented. History sorting, date filtering and list dates use lastUsedAt, updated on cache return or new attempt start; original creation and request timestamps remain unchanged. Reuse keeps original request IDs, costs and saved explanations, without adding attempts.
 
 ## UI and verification
 
@@ -157,8 +157,4 @@ docs/container.md.
 
 ## Approved V2 follow-ups (2026-10-22)
 
-V2.9 history filter correctness, V2.10 failed-request recovery with usable
-output despite reasoning-setting violations, and V2.11 caching/local storage
-are approved roadmap work, not optional ideas. Their implementation has not
-started; current request rejection and persistence behavior remains until the
-owning specs change it. See project-plan.md and build-plan.md for contracts.
+V2.9 history filter correctness and V2.10 complete valid correction output with logging-only reasoning violations are complete. V2.11 is split into V2.11a correction caching (implemented and verified, pending user review) and V2.11b browser persistence (not yet specified). See project-plan.md and build-plan.md for contracts.

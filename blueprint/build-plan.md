@@ -69,7 +69,9 @@ use the current UI with necessary adjustments; UI direction is chosen at V2.6.
 - [ ] **V2.8 — Minimal installable PWA:** support phone installation and home-screen launch; offline functionality remains deferred. Caching/local persistence is separate V2.11 work.
 - [x] **V2.9 - Fix history filter correctness:** supported model choices, matching-request display and consistent combined filters/pagination. Completed and approved 2026-10-22; see [archive](history/features/V2.9-fix-history-filter-correctness.md).
 - [x] **V2.10 - Fix failed requests and recover usable output:** show complete valid corrected text normally despite reasoning-setting violations; log the violation only and retain costs. Cover workspace and history. Completed and approved 2026-10-22; see [archive](history/features/V2.10-fix-failed-requests-and-recover-usable-output.md).
-- [ ] **V2.11 - Caching and local storage:** implement deliberate cache reuse and browser persistence, with retention, refresh and clearing behavior defined in its spec. Approved 2026-10-22; see contract below.
+- [ ] **V2.11 - Caching and local storage:** approved follow-ups, split by the user on 2026-10-22.
+  - [x] **V2.11a - Correction caching:** reuse compatible successful SQLite history, explicit paid regeneration, and last-used history dates. Completed and approved 2026-10-22; see [archive](history/features/V2.11a-correction-caching.md).
+  - [ ] **V2.11b - Browser persistence:** retention, draft recovery, preferences and clearing behavior remain to be planned separately.
 
 ### V2.1a planning contract — History costs in Russian kopecks
 
@@ -157,8 +159,7 @@ setting violations only. Request reasoning settings and prompts are unchanged.
 ### V2.11 contract: Caching and local storage
 
 **Status:** Approved V2 feature, committed to the roadmap on 2026-10-22.
-Not implemented; exact persistence, reuse, retention and clear behavior will
-be decided in its specification.
+V2.11a is implemented, verified and approved on 2026-10-22: SQLite history reuse, no expiry until deletion or configuration changes, explicit paid regeneration and last-used dates. V2.11b browser persistence remains unimplemented and requires its own specification.
 
 Review caching and browser-local persistence together, while distinguishing
 temporary reuse from data that should survive reloads or reopening the app.

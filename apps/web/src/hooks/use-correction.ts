@@ -77,7 +77,7 @@ export function useCorrection(text: string, draftRevision: number) {
   const visibleResult =
     results.find((entry) => entry.result.modelId === activeModel)?.result ?? null
   const pending = pendingModel !== null
-  const canCorrect = config?.available === true && validation.success && !pending
+  const canCorrect = config !== null && validation.success && !pending
   const isModeChanged = !!visiblePair && visiblePair.gemma.result.mode !== mode
   const canRequestOpinion = canCorrect && !!visiblePair && !visiblePair.gemini && !isModeChanged
 
@@ -96,10 +96,20 @@ export function useCorrection(text: string, draftRevision: number) {
     })
   }
 
-  async function submit(modelId: ModelId) {
+  async function submit(modelId: ModelId, forceRefresh = false) {
     const isOpinion = modelId === SECOND_OPINION_MODEL_ID
-    if (sending.current || (isOpinion ? !canRequestOpinion : !canCorrect)) return
-    const submittedMode = isOpinion ? visiblePair!.gemma.result.mode : mode
+    const priorResult = results.find((entry) => entry.result.modelId === modelId)?.result
+    const canRegenerate = canCorrect && config?.available && !!priorResult && !isModeChanged
+    if (
+      sending.current ||
+      (forceRefresh ? !canRegenerate : isOpinion ? !canRequestOpinion : !canCorrect)
+    )
+      return
+    const submittedMode = forceRefresh
+      ? priorResult!.mode
+      : isOpinion
+        ? visiblePair!.gemma.result.mode
+        : mode
     const submittedRevision = draftRevision
     const generation = requestGeneration.current
     const correctionId = isOpinion
@@ -117,7 +127,13 @@ export function useCorrection(text: string, draftRevision: number) {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(
-          CorrectionInput.parse({ text: original, modelId, correctionId, mode: submittedMode }),
+          CorrectionInput.parse({
+            text: original,
+            modelId,
+            correctionId,
+            mode: submittedMode,
+            forceRefresh,
+          }),
         ),
       })
       const payload: unknown = await response.json()
@@ -142,7 +158,7 @@ export function useCorrection(text: string, draftRevision: number) {
         value.originalText !== original ||
         value.modelId !== modelId ||
         value.mode !== submittedMode ||
-        (correctionId && value.correctionId !== correctionId)
+        (correctionId && value.correctionId !== correctionId && (isOpinion || !value.isCached))
       )
         throw Error('Mismatched correction')
       if (!isCurrent()) return
@@ -155,7 +171,9 @@ export function useCorrection(text: string, draftRevision: number) {
       )
       setActiveModel(modelId)
       notify(
-        `${modelName(value.modelId)}: ${value.originalText === value.correctedText ? 'No changes.' : 'Correction ready.'}`,
+        value.isCached
+          ? 'Saved result · no new model request'
+          : `${modelName(value.modelId)}: ${value.originalText === value.correctedText ? 'No changes.' : 'Correction ready.'}`,
         true,
       )
     } catch {
@@ -194,7 +212,7 @@ export function useCorrection(text: string, draftRevision: number) {
     : !config
       ? 'Connecting...'
       : !config.available
-        ? ERROR_MESSAGES.NOT_CONFIGURED
+        ? 'Only saved results are available. New model requests are not configured.'
         : ''
   const validationMessage =
     text && !validation.success ? (validation.error.issues[0]?.message ?? '') : ''
@@ -238,6 +256,8 @@ export function useCorrection(text: string, draftRevision: number) {
     canRequestOpinion,
     correct: () => submit(DEFAULT_MODEL_ID),
     requestOpinion: () => submit(SECOND_OPINION_MODEL_ID),
+    regenerate: (modelId: ModelId) => submit(modelId, true),
+    canRegenerate: canCorrect && config?.available === true && !isModeChanged,
     opinionModelName: modelName(SECOND_OPINION_MODEL_ID),
     copy,
     copying,

@@ -139,7 +139,10 @@ test('successful requests stay quiet; upstream failures log safe correlated diag
   assert.equal(lines.length, 0)
 
   isFailing = true
-  const failure = await app.inject(request)
+  const failure = await app.inject({
+    ...request,
+    payload: { ...request.payload, forceRefresh: true },
+  })
   assert.equal(failure.statusCode, 502)
   assert.equal(lines.length, 1)
   const event = JSON.parse(lines[0])

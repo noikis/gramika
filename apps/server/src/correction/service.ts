@@ -57,18 +57,16 @@ export function createCorrectionService(deps: Dependencies) {
     correctionId?: string,
     onRepositoryFailure = deps.onRepositoryFailure,
     mode: CorrectionMode = CorrectionMode.enum.strict,
+    forceRefresh = false,
   ) {
-    const input = CorrectionInput.safeParse({ text, modelId, correctionId, mode })
+    const input = CorrectionInput.safeParse({ text, modelId, correctionId, mode, forceRefresh })
     if (!input.success) throw new AttemptError(ErrorCode.enum.INVALID_INPUT, null)
-    if (!deps.isAvailable || !deps.transport)
-      throw new AttemptError(ErrorCode.enum.NOT_CONFIGURED, null)
     if (!deps.repository) throw new AttemptError(ErrorCode.enum.STORAGE_ERROR, null)
 
     const isRewrite = input.data.mode === CorrectionMode.enum['gentle-rewrite']
     const promptVersion = isRewrite ? REWRITE_PROMPT_VERSION : STRICT_PROMPT_VERSION
     const prompt = isRewrite ? REWRITE_PROMPT : STRICT_PROMPT
 
-    const ids = { correctionId: correctionId ?? uuid(), requestId: uuid() }
     const requestParameters = {
       ...OPENROUTER_REQUEST_DEFAULTS,
       model: input.data.modelId,
@@ -76,6 +74,34 @@ export function createCorrectionService(deps: Dependencies) {
       provider: { ...OPENROUTER_REQUEST_DEFAULTS.provider },
     }
 
+    try {
+      const saved = deps.repository.findReusable({
+        originalText: text,
+        modelId,
+        mode: input.data.mode,
+        promptVersion,
+        parameters: requestParameters,
+        correctionId,
+        forceRefresh,
+        usedAt: now(),
+      })
+      if (saved)
+        return {
+          ...saved,
+          originalText: text,
+          modelId: input.data.modelId,
+          mode: input.data.mode,
+          isCached: true,
+        }
+    } catch (error) {
+      if (error instanceof InvalidCorrectionReference)
+        throw new AttemptError(ErrorCode.enum.INVALID_INPUT, null)
+      onRepositoryFailure?.(error, 'begin')
+      throw new AttemptError(ErrorCode.enum.STORAGE_ERROR, null)
+    }
+    if (!deps.isAvailable || !deps.transport)
+      throw new AttemptError(ErrorCode.enum.NOT_CONFIGURED, null)
+    const ids = { correctionId: correctionId ?? uuid(), requestId: uuid() }
     const startedAtMs = clock()
 
     // Record the start of the correction attempt
@@ -167,6 +193,7 @@ export function createCorrectionService(deps: Dependencies) {
     if (isReasoningViolation) deps.onReasoningViolation?.(ids.requestId, input.data.modelId)
 
     return {
+      isCached: false,
       ...ids,
       originalText: text,
       correctedText: correctedText!,

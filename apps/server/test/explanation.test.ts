@@ -332,7 +332,7 @@ test('additive migration preserves existing data and is applied once', () => {
     raw.exec(
       'CREATE TABLE __drizzle_migrations (id SERIAL PRIMARY KEY, hash TEXT NOT NULL, created_at NUMERIC)',
     )
-    for (const migration of migrations.slice(0, -1)) {
+    for (const migration of migrations.slice(0, 3)) {
       raw.transaction(() => {
         for (const statement of migration.sql) raw.exec(statement)
         raw
@@ -362,7 +362,9 @@ test('additive migration preserves existing data and is applied once', () => {
       ['corrections', 'model_requests', 'model_preference'].map((table) =>
         raw.prepare(`SELECT * FROM ${table}`).all(),
       ),
-      before,
+      before.map((rows, index) =>
+        index === 0 ? rows.map((row) => ({ ...(row as object), last_used_at: at })) : rows,
+      ),
     )
     assert.deepEqual(raw.prepare('SELECT * FROM explanations').all(), [])
     migrateDatabase(drizzle(raw))

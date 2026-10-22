@@ -32,6 +32,7 @@ export async function correctionRoutes(
               parsed.data.correctionId,
               createCorrectionStorageFailureLogger(request),
               parsed.data.mode,
+              parsed.data.forceRefresh,
             ),
           )
         } catch (error) {

@@ -25,6 +25,7 @@ export const CorrectionInput = z.strictObject({
   mode: CorrectionMode.default(CorrectionMode.enum.strict),
   modelId: ModelId,
   correctionId: z.uuid().optional(),
+  forceRefresh: z.boolean().default(false),
 })
 
 export const CorrectionConfig = z.strictObject({
@@ -37,6 +38,7 @@ export const CorrectionConfig = z.strictObject({
 export type PublicConfig = z.infer<typeof CorrectionConfig>
 
 export const CorrectionSuccess = z.strictObject({
+  isCached: z.boolean(),
   correctionId: z.uuid(),
   requestId: z.uuid(),
   originalText: OriginalText,

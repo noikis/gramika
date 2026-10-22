@@ -73,7 +73,11 @@ test('mode migration preserves every old request field, status and relation tran
       }),
       requests,
     )
-    assert.deepEqual(raw.prepare('SELECT * FROM corrections').get(), { ...group, deleted_at: null })
+    assert.deepEqual(raw.prepare('SELECT * FROM corrections').get(), {
+      ...group,
+      deleted_at: null,
+      last_used_at: group!.created_at,
+    })
     assert.deepEqual(raw.prepare('SELECT * FROM model_preference').get(), preference)
     assert.deepEqual(raw.pragma('foreign_key_check'), [])
     assert.equal(raw.pragma('foreign_keys', { simple: true }), 1)

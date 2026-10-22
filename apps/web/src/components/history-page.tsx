@@ -97,7 +97,7 @@ function HistoryEntry({
             {item.preview}
           </span>
           <span className="history-meta">
-            <time dateTime={item.createdAt}>{formatDate(item.createdAt)}</time>
+            Last used <time dateTime={item.lastUsedAt}>{formatDate(item.lastUsedAt)}</time>
             {' · '}
             {item.models.map(shortModelName).join(', ') || 'Unavailable'}
           </span>

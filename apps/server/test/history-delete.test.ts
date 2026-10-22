@@ -230,6 +230,7 @@ test('soft-delete migration preserves populated V2.2 records and defaults to vis
     migrateDatabase(drizzle(raw))
     assert.deepEqual(raw.prepare('SELECT * FROM corrections').get(), {
       ...original,
+      last_used_at: at,
       deleted_at: null,
     })
     assert.deepEqual(raw.prepare('SELECT * FROM model_requests').all(), requests)

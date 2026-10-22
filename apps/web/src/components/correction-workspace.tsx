@@ -229,7 +229,7 @@ function OpinionAction({ correction }: { correction: Correction }) {
               : 'Second opinion'}
         </span>
         <span id="opinion-cost" className="opinion-button-cost" aria-hidden="true">
-          Higher cost
+          Higher cost if generated
         </span>
       </Button>
       {correction.isModeChanged ? (
@@ -273,6 +273,11 @@ export function CorrectionWorkspace({
               key={result.requestId}
               hidden={result.modelId !== correction.activeModel}
             >
+              {result.isCached && (
+                <p className="clipboard-feedback" role="status">
+                  Saved result · no new model request
+                </p>
+              )}
               <ResultView
                 result={result}
                 view={view}
@@ -283,16 +288,30 @@ export function CorrectionWorkspace({
                 title={`${result.modelId === DEFAULT_MODEL_ID ? 'Gemma 4' : correction.opinionModelName} · ${modeLabels[result.mode]}`}
                 compact
                 actions={
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    disabled={correction.copying}
-                    onClick={correction.copy}
-                    aria-label={`Copy ${result.modelId === DEFAULT_MODEL_ID ? 'Gemma' : 'Gemini'} result`}
-                  >
-                    <Icon name="copy" />
-                    {correction.copying ? 'Copying...' : 'Copy'}
-                  </Button>
+                  <>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      disabled={!correction.canRegenerate}
+                      onClick={() => correction.regenerate(result.modelId)}
+                      aria-label={`Generate ${result.modelId === DEFAULT_MODEL_ID ? 'Gemma' : 'Gemini'} again. New paid request`}
+                    >
+                      {correction.pendingModel === result.modelId
+                        ? 'Generating...'
+                        : 'Generate again'}
+                      <span className="opinion-button-cost">New paid request</span>
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      disabled={correction.copying}
+                      onClick={correction.copy}
+                      aria-label={`Copy ${result.modelId === DEFAULT_MODEL_ID ? 'Gemma' : 'Gemini'} result`}
+                    >
+                      <Icon name="copy" />
+                      {correction.copying ? 'Copying...' : 'Copy'}
+                    </Button>
+                  </>
                 }
               />
             </div>
@@ -325,11 +344,18 @@ export function CorrectionWorkspace({
         </div>
       </div>
       {correction.visibleResult && (
-        <div className="mobile-copy-bar">
-          <Button type="button" disabled={correction.copying} onClick={correction.copy}>
-            <Icon name="copy" /> {correction.copying ? 'Copying...' : 'Copy result'}
-          </Button>
-        </div>
+        <>
+          {correction.results.length === 2 && correction.opinionError && (
+            <p role="alert">
+              {correction.opinionError} Your previous Gemini result is still available.
+            </p>
+          )}
+          <div className="mobile-copy-bar">
+            <Button type="button" disabled={correction.copying} onClick={correction.copy}>
+              <Icon name="copy" /> {correction.copying ? 'Copying...' : 'Copy result'}
+            </Button>
+          </div>
+        </>
       )}
     </>
   )

@@ -240,9 +240,7 @@ provider.require_parameters=true and provider.allow_fallbacks=false. Application
 corrections accept complete valid output despite reasoning fields or positive
 reasoning token counts and log the setting violation only; the
 manual benchmark accepts otherwise valid outputs and records reported usage.
-No automatic retry, fallback model, second-model verification or correction-result
-cache. V2 second opinions are explicitly requested, and saved explanations are
-reused separately from correction results.
+No automatic retry, fallback model or second-model verification. Approved V2.11a correction caching reuses exact text/model/mode/prompt/settings matches from non-deleted SQLite history, with explicit paid regeneration. Reuse creates no new attempt or cost; it updates last-used dates. Gemini reuse stays within the displayed Gemma history entry. Saved explanations remain attached to their original requests.
 Limit input to 5,000 Unicode code points and each upstream request to 60 seconds.
 
 Each correction sends a compact instruction and the current text. Do not include correction history or ask the model to generate explanations, diff markup or duplicated originals.
@@ -423,7 +421,7 @@ acceptance criteria are defined one feature at a time in build-plan order.
   authorization to introduce accounts, ownership fields or new access infrastructure.
 - English/French support, future evaluation budgets, numerical quality/latency
   thresholds. These are not approved features; caching and local storage are
-  approved separately in V2.11, with detailed behavior still to be specified.
+  approved separately in V2.11. V2.11a correction caching is specified; V2.11b browser persistence still requires decisions.
 
 Backup/restore (former feature 6c) is deferred, not an outstanding delivery task.
 Revisit only if the user decides the saved history has become important.
@@ -449,6 +447,6 @@ with the user before adding any idea to this plan or the build roadmap.
 
 - V2.9: fix history model options and filter correctness, including showing only matching requests in expanded entries and consistent combined model/result filtering.
 - V2.10: show complete valid returned correction text normally despite reasoning-setting violations. Per user clarification on 2026-10-22, log the setting violation only, without a user-facing warning or failed status. Retain costs and diagnostics; do not claim recovery of output never saved.
-- V2.11: implement caching and local storage, with exact reuse, persistence, expiration, clearing and privacy behavior decided in its spec. This is separate from minimal PWA installation and does not automatically authorize offline correction.
+- V2.11: implement caching and local storage as separate V2.11a correction-cache and V2.11b browser-persistence features, with exact reuse, persistence, expiration, clearing and privacy behavior decided in its spec. This is separate from minimal PWA installation and does not automatically authorize offline correction.
 
-These are approved delivery commitments, not optional ideas. See the build-plan contracts for scope; implementation has not started.
+These are approved delivery commitments, not optional ideas. See the build-plan contracts for scope. V2.9 and V2.10 are complete; V2.11a is implemented pending user review, while V2.11b remains to be planned.

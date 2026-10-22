@@ -46,6 +46,16 @@ export type StartAttempt = {
 }
 
 export interface CorrectionRepository {
+  findReusable(input: {
+    originalText: string
+    modelId: string
+    mode: CorrectionMode
+    promptVersion: string
+    parameters: object
+    correctionId?: string
+    forceRefresh: boolean
+    usedAt: string
+  }): (Attempt & { correctedText: string }) | null
   beginAttempt(input: StartAttempt): void
   finishAttempt(requestId: string, outcome: Outcome): void
 }

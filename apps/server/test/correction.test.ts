@@ -337,9 +337,7 @@ test('configuration and initial repository failures prevent paid calls; final re
       createCorrectionService({ repository: null, isAvailable: available, transport: mock })(
         'text',
       ),
-      (error: unknown) =>
-        error instanceof AttemptError &&
-        error.code === (available ? 'STORAGE_ERROR' : 'NOT_CONFIGURED'),
+      (error: unknown) => error instanceof AttemptError && error.code === 'STORAGE_ERROR',
     )
   }
   await assert.rejects(
@@ -347,6 +345,9 @@ test('configuration and initial repository failures prevent paid calls; final re
       isAvailable: true,
       transport: mock,
       repository: {
+        findReusable() {
+          return null
+        },
         beginAttempt() {
           throw Error('private')
         },
@@ -360,6 +361,9 @@ test('configuration and initial repository failures prevent paid calls; final re
       isAvailable: true,
       transport: mock,
       repository: {
+        findReusable() {
+          return null
+        },
         beginAttempt() {},
         finishAttempt() {
           throw Error('private')
@@ -386,6 +390,9 @@ test('Repository diagnostics expose only safe stage and error codes', async () =
         transport: transport(),
         onRepositoryFailure: (error, stage) => diagnostics.push(databaseDiagnostic(error, stage)),
         repository: {
+          findReusable() {
+            return null
+          },
           beginAttempt() {
             if (stage === 'begin') throw failure
           },

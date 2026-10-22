@@ -91,8 +91,8 @@ function historyFilter(db: DatabaseClient, query: HistorySearchQuery) {
         )
       : undefined,
     query.model || query.result !== 'all' ? exists(matchingAttempt) : undefined,
-    query.from === null ? undefined : gte(corrections.createdAt, query.from),
-    query.to === null ? undefined : lt(corrections.createdAt, query.to),
+    query.from === null ? undefined : gte(corrections.lastUsedAt, query.from),
+    query.to === null ? undefined : lt(corrections.lastUsedAt, query.to),
   )
 }
 
@@ -105,7 +105,7 @@ function selectHistoryPage(db: DatabaseClient, query: HistorySearchQuery) {
     .select()
     .from(corrections)
     .where(filter)
-    .orderBy(direction(corrections.createdAt), direction(corrections.id))
+    .orderBy(direction(corrections.lastUsedAt), direction(corrections.id))
     .limit(HISTORY_PAGE_SIZE)
     .offset((page - 1) * HISTORY_PAGE_SIZE)
     .all()
@@ -133,6 +133,7 @@ export function createHistoryRepository(db: DatabaseClient) {
         items: rows.map((row) => ({
           id: row.id,
           createdAt: row.createdAt,
+          lastUsedAt: row.lastUsedAt,
           preview: createHistoryPreview(row.originalText),
           models: [
             ...new Set(
@@ -178,6 +179,7 @@ export function createHistoryRepository(db: DatabaseClient) {
       return HistoryDetail.parse({
         id: correction.id,
         createdAt: correction.createdAt,
+        lastUsedAt: correction.lastUsedAt,
         originalText: correction.originalText,
         language: correction.language,
         requests: rows,

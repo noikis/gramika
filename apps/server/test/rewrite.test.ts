@@ -93,6 +93,7 @@ test('mixed modes and models keep exact original, pending metadata and immutable
   }
   shouldFail = true
   const failed = await run({
+    forceRefresh: true,
     text: original,
     modelId: DEFAULT_MODEL_ID,
     mode: rewrite,
