@@ -1,17 +1,12 @@
+import { MetricFacts } from './request-metric-facts'
 import { useEffect, useId, useRef, useState } from 'react'
 import type { PointerEvent, ReactNode } from 'react'
-import type { HistoryRequest as SavedRequest } from '@gramota/contracts'
-import {
-  formatCost,
-  formatCount,
-  formatDate,
-  formatTime,
-  shortModelName,
-  modeLabels,
-} from '../lib/history-format'
+import type { ExplanationMetrics, HistoryRequest as SavedRequest } from '@gramota/contracts'
+import { formatDate, shortModelName, modeLabels } from '../lib/history-format'
 import { writeClipboardText } from '../lib/clipboard'
 import { notify } from '../lib/notifications'
 import { ResultView, type ResultViewMode } from './result-view'
+import { ExplanationRequestMetrics } from './explanation-request-metrics'
 import { Button } from './ui/button'
 import { Icon } from './ui/icon'
 
@@ -31,12 +26,33 @@ export function RequestMetrics({
   rate,
   actions,
   entryAction,
+  original,
 }: {
+  original: string
   request: SavedRequest
   rate: number | null
   actions?: ReactNode
   entryAction?: ReactNode
 }) {
+  const [isOpen, setIsOpen] = useState(false)
+  const [explanationMetrics, setExplanationMetrics] = useState<ExplanationMetrics | null>(null)
+  const hasExplanations =
+    explanationMetrics !== null &&
+    (explanationMetrics.attempts.length > 0 || explanationMetrics.legacySelections.length > 0)
+  function sum(field: 'costUsd' | 'inputTokens' | 'outputTokens') {
+    if (!explanationMetrics || explanationMetrics.legacySelections.length > 0) return null
+    const values = [request, ...explanationMetrics.attempts].map((item) => item[field])
+    return values.some((value) => value === null)
+      ? null
+      : values.reduce<number>((total, value) => total + value!, 0)
+  }
+  const totals = hasExplanations
+    ? {
+        costUsd: sum('costUsd'),
+        inputTokens: sum('inputTokens'),
+        outputTokens: sum('outputTokens'),
+      }
+    : undefined
   const dialog = useRef<HTMLDialogElement>(null)
   const opener = useRef<HTMLButtonElement>(null)
   const isBackdropStart = useRef(false)
@@ -47,39 +63,6 @@ export function RequestMetrics({
       element?.close()
     }
   }, [])
-  const primary = [
-    ['Generation time', formatTime(request.generationTimeMs)],
-    ['Input tokens', formatCount(request.inputTokens)],
-    ['Output tokens', formatCount(request.outputTokens)],
-    ['Cost', formatCost(request.costUsd, rate)],
-  ]
-  const routing = [
-    ['Requested model', request.requestedModel],
-    ['Returned model', request.returnedModel],
-    ['Provider', request.provider],
-    ['Routing strategy', request.routingStrategy],
-    ['Routing region', request.routingRegion],
-    ['Routing attempt', formatCount(request.routingAttempt)],
-    ['Bring your own key', request.isByok === null ? null : request.isByok ? 'Yes' : 'No'],
-  ]
-  const usage = [
-    ['Total tokens', formatCount(request.totalTokens)],
-    ['Reasoning tokens', formatCount(request.reasoningTokens)],
-    ['Cache-read tokens', formatCount(request.cachedInputTokens)],
-    ['Cache-write tokens', formatCount(request.cacheWriteTokens)],
-    ['Upstream cost', formatCost(request.upstreamInferenceCostUsd, rate)],
-    ['Upstream input cost', formatCost(request.upstreamPromptCostUsd, rate)],
-    ['Upstream output cost', formatCost(request.upstreamCompletionCostUsd, rate)],
-  ]
-  const diagnostics = [
-    ['Started', formatDate(request.startedAt)],
-    ['Ended', formatDate(request.endedAt)],
-    ['App request time', formatTime(request.appRequestTimeMs)],
-    ['OpenRouter generation ID', request.openrouterGenerationId],
-    ['Finish reason', request.finishReason],
-    ['Prompt version', request.promptVersion],
-    ...(request.errorCode ? [['Error code', request.errorCode]] : []),
-  ]
   return (
     <>
       <div className="request-actions">
@@ -88,7 +71,11 @@ export function RequestMetrics({
           type="button"
           variant="secondary"
           ref={opener}
-          onClick={() => dialog.current?.showModal()}
+          onClick={() => {
+            setExplanationMetrics(null)
+            dialog.current?.showModal()
+            setIsOpen(true)
+          }}
         >
           <Icon name="info" /> Details
         </Button>
@@ -109,6 +96,7 @@ export function RequestMetrics({
           isBackdropStart.current = false
         }}
         onClose={() => {
+          setIsOpen(false)
           if (opener.current?.isConnected) opener.current.focus()
         }}
       >
@@ -121,40 +109,37 @@ export function RequestMetrics({
             <Icon name="close" /> Close
           </Button>
         </header>
-        <section className="request-summary" aria-label="Request summary">
-          <h3>Summary</h3>
-          <dl className="request-metrics">
-            {primary.map(([label, value]) => (
-              <div key={label}>
-                <dt>{label}</dt>
-                <dd>{value}</dd>
-              </div>
-            ))}
-          </dl>
+        <section className="request-summary" aria-label="Correction request metrics">
+          <h3>{modeLabels[request.mode]} request</h3>
+          <p className="metric-caption">
+            {formatDate(request.startedAt)} ·{' '}
+            {request.status === 'succeeded'
+              ? 'Completed'
+              : request.status === 'failed'
+                ? 'Failed'
+                : 'Pending'}
+          </p>
+          {request.errorCode && (
+            <p className="history-error">{request.errorMessage ?? request.errorCode}</p>
+          )}
+          {hasExplanations && (
+            <p className="metric-caption">
+              Totals include this correction and all explanation attempts. Response time is for the
+              correction only.
+              {Object.values(totals!).some((value) => value === null) &&
+                ' Some totals are unavailable because usage was not recorded.'}
+            </p>
+          )}
+          <MetricFacts request={request} rate={rate} totals={totals} />
         </section>
-        <div className="detail-groups">
-          {[
-            { title: 'Model & routing', facts: routing },
-            { title: 'Usage & cost', facts: usage },
-            { title: 'Timing & diagnostics', facts: diagnostics },
-          ].map(({ title, facts }) => (
-            <section key={title} aria-label={title}>
-              <h3>{title}</h3>
-              <dl className="request-facts">
-                {facts.map(([label, value]) => (
-                  <div key={label}>
-                    <dt>{label}</dt>
-                    <dd>{value ?? 'Unavailable'}</dd>
-                  </div>
-                ))}
-              </dl>
-            </section>
-          ))}
-          <section className="parameters-section" aria-label="Sent parameters">
-            <h3>Sent parameters</h3>
-            <pre className="request-parameters">{JSON.stringify(request.parameters, null, 2)}</pre>
-          </section>
-        </div>
+        {isOpen && request.status === 'succeeded' && (
+          <ExplanationRequestMetrics
+            request={request}
+            original={original}
+            rate={rate}
+            onLoaded={setExplanationMetrics}
+          />
+        )}
       </dialog>
     </>
   )
@@ -200,6 +185,7 @@ export function HistoryRequest({
   const requestActions = (
     <RequestMetrics
       request={request}
+      original={original}
       rate={rate}
       entryAction={entryAction}
       actions={
@@ -217,6 +203,10 @@ export function HistoryRequest({
       className={`history-request${multipleResults ? ' multiple-results' : ''}${request.status === 'failed' ? ' request-failed' : ''}`}
       aria-labelledby={labelId}
     >
+      <p className="history-request-caption">
+        {modeLabels[request.mode]} · {shortModelName(request.requestedModel)} ·{' '}
+        <time dateTime={request.startedAt}>{formatDate(request.startedAt)}</time>
+      </p>
       {success ? (
         <ResultView
           result={{

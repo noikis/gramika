@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm'
 import { check, integer, primaryKey, real, sqliteTable, text } from 'drizzle-orm/sqlite-core'
-import type { HistoryDetail, HistoryRequest } from '@gramota/contracts'
+import type { ExplanationAttempt, HistoryDetail, HistoryRequest } from '@gramota/contracts'
 
 export const corrections = sqliteTable(
   'corrections',
@@ -132,4 +132,16 @@ export const explanations = sqliteTable(
     ),
     check('explanation_nonempty', sql`length(trim(${table.explanation})) > 0`),
   ],
+)
+
+export const explanationAttempts = sqliteTable(
+  'explanation_attempts',
+  {
+    id: text('id').primaryKey().notNull(),
+    requestId: text('request_id')
+      .notNull()
+      .references(() => modelRequests.id),
+    record: text('record_json', { mode: 'json' }).$type<ExplanationAttempt>().notNull(),
+  },
+  (table) => [check('explanation_attempt_record_json', sql`json_valid(${table.record})`)],
 )

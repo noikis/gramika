@@ -1,71 +1,51 @@
-# Feature: Rewrite Explain V1
+# Current Feature
 
-**From build-plan:** feature V2.4a
-**Build attempt:** 1
-**Branch:** feature/rewrite-explain-v1
-**Status:** implemented; manual acceptance and repository formatting gate pending
+> **Generated file.** Holds the one feature, fix, or rollback being built in this checkout. Run
+> `/feature <number-or-name>` to spec a build-plan feature, or `/fix "<bug>"` for
+> an ad-hoc fix. Use `/rollback <completed-feature>` to plan a safe reversal.
+> Build one thing at a time in this checkout; `/complete` archives it under
+> `blueprint/history/` and resets this file.
 
-## Goal
-Explain the linguistic effect of the selected Gentle Rewrite change in workspace and History. Approved for implementation by the user on 2026-10-22.
+## History and individual explanation metrics
 
-## In scope
-Use the user's REWRITE_EXPLAIN verbatim with the current EXPLAIN_CORE unchanged, version explain-rewrite-v1. Preserve Strict and commented prompt history. Russian output, adaptive length, maximum five sentences. Derive mode and model from the saved result, independent of editor mode. Preserve Gemma disabled reasoning/guard and Gemini minimal reasoning. Reuse selected-change UI, server-derived context, saved reuse, concurrency, errors and deletion safeguards. Opening a selection retrieves saved content; new generation requires Explain. Never store/display reasoning or alter results/Copy.
+**Type:** Feature
+**Branch:** feature/history-explanation-metrics
+**Status:** verified
 
-### Approved benchmark extension (2026-10-22)
+Approved by the user's implementation request on 2026-10-22 following the
+discussion of separate correction/rewrite and selected-change explanation metrics.
 
-Extend existing human-only Explain Run with `--explain-mode strict|gentle-rewrite`, default Strict. Reuse saved correction results and the application mode-specific prompt/model/settings. Skip other modes and failed/not-run results; unchanged results need no requests. Show selected mode/version and exact request count before existing RUN N confirmation. Retain source immutability, isolated outputs, usage/cost reporting, stop-on-failure/interruption and no retries. Record mode and actual prompt in the existing manifest; no CLI invocation by agents, even preview.
+Keep each correction's existing data and behavior. Record each actual explanation
+call separately, with selection identity, status, timestamps, reported token/cost
+details and measured request time. Support Strict and Rewrite, both models,
+failures and saved reuse. Never store reasoning content. Old saved explanations
+remain usable without invented metrics. Use additive Drizzle migrations.
 
-## Out of scope
-Application metrics, paid agent calls, migrations, dependencies, chat, Explain more, document-wide explanation and prompt optimization.
+History Details leads with cost, response time and input/output tokens, and shows
+individual explanation attempts with their selected fragments and metrics.
+Collapse advanced usage and technical fields, retaining all existing data.
+Preserve themes, mobile layout, keyboard access, Copy, search and filters.
+No dashboard, paid calls, new dependencies, commit, merge, push or deployment.
 
-## Build loop
-Feature-level review, checkpoint commits disabled; manual audit/independent review. No commit, merge, push or deploy in this pass.
+- [x] Persist individual explanation attempts and expose validated read-only history access.
+- [x] Simplify History details and display each explanation's own metrics.
+- [x] Verify persistence, failures, reuse and selection identity using mocked tests;
+      run server tests/lint and web build/lint. Browser verification requires permission.
 
-## Build steps
-- [x] Add exact Rewrite prompt and mode-aware routing/tests. Done when both modes/models route correctly with exact context/settings, persistence/reuse, valid selection identity, failures and concurrent deletion safeguards; server tests/lint pass.
-- [ ] Enable shared result Explain for Rewrite. Done when workspace and History use saved result identity and web build/lint/format checks pass. Visual acceptance remains pending manual review.
-- [x] Update roadmap/overview and record checks/manual references. Done when docs reflect delivered scope and pending human evaluation.
+Verification: 141 server tests passed (including migration preservation, both
+modes/models, failed costs, distinct selections, zero/missing metrics, saved reuse,
+reopening and interrupted requests). Web build, web lint and server lint passed.
+User-authorized Playwright checks at localhost:5173 used synthetic API fixtures
+at 1440px desktop and 390px mobile in light/dark themes. Confirmed individual
+metrics, expandable advanced fields, no horizontal overflow, Escape dismissal
+and focus return. This is browser fixture evidence plus independent mocked API
+tests, not a paid end-to-end model call. No paid requests were made.
 
-- [x] Extend Explain Run and docs with explicit Rewrite selection. Done when mocked tests cover both modes/models, preview counts, correct prompts/settings, report rendering, unchanged/skipped sources, source immutability and failure/interruption; server tests/lint pass.
+Existing findings are closed; no independent review was requested. Configured
+audit/check/independent-review gates are manual. Ready for user review and
+`/complete`; no commit, merge, push or deployment performed. Pre-existing plan,
+overview and Rewrite Explain archive edits were preserved.
 
-## Files / areas
-Server explanation prompt/service/tests; shared web result-view; Blueprint roadmap/overview. API contracts and database unchanged; manual benchmark runner/CLI/report tests and docs included.
+User refinement: History detail disclosures use plus when collapsed and minus when expanded. Web build/lint and mobile browser toggle checks passed.
 
-## Data / contracts
-Existing POST explanation and lookup payloads: request ID and half-open UTF-16 original/corrected ranges. Server reads texts/model/mode from the successful non-deleted source. Validate source mode with CorrectionMode. Preserve range/surrogate validation, unsupported-model generation rejection, exact result/occurrence isolation, timeout/proxy settings and privacy rules. No migration or new public fields.
-
-## Testing
-Mocked tests across modes/models for prompts, full context, selected occurrence, settings, disk reopening/reuse, cross-result isolation, insertion/deletion/spacing/grouped phrases/Unicode, failures, duplicate generation and deletion. Run server tests/lint, web build/lint/format check. No paid calls or benchmark invocation. User evaluates app behavior and linguistic quality; browser automation requires separate permission.
-
-Manual evaluation references, outside the prompt:
-- никого ответа → никакого ответа: agreement/usage.
-- Я ей отправил работу уже давно. → Я уже давно отправил ей работу.: valid alternatives and context-dependent emphasis.
-- но → хотя in «В целом всё работает хорошо, хотя хотелось бы обсудить несколько моментов»: contextual contrast/concession.
-- посмотрел → изучил: stronger implication of detailed study and possible meaning shift.
-Check workspace/History, selection navigation, saved reuse and clean Copy. Judge linguistic accuracy/relevance rather than exact output. Prompt revisions require a separate decision.
-
-## Notes for the AI
-Use the exact user-approved prompt. Keep shared core unchanged. The user approved extending Explain Run on 2026-10-22. Tests prove behavior, not language quality. No new infrastructure.
-
-## Verification evidence (2026-10-22)
-
-- npm test -w apps/server: passed, 130 tests (18 focused explanation cases).
-- npm run lint -w apps/server: passed.
-- npm run build -w apps/web: passed.
-- npm run lint -w apps/web: passed.
-- npm run format:check -w apps/web: failed in unchanged history-page.tsx, install-app.tsx and use-history.ts. No unrelated formatting edits made; UI checklist remains pending this declared gate and manual review.
-- Direct Prettier check of all four changed source/test files: passed.
-- git diff --check: passed.
-- Initial app verification: existing shared core, Strict and all commented prompt history unchanged. Explain Run was unchanged at that point; extension authorized subsequently.
-- No new audit or independent review; configured manual. Existing findings closed and no independent review requested.
-- No live/visual/clipboard or linguistic verification performed. No paid requests, benchmark commands, commit, merge, push, deployment or SSH.
-
-### Benchmark extension verification (2026-10-22)
-
-- npm test -w apps/server: passed, 136 tests, including 13 Explain benchmark tests across both modes.
-- npm run lint -w apps/server: passed.
-- Direct Prettier checks of all five changed benchmark source/test files: passed.
-- git diff --check: passed.
-- Existing passing web build/lint evidence reused; no web source changed in this extension. Existing unrelated web formatting issues remain.
-- Benchmark CLI, including preview, was not invoked. No paid requests; test helpers used injected mocked transport only.
-- User command: npm run benchmark -w apps/server -- --explain-run benchmark-data/runs/YOUR-RUN-FOLDER --explain-mode gentle-rewrite (add --execute for human-confirmed paid execution). See docs/benchmark.md.
+User refinement: Top summary totals cost/input/output tokens across the correction and every explanation attempt. Correction response time stays separate. Original correction values remain in Usage breakdown; individual explanation values remain separate. Missing contributing values or legacy explanations make the affected total unavailable. Browser fixtures verified totals (including failed attempts), unchanged response time, missing/legacy usage and mobile width.

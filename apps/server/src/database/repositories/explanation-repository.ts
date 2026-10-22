@@ -1,8 +1,8 @@
 import { and, eq, isNull } from 'drizzle-orm'
-import type { ExplanationInput } from '@gramota/contracts'
+import { ExplanationMetrics, type ExplanationInput } from '@gramota/contracts'
 import type { ExplanationRepository } from '../../explanation'
 import type { DatabaseClient } from '../sqlite-database'
-import { corrections, explanations, modelRequests } from '../schema'
+import { corrections, explanations, explanationAttempts, modelRequests } from '../schema'
 
 function columns(selection: ExplanationInput) {
   return {
@@ -27,6 +27,40 @@ function matches(selection: ExplanationInput) {
 
 export function createExplanationRepository(db: DatabaseClient): ExplanationRepository {
   return {
+    recordAttempt(attempt) {
+      db.insert(explanationAttempts)
+        .values({ id: attempt.id, requestId: attempt.selection.requestId, record: attempt })
+        .onConflictDoUpdate({ target: explanationAttempts.id, set: { record: attempt } })
+        .run()
+    },
+    metrics(requestId) {
+      const attempts = db
+        .select()
+        .from(explanationAttempts)
+        .where(eq(explanationAttempts.requestId, requestId))
+        .all()
+        .map((row) => row.record)
+        .sort((a, b) => a.startedAt.localeCompare(b.startedAt))
+      const legacySelections = db
+        .select()
+        .from(explanations)
+        .where(eq(explanations.requestId, requestId))
+        .all()
+        .map((row) => ({
+          requestId,
+          originalRange: { start: row.originalStart, end: row.originalEnd },
+          correctedRange: { start: row.correctedStart, end: row.correctedEnd },
+        }))
+        .filter(
+          (selection) =>
+            !attempts.some(
+              (attempt) =>
+                attempt.status === 'succeeded' &&
+                JSON.stringify(attempt.selection) === JSON.stringify(selection),
+            ),
+        )
+      return ExplanationMetrics.parse({ attempts, legacySelections })
+    },
     getSource(requestId) {
       const row = db
         .select({
@@ -68,4 +102,16 @@ export function createExplanationRepository(db: DatabaseClient): ExplanationRepo
         .get()!.explanation
     },
   }
+}
+
+export function recoverInterruptedExplanations(db: DatabaseClient, now: string) {
+  db.transaction((tx) => {
+    for (const row of tx.select().from(explanationAttempts).all()) {
+      if (row.record.status !== 'pending') continue
+      tx.update(explanationAttempts)
+        .set({ record: { ...row.record, status: 'interrupted', endedAt: now } })
+        .where(eq(explanationAttempts.id, row.id))
+        .run()
+    }
+  })
 }

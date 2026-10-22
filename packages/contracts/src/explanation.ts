@@ -1,3 +1,4 @@
+import { RequestMetrics } from './request-metrics.js'
 import { z } from 'zod'
 import { ErrorCode } from './correction.js'
 
@@ -37,3 +38,20 @@ export const EXPLANATION_ERROR_MESSAGES: Record<ErrorCode, string> = {
   REASONING_NOT_DISABLED: 'The model did not respect the reasoning setting.',
   TIMEOUT: 'Explanation timed out. You can try again.',
 }
+
+export const ExplanationAttempt = z.strictObject({
+  ...RequestMetrics.shape,
+  id: z.uuid(),
+  selection: ExplanationInput,
+  status: z.enum(['pending', 'succeeded', 'failed', 'interrupted']),
+  errorCode: ErrorCode.nullable(),
+})
+export type ExplanationAttempt = z.infer<typeof ExplanationAttempt>
+
+export const ExplanationMetricsInput = z.strictObject({ requestId: z.uuid() })
+export const ExplanationMetrics = z.strictObject({
+  attempts: z.array(ExplanationAttempt),
+  legacySelections: z.array(ExplanationInput),
+})
+
+export type ExplanationMetrics = z.infer<typeof ExplanationMetrics>

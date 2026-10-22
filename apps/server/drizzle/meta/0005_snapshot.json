@@ -1,0 +1,567 @@
+{
+  "version": "6",
+  "dialect": "sqlite",
+  "id": "88138a1f-f463-4e23-bd36-1165fadd78e9",
+  "prevId": "39916689-292d-48e9-9f0b-58f51d1c4d88",
+  "tables": {
+    "corrections": {
+      "name": "corrections",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "last_used_at": {
+          "name": "last_used_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "''"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "original_text": {
+          "name": "original_text",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "language": {
+          "name": "language",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "corrections_language": {
+          "name": "corrections_language",
+          "value": "\"corrections\".\"language\" = 'ru'"
+        }
+      }
+    },
+    "explanation_attempts": {
+      "name": "explanation_attempts",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "request_id": {
+          "name": "request_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "record_json": {
+          "name": "record_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "explanation_attempts_request_id_model_requests_id_fk": {
+          "name": "explanation_attempts_request_id_model_requests_id_fk",
+          "tableFrom": "explanation_attempts",
+          "tableTo": "model_requests",
+          "columnsFrom": [
+            "request_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "explanation_attempt_record_json": {
+          "name": "explanation_attempt_record_json",
+          "value": "json_valid(\"explanation_attempts\".\"record_json\")"
+        }
+      }
+    },
+    "explanations": {
+      "name": "explanations",
+      "columns": {
+        "request_id": {
+          "name": "request_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "original_start": {
+          "name": "original_start",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "original_end": {
+          "name": "original_end",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "corrected_start": {
+          "name": "corrected_start",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "corrected_end": {
+          "name": "corrected_end",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "explanation": {
+          "name": "explanation",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "explanations_request_id_model_requests_id_fk": {
+          "name": "explanations_request_id_model_requests_id_fk",
+          "tableFrom": "explanations",
+          "tableTo": "model_requests",
+          "columnsFrom": [
+            "request_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "explanations_request_id_original_start_original_end_corrected_start_corrected_end_pk": {
+          "columns": [
+            "request_id",
+            "original_start",
+            "original_end",
+            "corrected_start",
+            "corrected_end"
+          ],
+          "name": "explanations_request_id_original_start_original_end_corrected_start_corrected_end_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "explanation_original_range": {
+          "name": "explanation_original_range",
+          "value": "\"explanations\".\"original_start\" >= 0 AND \"explanations\".\"original_end\" >= \"explanations\".\"original_start\""
+        },
+        "explanation_corrected_range": {
+          "name": "explanation_corrected_range",
+          "value": "\"explanations\".\"corrected_start\" >= 0 AND \"explanations\".\"corrected_end\" >= \"explanations\".\"corrected_start\""
+        },
+        "explanation_nonempty": {
+          "name": "explanation_nonempty",
+          "value": "length(trim(\"explanations\".\"explanation\")) > 0"
+        }
+      }
+    },
+    "model_preference": {
+      "name": "model_preference",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "model_id": {
+          "name": "model_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "model_preference_singleton": {
+          "name": "model_preference_singleton",
+          "value": "\"model_preference\".\"id\" = 1"
+        }
+      }
+    },
+    "model_requests": {
+      "name": "model_requests",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "correction_id": {
+          "name": "correction_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "requested_model": {
+          "name": "requested_model",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "mode": {
+          "name": "mode",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'strict'"
+        },
+        "returned_model": {
+          "name": "returned_model",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "provider": {
+          "name": "provider",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "openrouter_generation_id": {
+          "name": "openrouter_generation_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "prompt_version": {
+          "name": "prompt_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "parameters_json": {
+          "name": "parameters_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "corrected_text": {
+          "name": "corrected_text",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "started_at": {
+          "name": "started_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "ended_at": {
+          "name": "ended_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "duration_ms": {
+          "name": "duration_ms",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "input_tokens": {
+          "name": "input_tokens",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "output_tokens": {
+          "name": "output_tokens",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "total_tokens": {
+          "name": "total_tokens",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "reasoning_tokens": {
+          "name": "reasoning_tokens",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "cached_input_tokens": {
+          "name": "cached_input_tokens",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "cache_write_tokens": {
+          "name": "cache_write_tokens",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "cost_usd": {
+          "name": "cost_usd",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "generation_time_ms": {
+          "name": "generation_time_ms",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "upstream_inference_cost_usd": {
+          "name": "upstream_inference_cost_usd",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "upstream_prompt_cost_usd": {
+          "name": "upstream_prompt_cost_usd",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "upstream_completion_cost_usd": {
+          "name": "upstream_completion_cost_usd",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "routing_strategy": {
+          "name": "routing_strategy",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "routing_region": {
+          "name": "routing_region",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "routing_attempt": {
+          "name": "routing_attempt",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "is_byok": {
+          "name": "is_byok",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "finish_reason": {
+          "name": "finish_reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "error_code": {
+          "name": "error_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "error_message": {
+          "name": "error_message",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "model_requests_correction_id_corrections_id_fk": {
+          "name": "model_requests_correction_id_corrections_id_fk",
+          "tableFrom": "model_requests",
+          "tableTo": "corrections",
+          "columnsFrom": [
+            "correction_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "requests_mode": {
+          "name": "requests_mode",
+          "value": "\"model_requests\".\"mode\" IN ('strict', 'gentle-rewrite')"
+        },
+        "requests_parameters_json": {
+          "name": "requests_parameters_json",
+          "value": "json_valid(\"model_requests\".\"parameters_json\")"
+        },
+        "duration_ms_nonnegative": {
+          "name": "duration_ms_nonnegative",
+          "value": "\"model_requests\".\"duration_ms\" >= 0"
+        },
+        "input_tokens_nonnegative": {
+          "name": "input_tokens_nonnegative",
+          "value": "\"model_requests\".\"input_tokens\" >= 0"
+        },
+        "output_tokens_nonnegative": {
+          "name": "output_tokens_nonnegative",
+          "value": "\"model_requests\".\"output_tokens\" >= 0"
+        },
+        "total_tokens_nonnegative": {
+          "name": "total_tokens_nonnegative",
+          "value": "\"model_requests\".\"total_tokens\" >= 0"
+        },
+        "reasoning_tokens_nonnegative": {
+          "name": "reasoning_tokens_nonnegative",
+          "value": "\"model_requests\".\"reasoning_tokens\" >= 0"
+        },
+        "cached_input_tokens_nonnegative": {
+          "name": "cached_input_tokens_nonnegative",
+          "value": "\"model_requests\".\"cached_input_tokens\" >= 0"
+        },
+        "cache_write_tokens_nonnegative": {
+          "name": "cache_write_tokens_nonnegative",
+          "value": "\"model_requests\".\"cache_write_tokens\" >= 0"
+        },
+        "cost_usd_nonnegative": {
+          "name": "cost_usd_nonnegative",
+          "value": "\"model_requests\".\"cost_usd\" >= 0"
+        },
+        "generation_time_ms_nonnegative": {
+          "name": "generation_time_ms_nonnegative",
+          "value": "\"model_requests\".\"generation_time_ms\" >= 0"
+        },
+        "upstream_inference_cost_usd_nonnegative": {
+          "name": "upstream_inference_cost_usd_nonnegative",
+          "value": "\"model_requests\".\"upstream_inference_cost_usd\" >= 0"
+        },
+        "upstream_prompt_cost_usd_nonnegative": {
+          "name": "upstream_prompt_cost_usd_nonnegative",
+          "value": "\"model_requests\".\"upstream_prompt_cost_usd\" >= 0"
+        },
+        "upstream_completion_cost_usd_nonnegative": {
+          "name": "upstream_completion_cost_usd_nonnegative",
+          "value": "\"model_requests\".\"upstream_completion_cost_usd\" >= 0"
+        },
+        "routing_attempt_nonnegative": {
+          "name": "routing_attempt_nonnegative",
+          "value": "\"model_requests\".\"routing_attempt\" >= 0"
+        },
+        "requests_is_byok": {
+          "name": "requests_is_byok",
+          "value": "\"model_requests\".\"is_byok\" IN (0, 1)"
+        },
+        "requests_status": {
+          "name": "requests_status",
+          "value": "\"model_requests\".\"status\" IN ('pending', 'succeeded', 'failed')"
+        },
+        "requests_outcome": {
+          "name": "requests_outcome",
+          "value": "\n    (\"model_requests\".\"status\" = 'pending'\n      AND \"model_requests\".\"corrected_text\" IS NULL AND \"model_requests\".\"ended_at\" IS NULL\n      AND \"model_requests\".\"duration_ms\" IS NULL AND \"model_requests\".\"error_code\" IS NULL\n      AND \"model_requests\".\"error_message\" IS NULL)\n    OR (\"model_requests\".\"status\" = 'succeeded'\n      AND length(\"model_requests\".\"corrected_text\") > 0 AND \"model_requests\".\"corrected_text\" IS NOT NULL\n      AND \"model_requests\".\"ended_at\" IS NOT NULL AND \"model_requests\".\"duration_ms\" IS NOT NULL\n      AND \"model_requests\".\"error_code\" IS NULL AND \"model_requests\".\"error_message\" IS NULL)\n    OR (\"model_requests\".\"status\" = 'failed'\n      AND \"model_requests\".\"corrected_text\" IS NULL AND \"model_requests\".\"ended_at\" IS NOT NULL\n      AND \"model_requests\".\"error_code\" IS NOT NULL AND \"model_requests\".\"error_message\" IS NOT NULL)"
+        }
+      }
+    }
+  },
+  "views": {},
+  "enums": {},
+  "_meta": {
+    "schemas": {},
+    "tables": {},
+    "columns": {}
+  },
+  "internal": {
+    "indexes": {}
+  }
+}

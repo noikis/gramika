@@ -1,9 +1,6 @@
+import { RequestMetrics } from './request-metrics.js'
 import { z } from 'zod'
 import { CorrectionMode, MAX_INPUT_CHARACTERS } from './correction.js'
-
-const NullableCount = z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).nullable()
-
-const NullableAmount = z.number().finite().nonnegative().nullable()
 
 const NullableText = z.string().nullable()
 
@@ -21,33 +18,9 @@ export type HistorySummary = z.infer<typeof HistorySummary>
 export const HistoryRequest = z
   .strictObject({
     id: z.uuid(),
-    requestedModel: z.string(),
+    ...RequestMetrics.shape,
     mode: CorrectionMode,
-    returnedModel: NullableText,
-    provider: NullableText,
-    openrouterGenerationId: NullableText,
-    promptVersion: z.string(),
-    parameters: z.record(z.string(), z.json()),
     correctedText: NullableText,
-    startedAt: Timestamp,
-    endedAt: Timestamp.nullable(),
-    appRequestTimeMs: NullableAmount,
-    inputTokens: NullableCount,
-    outputTokens: NullableCount,
-    totalTokens: NullableCount,
-    reasoningTokens: NullableCount,
-    cachedInputTokens: NullableCount,
-    cacheWriteTokens: NullableCount,
-    costUsd: NullableAmount,
-    generationTimeMs: NullableAmount,
-    upstreamInferenceCostUsd: NullableAmount,
-    upstreamPromptCostUsd: NullableAmount,
-    upstreamCompletionCostUsd: NullableAmount,
-    routingStrategy: NullableText,
-    routingRegion: NullableText,
-    routingAttempt: NullableCount,
-    isByok: z.boolean().nullable(),
-    finishReason: NullableText,
     status: z.enum(['pending', 'succeeded', 'failed']),
     errorCode: NullableText,
     errorMessage: NullableText,

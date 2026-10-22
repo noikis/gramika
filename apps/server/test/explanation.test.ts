@@ -462,6 +462,8 @@ test('unknown saved modes are rejected for lookup and generation without a model
   let calls = 0
   const explain = createExplanationService({
     repository: {
+      recordAttempt() {},
+      metrics: () => ({ attempts: [], legacySelections: [] }),
       getSource: () => source,
       get: () => null,
       save: (_selection, text) => text,
@@ -480,4 +482,202 @@ test('unknown saved modes are rejected for lookup and generation without a model
   assert.throws(() => explain.lookup(selection), hasCode('INVALID_INPUT'))
   await assert.rejects(explain.explain(selection), hasCode('INVALID_INPUT'))
   assert.equal(calls, 0)
+})
+
+for (const mode of ['strict', 'gentle-rewrite'] as const) {
+  test(`individual explanation metrics retain selection, failed costs and reuse without new calls (${mode})`, async (t) => {
+    const db = new SqliteDatabase(':memory:')
+    t.after(() => db.close())
+    for (const model of MODELS) {
+      const { selection, correctionId } = seed(db, model.id, mode)
+      const second = {
+        ...selection,
+        originalRange: { start: 18, end: 23 },
+        correctedRange: { start: 19, end: 25 },
+      }
+      let calls = 0
+      const explain = service(db, async () => {
+        calls++
+        return {
+          ...(calls === 1
+            ? { correctedText: null, errorCode: 'INVALID_RESPONSE' as const }
+            : { correctedText: answer, errorCode: null }),
+          details: {
+            inputTokens: 100 + calls,
+            outputTokens: 20,
+            totalTokens: 120 + calls,
+            reasoningTokens: 3,
+            cachedInputTokens: 5,
+            costUsd: calls * 0.001,
+            upstreamInferenceCostUsd: 0.0005,
+            generationTimeMs: 1500,
+            returnedModel: model.id,
+            provider: 'Synthetic provider',
+            openrouterGenerationId: 'synthetic-id',
+          },
+        }
+      })
+      assert.deepEqual(explain.metrics({ requestId: selection.requestId }), {
+        attempts: [],
+        legacySelections: [],
+      })
+      await assert.rejects(explain.explain(selection), hasCode('INVALID_RESPONSE'))
+      await explain.explain(selection)
+      await explain.explain(second)
+      await explain.explain(selection)
+      explain.lookup(second)
+      assert.equal(calls, 3)
+      const { attempts, legacySelections } = explain.metrics({ requestId: selection.requestId })
+      assert.equal(attempts.length, 3)
+      assert.deepEqual(legacySelections, [])
+      assert.equal(new Set(attempts.map((attempt) => attempt.id)).size, 3)
+      const failed = attempts.find((attempt) => attempt.status === 'failed')!
+      assert.equal(failed.costUsd, 0.001)
+      assert.equal(failed.inputTokens, 101)
+      assert.equal(failed.errorCode, 'INVALID_RESPONSE')
+      assert.deepEqual(failed.selection, selection)
+      assert.equal(attempts.filter((attempt) => attempt.status === 'succeeded').length, 2)
+      for (const attempt of attempts) {
+        assert.equal(attempt.requestedModel, model.id)
+        assert.equal(attempt.returnedModel, model.id)
+        assert.equal(attempt.promptVersion, mode === 'strict' ? 'explain-v1' : 'explain-rewrite-v1')
+        assert.equal(attempt.generationTimeMs, 1500)
+        assert.equal(attempt.reasoningTokens, 3)
+        assert.equal(attempt.upstreamInferenceCostUsd, 0.0005)
+        assert.ok(attempt.appRequestTimeMs! >= 0)
+        assert.ok(attempt.endedAt)
+        assert.equal('correctedText' in attempt, false)
+      }
+      assert.equal(db.history.get(correctionId)!.requests[0].costUsd, 0.01)
+      db.history.softDelete(correctionId)
+      assert.throws(
+        () => explain.metrics({ requestId: selection.requestId }),
+        hasCode('INVALID_INPUT'),
+      )
+    }
+  })
+}
+
+test('legacy explanation metrics stay unavailable and recorded metrics survive reopening', async (t) => {
+  const directory = mkdtempSync(join(tmpdir(), 'gramota-explanation-metrics-'))
+  const path = join(directory, 'db.sqlite')
+  let db = new SqliteDatabase(path)
+  t.after(() => {
+    db.close()
+    rmSync(directory, { recursive: true, force: true })
+  })
+  const legacy = seed(db).selection
+  db.explanations.save(legacy, answer)
+  const tracked = seed(db).selection
+  await service(db, async () => ({
+    correctedText: answer,
+    errorCode: null,
+    details: { costUsd: 0, inputTokens: 0 },
+  })).explain(tracked)
+  const before = service(db).metrics({ requestId: tracked.requestId })
+  db.explanations.recordAttempt({
+    ...before.attempts[0],
+    id: randomUUID(),
+    status: 'pending',
+    endedAt: null,
+    appRequestTimeMs: null,
+    costUsd: null,
+  })
+
+  db.close()
+  db = new SqliteDatabase(path)
+  const offline = createExplanationService({
+    repository: db.explanations,
+    transport: null,
+    isAvailable: false,
+  })
+  const reopened = offline.metrics({ requestId: tracked.requestId })
+  assert.deepEqual(
+    reopened.attempts.filter((attempt) => attempt.status === 'succeeded'),
+    before.attempts,
+  )
+  const interrupted = reopened.attempts.find((attempt) => attempt.status === 'interrupted')!
+  assert.ok(interrupted.endedAt)
+  assert.equal(interrupted.appRequestTimeMs, null)
+  assert.equal(interrupted.costUsd, null)
+  assert.equal(before.attempts[0].costUsd, 0)
+  assert.equal(before.attempts[0].inputTokens, 0)
+  assert.equal(before.attempts[0].outputTokens, null)
+  assert.deepEqual(offline.metrics({ requestId: legacy.requestId }), {
+    attempts: [],
+    legacySelections: [legacy],
+  })
+  await offline.explain(legacy)
+  assert.deepEqual(offline.metrics({ requestId: legacy.requestId }), {
+    attempts: [],
+    legacySelections: [legacy],
+  })
+})
+
+test('metrics API validates identifiers and never generates an explanation', async (t) => {
+  const db = new SqliteDatabase(':memory:')
+  const { requestId, correctionId } = seed(db)
+  const app = Fastify()
+  await application(app, {
+    correction: {
+      database: db,
+      transport: transport(async () => {
+        throw Error('must not call model')
+      }),
+      environment: { NODE_ENV: 'development', OPENROUTER_API_KEY: 'fictional-test-key' },
+    },
+  })
+  t.after(() => app.close())
+  const post = (payload: object) =>
+    app.inject({ method: 'POST', url: '/api/explanations/metrics', payload })
+  assert.deepEqual((await post({ requestId })).json(), { attempts: [], legacySelections: [] })
+  for (const payload of [
+    {},
+    { requestId: 'bad' },
+    { requestId: randomUUID() },
+    { requestId, extra: true },
+  ])
+    assert.equal((await post(payload)).statusCode, 400)
+  db.history.softDelete(correctionId)
+  assert.equal((await post({ requestId })).statusCode, 400)
+})
+
+test('metrics migration preserves saved explanations and their missing metrics', () => {
+  const raw = new Database(':memory:')
+  try {
+    const migrations = readMigrationFiles({ migrationsFolder: join(__dirname, '../drizzle') })
+    raw.exec(
+      'CREATE TABLE __drizzle_migrations (id SERIAL PRIMARY KEY, hash TEXT NOT NULL, created_at NUMERIC)',
+    )
+    for (const migration of migrations.slice(0, -1)) {
+      raw.transaction(() => {
+        for (const statement of migration.sql) raw.exec(statement)
+        raw
+          .prepare('INSERT INTO __drizzle_migrations (hash, created_at) VALUES (?, ?)')
+          .run(migration.hash, migration.folderMillis)
+      })()
+    }
+    raw
+      .prepare(
+        "INSERT INTO corrections (id, created_at, last_used_at, original_text, language) VALUES ('synthetic', ?, ?, 'Текст', 'ru')",
+      )
+      .run(at, at)
+    raw
+      .prepare(
+        "INSERT INTO model_requests (id, correction_id, requested_model, prompt_version, parameters_json, started_at, ended_at, duration_ms, status, corrected_text) VALUES ('synthetic-request', 'synthetic', ?, 'strict-v3', '{}', ?, ?, 1, 'succeeded', 'Текст!')",
+      )
+      .run(DEFAULT_MODEL_ID, at, at)
+    raw
+      .prepare(
+        "INSERT INTO explanations (request_id, original_start, original_end, corrected_start, corrected_end, explanation) VALUES ('synthetic-request', 5, 5, 5, 6, ?)",
+      )
+      .run(answer)
+    const before = raw.prepare('SELECT * FROM explanations').all()
+    migrateDatabase(drizzle(raw))
+    migrateDatabase(drizzle(raw))
+    assert.deepEqual(raw.prepare('SELECT * FROM explanations').all(), before)
+    assert.deepEqual(raw.prepare('SELECT * FROM explanation_attempts').all(), [])
+  } finally {
+    raw.close()
+  }
 })

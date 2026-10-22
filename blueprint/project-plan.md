@@ -114,8 +114,8 @@ English and French remain future candidates. Russian is the initial acceptance t
   using the current shared core unchanged plus the user-supplied REWRITE_EXPLAIN
   verbatim (explain-rewrite-v1). It explains actual linguistic effects, including
   language corrections, valid alternatives and changes in nuance or meaning,
-  without assuming every rewrite is better. Manual app/linguistic acceptance is
-  pending; Explain Run now supports explicit Rewrite mode for human evaluation. Application explanation metrics/cost
+  without assuming every rewrite is better. Completed and accepted by the user
+  on 2026-10-22; Explain Run supports explicit Rewrite mode for human evaluation. Application explanation metrics/cost
   reporting also remain a separate follow-up. See the
   [agreed V2.4 handoff](context/v2.4-explain-handoff.md). Gemini
   explanations use minimal reasoning and accept reasoning metadata; Gemma app

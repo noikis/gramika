@@ -906,3 +906,104 @@ body:has(dialog[open]) {
     transition: none;
   }
 }
+
+.history-request-caption,
+.metric-caption {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.history-request-caption {
+  margin: 0 0 12px;
+}
+.request-summary > .metric-caption {
+  margin: 0 0 20px;
+}
+.metric-group > summary,
+.explanation-attempt > summary {
+  cursor: pointer;
+  min-height: 44px;
+  align-content: center;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.metric-group[open] > summary {
+  margin-bottom: 14px;
+}
+.metric-group > summary:focus-visible,
+.explanation-attempt > summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+.request-sheet .request-summary .detail-groups,
+.request-sheet .explanation-attempt .detail-groups {
+  padding-bottom: 0;
+  gap: 8px;
+}
+.explanation-metrics {
+  padding: 24px 0;
+}
+.explanation-metrics > h3 {
+  margin-bottom: 8px;
+}
+.explanation-metrics > .metric-caption {
+  margin-bottom: 20px;
+}
+.explanation-attempt {
+  border-top: 1px solid var(--line);
+  padding: 12px 0;
+}
+.explanation-attempt > summary > span {
+  display: block;
+}
+.explanation-attempt > summary .metric-caption {
+  font-weight: 400;
+}
+.explanation-fragments {
+  display: grid;
+  gap: 12px;
+  margin: 16px 0 24px;
+}
+.explanation-fragments dt {
+  color: var(--muted);
+  font-size: 13px;
+}
+.explanation-fragments dd {
+  margin: 4px 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.metric-group > summary,
+.explanation-attempt > summary {
+  position: relative;
+  padding-left: 28px;
+  list-style: none;
+}
+.metric-group > summary::-webkit-details-marker,
+.explanation-attempt > summary::-webkit-details-marker {
+  display: none;
+}
+.metric-group > summary::marker,
+.explanation-attempt > summary::marker {
+  content: '';
+}
+.metric-group > summary > .disclosure-plus,
+.metric-group > summary > .disclosure-minus,
+.explanation-attempt > summary > .disclosure-plus,
+.explanation-attempt > summary > .disclosure-minus {
+  position: absolute;
+  left: 0;
+  top: 13px;
+}
+.metric-group > summary > .disclosure-minus,
+.explanation-attempt > summary > .disclosure-minus,
+.metric-group[open] > summary > .disclosure-plus,
+.explanation-attempt[open] > summary > .disclosure-plus {
+  display: none;
+}
+.metric-group[open] > summary > .disclosure-minus,
+.explanation-attempt[open] > summary > .disclosure-minus {
+  display: block;
+}

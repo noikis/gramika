@@ -1,9 +1,9 @@
 # Gramota - Project Overview
 
-<!-- blueprint:source-hash 41165cdc61bb3c1cf7d090f83c3dce4c214941277cefebf6d85911c9deecc9a5 -->
+<!-- blueprint:source-hash 73fe181f24691ba1009fecaf49caa055adaa575f2a22eb4f5fff9cf6b64f2261 -->
 
 Derived from [project-plan.md](../project-plan.md) and [build-plan.md](../build-plan.md).
-Updated 2026-10-22 for Rewrite Explain V1 (manual acceptance pending). Implementation
+Updated 2026-10-22 for completed and user-accepted Rewrite Explain V1. Implementation
 contracts and history remain in current-feature.md and blueprint/history/.
 
 ## Product and scope

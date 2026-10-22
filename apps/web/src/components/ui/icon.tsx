@@ -7,6 +7,7 @@ const paths = {
   copy: 'M9 9h11v11H9z M15 9V4H4v11h5',
   paste: 'M9 5H5v16h14V5h-4 M9 3h6v5H9z',
   plus: 'M12 5v14 M5 12h14',
+  minus: 'M5 12h14',
   history: 'M3 11a9 9 0 1 1 2 7 M3 4v7h7 M12 7v5l3 2',
   trash: 'M4 7h16 M9 7V4h6v3 M7 7l1 14h8l1-14 M10 11v6 M14 11v6',
   info: 'M12 11v6 M12 7h.01',

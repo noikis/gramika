@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify'
 import {
   ExplanationFailure,
+  ExplanationMetrics,
   ExplanationInput,
   ExplanationLookup,
   ExplanationSuccess,
@@ -48,6 +49,9 @@ export async function explanationRoutes(
         }),
       )
     })
+    api.post('/api/explanations/metrics', async (request) =>
+      ExplanationMetrics.parse(service.metrics(request.body)),
+    )
     for (const isLookup of [true, false]) {
       api.post(
         isLookup ? '/api/explanations/lookup' : '/api/explanations',

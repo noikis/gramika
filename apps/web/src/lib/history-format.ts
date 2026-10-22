@@ -27,9 +27,11 @@ export function formatCount(value: number | null) {
 }
 
 export function formatTime(value: number | null) {
-  return value === null
-    ? 'Unavailable'
-    : value.toLocaleString('en-US', { maximumSignificantDigits: 12 }) + ' ms'
+  if (value === null) return 'Unavailable'
+  const MILLISECONDS_PER_SECOND = 1000
+  return value < MILLISECONDS_PER_SECOND
+    ? value.toLocaleString('en-US', { maximumFractionDigits: 0 }) + ' ms'
+    : (value / MILLISECONDS_PER_SECOND).toLocaleString('en-US', { maximumFractionDigits: 2 }) + ' s'
 }
 
 export const modeLabels: Record<CorrectionMode, string> = {

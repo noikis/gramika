@@ -229,6 +229,8 @@ export async function runExplanationBenchmark(options: Options) {
       // This repository is isolated to this new benchmark, never everyday history.
       const service = createExplanationService({
         repository: {
+          recordAttempt() {},
+          metrics: () => ({ attempts: [], legacySelections: [] }),
           getSource: () => source,
           get: () => null,
           save: (_selection, explanation) => explanation,

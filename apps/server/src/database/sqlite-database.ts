@@ -1,4 +1,7 @@
-import { createExplanationRepository } from './repositories/explanation-repository'
+import {
+  createExplanationRepository,
+  recoverInterruptedExplanations,
+} from './repositories/explanation-repository'
 import Database from 'better-sqlite3'
 import { drizzle, type BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import { mkdirSync } from 'node:fs'
@@ -30,6 +33,7 @@ export class SqliteDatabase {
       const database = this.createDrizzleClient()
       migrateDatabase(database)
       recoverInterruptedAttempts(database, now)
+      recoverInterruptedExplanations(database, now)
 
       this.explanations = createExplanationRepository(database)
       this.corrections = createCorrectionRepository(database)

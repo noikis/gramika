@@ -1,12 +1,20 @@
+import { randomUUID } from 'node:crypto'
 import {
   CorrectionMode,
   ErrorCode,
   ExplanationInput,
+  ExplanationAttempt,
+  ExplanationMetricsInput,
   ModelId,
   TIMEOUT_MS,
 } from '@gramota/contracts'
 import { CorrectionError, type CorrectionTransport } from '../correction'
-import { REWRITE_EXPLAIN_PROMPT, STRICT_EXPLAIN_PROMPT } from './prompt'
+import {
+  EXPLAIN_PROMPT_VERSION,
+  REWRITE_EXPLAIN_PROMPT_VERSION,
+  REWRITE_EXPLAIN_PROMPT,
+  STRICT_EXPLAIN_PROMPT,
+} from './prompt'
 import type { ExplanationRepository } from './types'
 
 import { explanationRequestParameters, GEMINI_EXPLANATION_MODEL_ID } from './constants'
@@ -72,12 +80,57 @@ export function createExplanationService(deps: Dependencies) {
     return { result: explanation === null ? null : { selection, explanation } }
   }
 
+  function metrics(input: unknown) {
+    const parsed = ExplanationMetricsInput.safeParse(input)
+    if (!parsed.success) throw new CorrectionError(ErrorCode.enum.INVALID_INPUT)
+    if (!deps.repository) throw new CorrectionError(ErrorCode.enum.STORAGE_ERROR)
+    if (!readStorage(() => deps.repository!.getSource(parsed.data.requestId)))
+      throw new CorrectionError(ErrorCode.enum.INVALID_INPUT)
+    return readStorage(() => deps.repository!.metrics(parsed.data.requestId))
+  }
+
   async function generate(value: ReturnType<typeof read>) {
     const { selection, source, original, corrected } = value
     if (!deps.isAvailable || !deps.transport)
       throw new CorrectionError(ErrorCode.enum.NOT_CONFIGURED)
     if (!ModelId.safeParse(source.modelId).success)
       throw new CorrectionError(ErrorCode.enum.INVALID_INPUT)
+    const started = performance.now()
+    let attempt = ExplanationAttempt.parse({
+      id: randomUUID(),
+      selection,
+      requestedModel: source.modelId,
+      promptVersion:
+        source.mode === CorrectionMode.enum.strict
+          ? EXPLAIN_PROMPT_VERSION
+          : REWRITE_EXPLAIN_PROMPT_VERSION,
+      parameters: explanationRequestParameters(source.modelId),
+      status: 'pending',
+      errorCode: null,
+      startedAt: new Date().toISOString(),
+      endedAt: null,
+      appRequestTimeMs: null,
+      returnedModel: null,
+      provider: null,
+      openrouterGenerationId: null,
+      inputTokens: null,
+      outputTokens: null,
+      totalTokens: null,
+      reasoningTokens: null,
+      cachedInputTokens: null,
+      cacheWriteTokens: null,
+      costUsd: null,
+      generationTimeMs: null,
+      upstreamInferenceCostUsd: null,
+      upstreamPromptCostUsd: null,
+      upstreamCompletionCostUsd: null,
+      routingStrategy: null,
+      routingRegion: null,
+      routingAttempt: null,
+      isByok: null,
+      finishReason: null,
+    })
+    readStorage(() => deps.repository!.recordAttempt(attempt))
     const controller = new AbortController()
     let timer: ReturnType<typeof setTimeout> | undefined
     try {
@@ -121,17 +174,51 @@ export function createExplanationService(deps: Dependencies) {
         ),
         timeout,
       ])
+      // Only schema-listed metrics are retained; response text and reasoning never enter this record.
+      const details = Object.fromEntries(
+        Object.entries(response.details).filter(
+          ([key, value]) =>
+            key in attempt && value !== undefined && !['status', 'errorCode'].includes(key),
+        ),
+      )
+      attempt = ExplanationAttempt.parse({
+        ...attempt,
+        ...details,
+        selection,
+        id: attempt.id,
+        requestedModel: source.modelId,
+        parameters: attempt.parameters,
+        promptVersion: attempt.promptVersion,
+        startedAt: attempt.startedAt,
+        status: 'pending',
+        errorCode: null,
+      })
       if (response.errorCode) throw new CorrectionError(response.errorCode)
       if (!response.correctedText?.trim())
         throw new CorrectionError(ErrorCode.enum.INVALID_RESPONSE)
       // The user may delete the parent history entry while the model is running.
       read(selection)
-      return readStorage(() => deps.repository!.save(selection, response.correctedText!))
+      const explanation = readStorage(() =>
+        deps.repository!.save(selection, response.correctedText!),
+      )
+      attempt = { ...attempt, status: 'succeeded' }
+      return explanation
     } catch (error) {
-      if (error instanceof CorrectionError) throw error
-      throw new CorrectionError(ErrorCode.enum.UPSTREAM_ERROR)
+      const failure =
+        error instanceof CorrectionError
+          ? error
+          : new CorrectionError(ErrorCode.enum.UPSTREAM_ERROR)
+      attempt = { ...attempt, status: 'failed', errorCode: failure.code }
+      throw failure
     } finally {
       clearTimeout(timer)
+      readStorage(() =>
+        deps.repository!.recordAttempt({
+          ...attempt,
+          endedAt: new Date().toISOString(),
+          appRequestTimeMs: performance.now() - started,
+        }),
+      )
     }
   }
 
@@ -154,5 +241,5 @@ export function createExplanationService(deps: Dependencies) {
     }
   }
 
-  return { lookup, explain }
+  return { lookup, explain, metrics }
 }
