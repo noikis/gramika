@@ -138,7 +138,7 @@ verification, and review before the next item begins.
   selected-changes UI; add a small conditional result scroll; place Generate
   again above Second opinion on mobile; and improve History explanation
   loading so incomplete details are not briefly shown.
-- [ ] **V3.1 — Text-diff stabilization:** preserve local movement detection
+- [x] **V3.1 — Text-diff stabilization:** preserve local movement detection
   when sentence counts change, bound movement-search cost for large and
   repetitive inputs, and retain exact reconstruction, conservative grouping,
   Unicode, whitespace, and Explain integration. Use
