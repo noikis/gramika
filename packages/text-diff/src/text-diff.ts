@@ -17,6 +17,7 @@ export * from "./diff-types.js";
 export { resolveWordMoves } from "./word-moves.js";
 
 const COMPARISON_BUDGET = 65536;
+const MAX_MOVE_DISCOVERY_WINDOWS = 4096;
 
 type Draft = ChangeGroup & { anchor: number; sourceAnchor?: number };
 
@@ -43,6 +44,7 @@ export function diffText(original: string, corrected: string): TextDiff {
   const gapsOld = new Set<Token>(),
     gapsNew = new Set<Token>();
   const budget = { remaining: MAX_MOVE_STATES };
+  const discoveryBudget = { remaining: MAX_MOVE_DISCOVERY_WINDOWS };
   function add(
     old: TextRange[],
     next: TextRange[],
@@ -70,79 +72,123 @@ export function diffText(original: string, corrected: string): TextDiff {
   }
   const oldSentences = sentenceRanges(original),
     newSentences = sentenceRanges(corrected);
-  if (oldSentences.length === newSentences.length)
-    oldSentences.forEach((range, sentenceIndex) => {
-      const nextRange = newSentences[sentenceIndex];
-      const oldWords = before.filter(
-        (token) =>
-          token.isWord &&
-          token.range.start >= range.start &&
-          token.range.end <= range.end,
-      );
-      const newWords = after.filter(
-        (token) =>
-          token.isWord &&
-          token.range.start >= nextRange.start &&
-          token.range.end <= nextRange.end,
-      );
-      if (oldWords.length !== newWords.length) return;
-      // Isolate balanced local reorder windows; unrelated substitutions stay outside.
-      for (let start = 0; start < oldWords.length; start++) {
-        if (oldWords[start].text === newWords[start].text) continue;
-        for (
-          let end = start + 2;
-          end <= Math.min(oldWords.length, start + MAX_MOVE_WORDS);
-          end++
-        ) {
-          const old = oldWords.slice(start, end),
-            next = newWords.slice(start, end);
-          if (
-            old
-              .map((token) => token.text)
-              .sort()
-              .join("\0") !==
-            next
-              .map((token) => token.text)
-              .sort()
-              .join("\0")
-          )
-            continue;
-          const moves = resolveWordMoves(
-            old.map((token) => token.text),
-            next.map((token) => token.text),
-            budget,
-          );
-          if (!moves.length) break;
-          for (const move of moves) {
-            const oldTokens = move.original.map((index) => old[index]);
-            const newTokens = move.corrected.map((index) => next[index]);
-            const group = add(
-              oldTokens.map((token) => token.range),
-              newTokens.map((token) => token.range),
-              { start: old[0].range.start, end: old.at(-1)!.range.end },
-              { start: next[0].range.start, end: next.at(-1)!.range.end },
-              "move",
-            );
-            group.sourceAnchor = oldTokens[0].range.start;
-            oldTokens.forEach((token) => movedOld.add(token));
-            newTokens.forEach((token) => movedNew.add(token));
-          }
-          // Identical separators in reordered slots are unchanged, not word edits.
-          if (
-            old.every(
-              (token, index) =>
-                original.slice(token.gap.start, token.gap.end) ===
-                corrected.slice(next[index].gap.start, next[index].gap.end),
-            )
-          ) {
-            old.forEach((token) => gapsOld.add(token));
-            next.forEach((token) => gapsNew.add(token));
-          }
-          start = end - 1;
-          break;
-        }
+  function wordSignature(words: Token[]) {
+    const counts = new Map<string, number>();
+    for (const token of words)
+      counts.set(token.text, (counts.get(token.text) ?? 0) + 1);
+    return [...counts.entries()]
+      .sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))
+      .map(([word, count]) => `${word}:${count}`)
+      .join("\0");
+  }
+  function sentenceRegions(text: string, tokens: Token[], ranges: TextRange[]) {
+    let tokenIndex = 0;
+    let paragraph = 0;
+    let cursor = 0;
+    return ranges.map((range) => {
+      paragraph += [
+        ...text.slice(cursor, range.start).matchAll(/\r?\n\s*\r?\n/gu),
+      ].length;
+      while (tokens[tokenIndex]?.range.end <= range.start) tokenIndex++;
+      const words: Token[] = [];
+      while (tokens[tokenIndex]?.range.end <= range.end) {
+        const token = tokens[tokenIndex++];
+        if (token.isWord) words.push(token);
       }
+      cursor = range.end;
+      return {
+        range,
+        words,
+        key: `${paragraph}\0${wordSignature(words)}`,
+      };
     });
+  }
+  const oldRegions = sentenceRegions(original, before, oldSentences);
+  const newRegionsByKey = new Map<string, ReturnType<typeof sentenceRegions>>();
+  for (const region of sentenceRegions(corrected, after, newSentences)) {
+    const regions = newRegionsByKey.get(region.key) ?? [];
+    regions.push(region);
+    newRegionsByKey.set(region.key, regions);
+  }
+  const movementRegions: {
+    old: (typeof oldRegions)[number];
+    next: (typeof oldRegions)[number];
+  }[] = [];
+  for (const region of oldRegions) {
+    const regions = newRegionsByKey.get(region.key);
+    const next = regions?.shift();
+    if (next) movementRegions.push({ old: region, next });
+  }
+  function sameWordMultiset(oldWords: Token[], newWords: Token[]) {
+    if (oldWords.length !== newWords.length) return false;
+    const counts = new Map<string, number>();
+    for (const token of oldWords)
+      counts.set(token.text, (counts.get(token.text) ?? 0) + 1);
+    for (const token of newWords) {
+      const count = counts.get(token.text);
+      if (!count) return false;
+      if (count === 1) counts.delete(token.text);
+      else counts.set(token.text, count - 1);
+    }
+    return counts.size === 0;
+  }
+  for (const { old, next } of movementRegions) {
+    const { range, words: oldWords } = old;
+    const { range: nextRange, words: newWords } = next;
+    if (oldWords.length !== newWords.length) continue;
+    // Isolate balanced local reorder windows; unrelated substitutions stay outside.
+    for (
+      let start = 0;
+      start < oldWords.length && discoveryBudget.remaining > 0;
+      start++
+    ) {
+      if (oldWords[start].text === newWords[start].text) continue;
+      for (
+        let end = start + 2;
+        end <= Math.min(oldWords.length, start + MAX_MOVE_WORDS) &&
+        discoveryBudget.remaining > 0;
+        end++
+      ) {
+        discoveryBudget.remaining--;
+        const old = oldWords.slice(start, end),
+          next = newWords.slice(start, end);
+        if (!sameWordMultiset(old, next)) continue;
+        const moves = resolveWordMoves(
+          old.map((token) => token.text),
+          next.map((token) => token.text),
+          budget,
+        );
+        if (!moves.length) break;
+        for (const move of moves) {
+          const oldTokens = move.original.map((index) => old[index]);
+          const newTokens = move.corrected.map((index) => next[index]);
+          const group = add(
+            oldTokens.map((token) => token.range),
+            newTokens.map((token) => token.range),
+            { start: old[0].range.start, end: old.at(-1)!.range.end },
+            { start: next[0].range.start, end: next.at(-1)!.range.end },
+            "move",
+          );
+          group.sourceAnchor = oldTokens[0].range.start;
+          oldTokens.forEach((token) => movedOld.add(token));
+          newTokens.forEach((token) => movedNew.add(token));
+        }
+        // Identical separators in reordered slots are unchanged, not word edits.
+        if (
+          old.every(
+            (token, index) =>
+              original.slice(token.gap.start, token.gap.end) ===
+              corrected.slice(next[index].gap.start, next[index].gap.end),
+          )
+        ) {
+          old.forEach((token) => gapsOld.add(token));
+          next.forEach((token) => gapsNew.add(token));
+        }
+        start = end - 1;
+        break;
+      }
+    }
+  }
   const old = before.filter((token) => !movedOld.has(token));
   const next = after.filter((token) => !movedNew.has(token));
   const matches = align(old, next, { remaining: COMPARISON_BUDGET });

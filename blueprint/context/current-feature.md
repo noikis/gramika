@@ -1,110 +1,115 @@
-# Feature: Word-aware diff with conservative grouping
+# Feature: Text-diff stabilization
 
-**Type:** Feature
-**Branch:** feature/word-aware-diff-with-conservative-grouping
-**Status:** implemented; automated behavior checks passed; repository-wide formatting has pre-existing failures
+**From build-plan:** feature 3.1
+**Build attempt:** 1
+**Branch:** master (managed checkout does not permit creating a feature ref)
 
-Approved implementation from `word-aware-diff-handoff.md` on 2026-10-22.
-That document is the full behavior, contract, migration and verification spec.
-Use the ordinary checkout; preserve pre-existing UI refinements.
+## Goal
 
-- [x] Shared algorithm, exact spans and conservative movement tests.
-- [x] Explain V2 identity, validation, payload, migration and metrics preservation.
-- [x] Workspace/History rendering and shared benchmark selections.
-- [x] Final checks and manual review handoff; no commit, merge, push or deployment.
+Make word movement detection reliable when unrelated sentences are added,
+removed, joined, or split, and bound the complete movement discovery path for
+large or repetitive inputs. Preserve exact text reconstruction, conservative
+groups, Unicode and whitespace handling, and existing Explain selection data.
+
+## In scope
+
+- Pair reliable local sentence regions independently of total document sentence
+  counts, using deterministic word signatures and occurrence order.
+- Continue movement analysis only for balanced, structurally supported regions.
+- Bound candidate-window enumeration and retain the existing resolver state
+  budget, with ordinary diff fallback when either budget is exhausted.
+- Replace repeated sorting in candidate checks with a bounded multiset check.
+- Add regression coverage for sentence additions, sentence splits, ambiguous
+  swaps, repeated words, exact reconstruction, and large repetitive inputs.
+- Record reproducible performance measurements for medium, large, and stress
+  inputs.
+
+## Out of scope
+
+- Global semantic movement detection, NLP, linguistic parsing, or LLM calls.
+- Changes to public diff contracts, Explain prompts, correction behavior,
+  History, UI layout, persistence, dependencies, or database schema.
+- Manual text-selection Stages 1-3 and paid benchmark execution.
+
+## Build loop
+
+Implement the focused diff changes, run the text-diff and server checks after
+each meaningful step, then run the documented server build/test gate and the
+contracts build. Browser verification is not required for this library change.
+
+## Build steps
+
+- [x] **1. Add reliable local movement regions.** Pair sentence ranges by their
+      word signatures, preserving duplicate occurrence order, and run the existing
+      conservative movement resolver inside those pairs even when document
+      sentence counts differ.
+      **Done when:** the A1/A2 handoff cases detect clear local moves, inserted or
+      split sentences remain complete edits, repeated signatures are deterministic,
+      and ambiguous swaps remain ordinary changes.
+
+- [x] **2. Bound movement discovery.** Add a document-level candidate-window
+      budget and a cheap multiset precheck; exhaustive window discovery must stop
+      and fall back without dropping text or spans.
+      **Done when:** 8,000-word and repetitive stress inputs return with complete
+      reconstruction, no speculative movement, and measured bounded runtime.
+
+- [x] **3. Run regression and integration checks.** Keep existing movement,
+      split/join, punctuation, whitespace, Unicode, Explain selection, and server
+      behavior passing while adding the new cases and measurements.
+      **Done when:** focused text-diff tests, server tests, contracts build, and
+      relevant lint/build checks pass, with any pre-existing failures reported.
+
+## Files / areas
+
+- `packages/text-diff/src/text-diff.ts`
+- `packages/text-diff/src/word-moves.ts` only if the resolver budget seam needs
+  a compatible adjustment
+- `apps/server/test/text-diff.test.ts`
+- `blueprint/build-plan.md` and this current feature record
+
+## Data / contracts
+
+No persisted data, network requests, public types, or external formats change.
+All offsets remain end-exclusive JavaScript UTF-16 ranges, and all public runs
+must reconstruct their original input strings exactly.
+
+## Testing
+
+Use the existing `apps/server/test/text-diff.test.ts` suite and add focused
+cases for the handoff examples. Measure deterministic inputs locally with the
+same test process or a small test helper; do not run benchmarks or real model
+requests. Run `npm test -w apps/server`, `npm run build -w packages/contracts`,
+and affected lint/build commands documented in `AGENTS.md`.
+
+## Notes for the AI
+
+Prefer the smallest reliable local pairing and a conservative ordinary-diff
+fallback. Do not broaden movement heuristics to compensate for uncertain
+sentence correspondence. Preserve existing uncommitted user files and the
+approved V3 roadmap edits.
 
 ## Verification and review handoff
 
-Package organization refinement: moved the complete diff engine (text-diff, tokenize, align, movement resolver, types and diff declarations) into the standalone `@gramota/text-diff` workspace package. Contracts retains only the Explain selection adapter and re-exports for compatibility. Workspace dependencies, lockfile, and Docker package copies were updated.
+Implemented in `packages/text-diff/src/text-diff.ts` with focused regressions
+in `apps/server/test/text-diff.test.ts`. Sentence regions are paired by sorted
+word multisets within paragraph boundaries, with duplicate signatures consumed
+in source order. Candidate movement windows use a 4,096-window document budget
+in addition to the resolver state budget; exhausted discovery falls through to
+the ordinary alignment and coarse diff path.
 
-Organization refinement: extracted tokenization/sentence boundaries into
-`packages/contracts/src/diff/tokenize.ts` and alignment into `diff/align.ts`.
-The main function and its nested helpers remain together. All 15 function bodies
-match the pre-refactor version exactly; 1,043 complete diff outputs match, and all
-151 server tests pass before and after. No package, build or container setup was
-changed. Existing test expectations were not changed.
+Passed: `npm run build -w packages/text-diff`, `npm run build -w
+packages/contracts`, `npm run lint -w apps/server`, and the complete server test
+gate. The server suite reports 152 passing tests, including A1/A2 local moves,
+ambiguous and repeated-word cases, exact reconstruction, Unicode and whitespace
+coverage, and the 8,000-word stress fallback.
 
-151 server tests pass, including generated Unicode/repeated-token cases, ambiguous
-movement, minimal relocation, exact multi-span Explain payloads, cache separation,
-soft-delete migration with foreign keys enabled, and historical metrics.
+Measured on the local Node runtime after the change: 500 words with a local
+move 9 ms, 2,000 words with a local move 17 ms, and 8,000 repetitive words
+with an ambiguous reversal 60 ms in a direct run. The server stress test measured
+the same 8,000-word case at 457-468 ms while running the full invariant checks.
 
-Passed: server tests (including contracts/server builds and test typecheck), web
-build, server lint, web lint, shared diff smoke check, targeted formatting for all
-feature code, and actual React static rendering fixtures for workspace/History.
-React fixtures verify linked source/destination selection and untouched context;
-they are not browser interaction, visual/mobile or paid-model quality evidence.
-
-Full workspace formatting checks fail in 37 server and 21 web files outside this
-feature's changes. Those files were not reformatted. This debt remains reported,
-not waived. Browser checks require permission and were not run.
-
-Audit/check/independent-review gates are manual; none requested. Existing findings
-are closed and no independent review is pending. No paid calls, benchmark CLI,
-SSH, production migration, commit, merge, push or deployment. Existing UI changes
-in App.css, correction-workspace.tsx and ui/icon.tsx were preserved.
-
-## Try it now
-
-From the repository root, run this local library example (no network/model call):
-
-```text
-node -e "const {diffText}=require('./packages/contracts/dist/text-diff.js'); console.log(diffText('Я пока не могу.', 'Я не могу пока.').groups)"
-```
-
-Expected: one group with kind move; exact spans select пока, while comparison
-ranges include the surrounding word order. Unchanged не могу is not a highlight.
-
-## Previous verified feature context (preserved)
-# Current Feature
-
-> **Generated file.** Holds the one feature, fix, or rollback being built in this checkout. Run
-> `/feature <number-or-name>` to spec a build-plan feature, or `/fix "<bug>"` for
-> an ad-hoc fix. Use `/rollback <completed-feature>` to plan a safe reversal.
-> Build one thing at a time in this checkout; `/complete` archives it under
-> `blueprint/history/` and resets this file.
-
-## History and individual explanation metrics
-
-**Type:** Feature
-**Branch:** feature/history-explanation-metrics
-**Status:** verified
-
-Approved by the user's implementation request on 2026-10-22 following the
-discussion of separate correction/rewrite and selected-change explanation metrics.
-
-Keep each correction's existing data and behavior. Record each actual explanation
-call separately, with selection identity, status, timestamps, reported token/cost
-details and measured request time. Support Strict and Rewrite, both models,
-failures and saved reuse. Never store reasoning content. Old saved explanations
-remain usable without invented metrics. Use additive Drizzle migrations.
-
-History Details leads with cost, response time and input/output tokens, and shows
-individual explanation attempts with their selected fragments and metrics.
-Collapse advanced usage and technical fields, retaining all existing data.
-Preserve themes, mobile layout, keyboard access, Copy, search and filters.
-No dashboard, paid calls, new dependencies, commit, merge, push or deployment.
-
-- [x] Persist individual explanation attempts and expose validated read-only history access.
-- [x] Simplify History details and display each explanation's own metrics.
-- [x] Verify persistence, failures, reuse and selection identity using mocked tests;
-      run server tests/lint and web build/lint. Browser verification requires permission.
-
-Verification: 141 server tests passed (including migration preservation, both
-modes/models, failed costs, distinct selections, zero/missing metrics, saved reuse,
-reopening and interrupted requests). Web build, web lint and server lint passed.
-User-authorized Playwright checks at localhost:5173 used synthetic API fixtures
-at 1440px desktop and 390px mobile in light/dark themes. Confirmed individual
-metrics, expandable advanced fields, no horizontal overflow, Escape dismissal
-and focus return. This is browser fixture evidence plus independent mocked API
-tests, not a paid end-to-end model call. No paid requests were made.
-
-Existing findings are closed; no independent review was requested. Configured
-audit/check/independent-review gates are manual. Ready for user review and
-`/complete`; no commit, merge, push or deployment performed. Pre-existing plan,
-overview and Rewrite Explain archive edits were preserved.
-
-User refinement: History detail disclosures use plus when collapsed and minus when expanded. Web build/lint and mobile browser toggle checks passed.
-
-User refinement: Top summary totals cost/input/output tokens across the correction and every explanation attempt. Correction response time stays separate. Original correction values remain in Usage breakdown; individual explanation values remain separate. Missing contributing values or legacy explanations make the affected total unavailable. Browser fixtures verified totals (including failed attempts), unchanged response time, missing/legacy usage and mobile width.
-
-User refinement: In workspace result actions, Copy is centered and Generate again is on the right on desktop. Generate again has a sparkles icon and a New paid request hover tooltip instead of inline cost text, retaining the accessible paid-request label. Web build/lint passed; synthetic browser checks verified desktop centering and mobile fit without model calls.
+No paid model calls, benchmark CLI, network request, database change,
+dependency change, commit, merge, push, or deployment was performed. The
+managed checkout could not create a feature branch because `.git` ref locking
+is unavailable; work remains in the ordinary `master` checkout. Ready for user
+review and the separate completion bookkeeping step.

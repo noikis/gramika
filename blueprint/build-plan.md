@@ -99,11 +99,12 @@ readable-diff branch if still active when implementation is requested.
   freshness/reuse and the loading display when writing the implementation spec.
   Verify both successful conversion and USD fallback with mocked responses.
 
-## Approved V2 follow-ups
+## Completed V2 follow-ups and contracts
 
-V2.9-V2.11 are committed delivery scope, not optional ideas. Define and review
-each implementation spec before coding. Their IDs preserve the existing roadmap;
-execution order can be chosen separately, including prioritizing fixes before PWA.
+V2.9-V2.11 were committed delivery scope, not optional ideas. All three are
+now implemented, verified, and approved; their contracts remain here as the
+historical records of the delivered behavior. V2 is complete; no V2 item is
+currently active.
 
 ### V2.9 contract: History filter correctness
 
@@ -126,10 +127,42 @@ This is a correctness fix, not another filter styling pass. Diagnose frontend
 display and backend search behavior before choosing the implementation scope;
 no server changes are authorized by recording this backlog item.
 
+## V3 roadmap (current)
+
+Approved by the user on 2026-10-23. V3 is the current roadmap. Its work is
+ordered and implemented one
+feature at a time. Each item requires its own implementation specification,
+verification, and review before the next item begins.
+
+- [ ] **V3.0 — UI fixes:** restore sensible focus on reopen; remove the
+  selected-changes UI; add a small conditional result scroll; place Generate
+  again above Second opinion on mobile; and improve History explanation
+  loading so incomplete details are not briefly shown.
+- [ ] **V3.1 — Text-diff stabilization:** preserve local movement detection
+  when sentence counts change, bound movement-search cost for large and
+  repetitive inputs, and retain exact reconstruction, conservative grouping,
+  Unicode, whitespace, and Explain integration. Use
+  `docs/gramika_text_diff_implementation_handoff.md` as the implementation
+  handoff and regression contract.
+- [ ] **V3.2 — Export:** provide export functionality for LLM agents and
+  other consumers. Define formats and included correction, diff, explanation,
+  and metadata fields in the feature specification.
+- [ ] **V3.3 — Manual selection in edited text:** implement Stage 1 from
+  `docs/gramika_manual_selection_explain_spec.md`, allowing contextual
+  explanations for arbitrary selections in corrected or rewritten text.
+- [ ] **V3.4 — Manual selection in original text:** implement Stage 2 from
+  the same specification as a separate feature after V3.3.
+- [ ] **V3.5 — Contextual original-versus-edited comparison:** implement
+  Stage 3 as a separate feature after V3.4, with reliable correspondence and
+  conservative handling of ambiguous mappings.
+
+Stages 1, 2, and 3 are all part of V3, but must not be implemented together.
+The text-diff stabilization handoff is an explicit V3 feature, not merely
+reference material.
+
 ### V2.10 contract: Failed requests and recoverable model output
 
-**Status:** Approved V2 fix, committed to the roadmap on 2026-10-22.
-Implemented and approved on 2026-10-22; see the
+**Status:** Implemented, verified, and approved on 2026-10-22. See the
 [completion archive](history/features/V2.10-fix-failed-requests-and-recover-usable-output.md).
 
 The user observes requests rejected for not respecting the reasoning setting,
@@ -159,11 +192,16 @@ setting violations only. Request reasoning settings and prompts are unchanged.
 
 ### V2.11 contract: Caching and local storage
 
-**Status:** Approved V2 feature, committed to the roadmap on 2026-10-22.
-V2.11a and V2.11b are completed and accepted on 2026-10-22. SQLite history reuse has no expiry until deletion or configuration changes, with explicit paid regeneration and last-used dates. Browser persistence stores the current draft/results, active result/view, theme and interrupted-request marker locally until New correction or Clear local data. Selected mode is session-only; reopening always starts Strict, preserving saved results' actual mode.
+**Status:** Implemented, verified, and accepted on 2026-10-22. V2.11a and
+V2.11b are completed. SQLite history reuse has no expiry until deletion or
+configuration changes, with explicit paid regeneration and last-used dates.
+Browser persistence stores the current draft/results, active result/view, theme
+and interrupted-request marker locally until New correction or Clear local
+data. Selected mode is session-only; reopening always starts Strict, preserving
+saved results' actual mode.
 
-Review caching and browser-local persistence together, while distinguishing
-temporary reuse from data that should survive reloads or reopening the app.
+The delivered implementation distinguishes temporary correction reuse from
+browser data that survives reloads or reopening the app.
 
 - Inspect existing behavior first, including drafts, saved explanations, model
   preferences and the cached exchange rate. Avoid duplicating existing caches.

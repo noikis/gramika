@@ -124,6 +124,36 @@ test('movement analysis chooses the smallest unique relocation independently of 
   }
 })
 
+test('movement analysis stays local when sentence counts change', () => {
+  const insertedSentence = verify(
+    'Я пока не могу обещать, что закончу работу к пятнице. Мне нужно проверить несколько деталей.',
+    'Я не могу пока обещать, что закончу работу к пятнице. Мне нужно проверить несколько деталей. Завтра обсудим сроки.',
+  )
+  assert.equal(insertedSentence.groups.filter((group) => group.kind === 'move').length, 1)
+  assert(
+    insertedSentence.groups.some((group) =>
+      group.correctedSpans.some((span) =>
+        'Я не могу пока обещать, что закончу работу к пятнице. Мне нужно проверить несколько деталей. Завтра обсудим сроки.'
+          .slice(span.start, span.end)
+          .includes('Завтра'),
+      ),
+    ),
+  )
+
+  const splitSentence = verify(
+    'Я уже отправил преподавателю документы вчера. Он обещал посмотреть их на этой неделе, но пока ничего не ответил.',
+    'Я уже вчера отправил преподавателю документы. Он обещал посмотреть их на этой неделе. Пока он ничего не ответил.',
+  )
+  const moves = splitSentence.groups.filter((group) => group.kind === 'move')
+  assert.equal(moves.length, 1)
+  assert.deepEqual(
+    moves[0].originalSpans.map((span) =>
+      'Я уже отправил преподавателю документы вчера.'.slice(span.start, span.end),
+    ),
+    ['вчера'],
+  )
+})
+
 test('multiword/disjoint moves, competing interpretations, repeated words and budgets', () => {
   assert.deepEqual(
     resolveWordMoves(['сейчас', 'же', 'я', 'не', 'могу'], ['я', 'не', 'могу', 'сейчас', 'же']),
@@ -199,6 +229,15 @@ test('bounded fallback preserves unique equal islands and large text', () => {
         !run.groupId && repeatedCorrected.slice(run.range.start, run.range.end).includes('ОСТРОВ'),
     ),
   )
+
+  const stressOriginal = Array.from({ length: 8000 }, (_, index) => `слово${index % 8}`).join(' ')
+  const stressCorrected = stressOriginal.split(' ').reverse().join(' ')
+  const started = performance.now()
+  const stress = verify(stressOriginal, stressCorrected)
+  const elapsed = performance.now() - started
+  assert(stress.groups.length > 0)
+  assert(Number.isFinite(elapsed))
+  console.log(`text-diff stress fallback: ${Math.round(elapsed)}ms for 8,000 words`)
 })
 
 test('selection keys separate exact targets even when context is identical', () => {
