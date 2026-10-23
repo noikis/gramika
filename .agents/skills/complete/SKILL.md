@@ -34,21 +34,11 @@ Record `git.landing`; a missing value defaults to `local-merge`. The
 `pull-request` value applies only to this skill. Continuous Mode remains a
 local-only serial workflow and never pushes or opens pull requests.
 
-Before requiring a real active spec, check for pending completion using
-`reference/completion-recovery.md`. A matching archive may mean archival was
-interrupted, the work commit awaits merge, or the merge already finished. Follow
-that phase instead of restarting logging. Missing or ambiguous evidence stops
-with concrete recovery steps; a reset stub never authorizes selecting new work.
-Recovery uses archive and Git proof, never dashboard activity as authority.
-
-For a normal completion with no recovery in progress, continue below.
-
 Confirm the work is actually finished: `blueprint/context/current-feature.md`
-holds a real spec, its steps are built on a branch, and `Verify`, or the fallback
-build and tests, passes. Apply the configured regular quality gates below before
-logging or committing. Uncommitted step work is expected because per-step
-checkpoints are optional; this skill commits it. Don't require the steps to be
-pre-committed.
+holds a real spec, its steps are built, and `Verify`, or the fallback build and
+tests, passes. Apply the configured regular quality gates below before logging
+or committing. Uncommitted step work is expected because per-step checkpoints
+are optional; this skill commits it. Don't require the steps to be pre-committed.
 
 Read `blueprint/context/review.md` when present. A missing file on an older
 install means no independent review has been requested. A pending,
@@ -128,14 +118,16 @@ current passing receipt:
 
 Before logging or committing, run a short safety pass and report blockers only:
 
-- active spec exists and the work is not being completed from `main` or `master`
-- the branch name uses the configured feature, fix, or rollback prefix
+- active spec exists and the current branch is known
 - changed files are tied to the active spec, with no unrelated dirty work mixed
   in (dirty `blueprint/context/findings.md` and
   `blueprint/context/review.md` are expected review evidence)
-- the exact `Verify` command from `AGENTS.md` passed in this session, when one is
-  declared; otherwise the build passed, and tests passed when the project has a
-  declared test command and the change touched logic
+- when product changes are uncommitted, the exact `Verify` command from
+  `AGENTS.md` passed; otherwise the build passed, and tests passed when the
+  project has a declared test command and the change touched logic
+- when the product work is already committed and no product files changed after
+  that commit, reuse the recorded verification evidence and do not rerun tests
+  or builds
 - any check required by `qualityGates.regular` has evidence, and testable work
   has a clear manual try path while non-testable work has a recorded skip reason
 - with `verification.logicTests: "required"`, logic changes have a configured
@@ -176,19 +168,14 @@ evidence is missing.
 After this safety pass succeeds, set the active spec's `**Status:**` to
 `verified` before archiving it when no independent receipt exists. With a
 passing independent receipt, it must already be `verified`; do not rewrite it
-after review. Rerun the required final checks either way because `/complete`
-owns the final safety pass.
+after review. Run checks only when the committed-work exception above does not
+apply.
 
 ## Step 1 - log the work
 
-Follow `reference/completion-recovery.md` to capture the source tree and compact
-archive annotation before any logging edits. Preserve the exact verified spec
-prefix, its UTF-8 byte length and SHA-256, branch, original HEAD, and local base.
-Record the reference's narrow `absentOptional` proof before creating any optional
-findings/review stub on an older installation; tree absence alone is insufficient.
-Prepare the entire archive, including the sections below and any generated try
-guide, before placing it at its absent destination. An existing matching archive
-enters recovery; never overwrite it or append duplicate sections.
+Prepare the complete archive from the current feature spec, including the
+sections below and any generated try guide, before placing it at the expected
+destination. Do not overwrite an existing archive; stop and report the conflict.
 
 Check whether the spec is a feature, fix, or rollback. A fix is marked
 `Type: Fix` and has no build-plan number. A rollback is marked `Type: Rollback`
@@ -197,12 +184,8 @@ and records the exact target feature, archive, commit, and parent.
 - **Feature** - use the verified spec's frozen `**Build attempt:**` and stable ID,
   following `../feature/reference/build-history.md`. Attempt 1 keeps
   `blueprint/history/features/NN-name.md`; N > 1 uses `NN-name--build-N.md`.
-  Validate the attempt against prior immutable builds and completed reversals;
-  never increment it at completion or resume. For an older active spec without
-  the field, derive 1 only with no prior builds, or derive the next attempt only
-  from unambiguous prior builds and their proven completed reversals. Keep those
-  reviewed spec bytes and the existing branch unchanged; otherwise stop. An
-  existing matching archive and its annotation freeze the recovery destination.
+  Keep the frozen `**Build attempt:**` value from the active spec. If the field
+  is absent, use attempt 1. Do not overwrite an existing archive.
   Check the feature off in `blueprint/build-plan.md`
   (and its parent item once all sub-items are checked). Then recompute the
   overview fingerprint using `/overview`'s checkbox-normalized hash contract and
@@ -328,12 +311,12 @@ Follow only the configured path.
 
 With `git.landing: "local-merge"`:
 
-1. Confirm the recorded local default branch has not advanced and the final work
-   commit is unchanged. Squash-merge into that default branch only with the user's
-   explicit go-ahead, so the work lands as one clean commit regardless of how many
-   checkpoints the branch carried.
-2. Verify the resulting default-branch commit, parent, archive, and full tree
-   using `reference/completion-recovery.md`, then perform approved branch cleanup.
+1. If the current branch is already the local default branch, keep the completed
+   commit there. Otherwise confirm the recorded local default branch has not
+   advanced and squash-merge the work branch only with the user's explicit
+   go-ahead, so the work lands as one clean commit.
+2. Verify the resulting default-branch commit, archive, and working tree, then
+   perform approved branch cleanup when a work branch was used.
 3. Stop and ask whether to push the local default branch to its upstream. The
    merge approval does not count as push approval.
 4. Push the default branch only after a separate explicit yes in the current
@@ -359,9 +342,8 @@ With `git.landing: "pull-request"`:
 4. Verify that the pull request head is the exact final work commit and report its
    URL plus check status. Never merge the pull request, enable auto-merge, delete
    the remote branch, or push the default branch from this approval.
-5. Stop with the work ready for provider review and squash merge. If `/complete`
-   is resumed after the provider reports it merged, follow
-   `reference/completion-recovery.md`; verify the exact pull request and squash
+5. Stop with the work ready for provider review and squash merge. If the
+   provider reports it merged later, verify the exact pull request and squash
    commit before reporting completion or offering local branch cleanup.
 
 Then point the user at `/feature`, `/fix`, or `/rollback` for the next thing.
