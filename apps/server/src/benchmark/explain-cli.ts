@@ -6,7 +6,10 @@ import { parseConfig, readEnvironment } from '../config'
 import { createTransport } from '../openrouter'
 import { BenchmarkInputError } from './run'
 import { prepareExplanationBenchmark, runExplanationBenchmark } from './explain-run'
-import { EXPLAIN_PROMPT_VERSION, REWRITE_EXPLAIN_PROMPT_VERSION } from '../explanation/prompt'
+import {
+  REWRITE_CHANGE_EXPLANATION_PROMPT_VERSION,
+  STRICT_CHANGE_EXPLANATION_PROMPT_VERSION,
+} from '../explanation/prompts'
 
 export async function explainBenchmarkCommand(
   folder: string,
@@ -15,7 +18,9 @@ export async function explainBenchmarkCommand(
 ) {
   const plan = prepareExplanationBenchmark(folder, mode)
   const promptVersion =
-    mode === CorrectionMode.enum.strict ? EXPLAIN_PROMPT_VERSION : REWRITE_EXPLAIN_PROMPT_VERSION
+    mode === CorrectionMode.enum.strict
+      ? STRICT_CHANGE_EXPLANATION_PROMPT_VERSION
+      : REWRITE_CHANGE_EXPLANATION_PROMPT_VERSION
   console.log(
     `Mode: ${mode}\nPrompt: ${promptVersion}\nCorrection results: ${plan.results.length}\nMaximum explanation requests: ${plan.maxRequests}`,
   )

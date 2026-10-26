@@ -147,7 +147,7 @@ verification, and review before the next item begins.
 - [ ] **V3.2 — Export:** provide export functionality for LLM agents and
   other consumers. Define formats and included correction, diff, explanation,
   and metadata fields in the feature specification.
-- [ ] **V3.3 — Manual selection in edited text:** implement Stage 1 from
+- [x] **V3.3 — Manual selection in edited text:** implement Stage 1 from
   `docs/gramika_manual_selection_explain_spec.md`, allowing contextual
   explanations for arbitrary selections in corrected or rewritten text.
 - [ ] **V3.4 — Manual selection in original text:** implement Stage 2 from

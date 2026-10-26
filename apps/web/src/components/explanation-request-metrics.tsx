@@ -23,7 +23,9 @@ function SelectionFragments({
     return (
       <dl className="explanation-fragments">
         <div>
-          <dt>Selected expression · edited text</dt>
+          <dt>
+            Selected expression · {'source' in selection && selection.source === 'original' ? 'original' : 'edited'} text
+          </dt>
           <dd lang="ru">{selection.value}</dd>
         </div>
       </dl>

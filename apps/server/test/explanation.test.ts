@@ -22,15 +22,16 @@ import { migrateDatabase } from '../src/database/migrations'
 import { CorrectionError, type CorrectionTransport } from '../src/correction'
 import { createExplanationService } from '../src/explanation'
 import {
-  EXPLAIN_CORE,
-  STRICT_EXPLAIN,
-  STRICT_EXPLAIN_PROMPT,
-  REWRITE_EXPLAIN,
-  REWRITE_EXPLAIN_PROMPT,
-  REWRITE_EXPLAIN_PROMPT_VERSION,
-  EXPRESSION_EXPLAIN_PROMPT,
-  EXPRESSION_EXPLAIN_PROMPT_VERSION,
-} from '../src/explanation/prompt'
+  CHANGE_EXPLANATION_CORE_PROMPT,
+  STRICT_CHANGE_EXPLANATION_INSTRUCTIONS,
+  REWRITE_CHANGE_EXPLANATION_INSTRUCTIONS,
+  REWRITE_CHANGE_EXPLANATION_PROMPT,
+  REWRITE_CHANGE_EXPLANATION_PROMPT_VERSION,
+  STRICT_CHANGE_EXPLANATION_PROMPT,
+  STRICT_CHANGE_EXPLANATION_PROMPT_VERSION,
+  EXPRESSION_EXPLANATION_PROMPT,
+  EXPRESSION_EXPLANATION_PROMPT_VERSION,
+} from '../src/explanation/prompts'
 import application from '../src/app'
 import { mockOpenRouterTransport } from './mock-transport'
 
@@ -104,7 +105,7 @@ test('expression explanations use edited selection context and persist independe
   const explain = service(db, async (body) => {
     calls++
     const request = body as { messages: { content: string }[] }
-    assert.equal(request.messages[0].content, EXPRESSION_EXPLAIN_PROMPT)
+    assert.equal(request.messages[0].content, EXPRESSION_EXPLANATION_PROMPT)
     const input = JSON.parse(request.messages[1].content)
     assert.equal(input.selectedExpression.source, 'edited')
     assert.equal(input.selectedExpression.value, 'помощь')
@@ -112,7 +113,7 @@ test('expression explanations use edited selection context and persist independe
     assert.equal(input.originalText, undefined)
     return { correctedText: answer, errorCode: null, details: { costUsd: 0.2 } }
   })
-  assert.equal(EXPRESSION_EXPLAIN_PROMPT_VERSION, 'expression-explain-v1')
+  assert.equal(EXPRESSION_EXPLANATION_PROMPT_VERSION, 'expression-explain-v1')
   assert.deepEqual(await explain.lookup(selection), { result: null })
   const result = await explain.explain(selection)
   assert.equal(result.explanation, answer)
@@ -126,6 +127,51 @@ test('expression explanations use edited selection context and persist independe
     hasCode('INVALID_INPUT'),
   )
   assert.equal(calls, 1)
+})
+
+test('expression explanations use original selection context and a distinct identity', async (t) => {
+  const db = new SqliteDatabase(':memory:')
+  t.after(() => db.close())
+  const { requestId } = seed(db, DEFAULT_MODEL_ID as string, 'strict', 'Нужна помощь.', 'Нужна помощь!')
+  const selection = ExpressionExplanationInput.parse({
+    version: 3,
+    requestId,
+    kind: 'expression',
+    mode: 'strict',
+    source: 'original',
+    originalRange: { start: 6, end: 12 },
+    value: 'помощь',
+  })
+  let calls = 0
+  const explain = service(db, async (body) => {
+    calls++
+    const request = body as { messages: { content: string }[] }
+    const input = JSON.parse(request.messages[1].content)
+    assert.equal(input.selectedExpression.source, 'original')
+    assert.equal(input.selectedExpression.value, 'помощь')
+    assert.equal(input.originalText, 'Нужна помощь.')
+    assert.equal(input.editedText, undefined)
+    return { correctedText: answer, errorCode: null, details: { costUsd: 0.2 } }
+  })
+  const result = await explain.explain(selection)
+  assert.equal(result.explanation, answer)
+  assert.equal(calls, 1)
+  assert.deepEqual(await explain.lookup(selection), { result })
+
+  const edited = ExpressionExplanationInput.parse({
+    version: 3,
+    requestId,
+    kind: 'expression',
+    mode: 'strict',
+    source: 'edited',
+    correctedRange: { start: 6, end: 12 },
+    value: 'помощь',
+  })
+  assert.deepEqual(await explain.lookup(edited), { result: null })
+  await assert.rejects(
+    explain.explain({ ...selection, value: 'помощ!' }),
+    hasCode('INVALID_INPUT'),
+  )
 })
 
 for (const mode of ['strict', 'gentle-rewrite'] as const) {
@@ -151,11 +197,20 @@ for (const mode of ['strict', 'gentle-rewrite'] as const) {
         )
         assert.equal(
           request.messages[0].content,
-          mode === 'strict' ? STRICT_EXPLAIN_PROMPT : REWRITE_EXPLAIN_PROMPT,
+          mode === 'strict'
+            ? STRICT_CHANGE_EXPLANATION_PROMPT
+            : REWRITE_CHANGE_EXPLANATION_PROMPT,
         )
-        assert.equal(STRICT_EXPLAIN_PROMPT, `${EXPLAIN_CORE}\n\n${STRICT_EXPLAIN}`)
-        assert.equal(REWRITE_EXPLAIN_PROMPT, `${EXPLAIN_CORE}\n\n${REWRITE_EXPLAIN}`)
-        assert.equal(REWRITE_EXPLAIN_PROMPT_VERSION, 'explain-rewrite-v1')
+        assert.equal(
+          STRICT_CHANGE_EXPLANATION_PROMPT,
+          `${CHANGE_EXPLANATION_CORE_PROMPT}\n\n${STRICT_CHANGE_EXPLANATION_INSTRUCTIONS}`,
+        )
+        assert.equal(
+          REWRITE_CHANGE_EXPLANATION_PROMPT,
+          `${CHANGE_EXPLANATION_CORE_PROMPT}\n\n${REWRITE_CHANGE_EXPLANATION_INSTRUCTIONS}`,
+        )
+        assert.equal(STRICT_CHANGE_EXPLANATION_PROMPT_VERSION, 'explain-v1')
+        assert.equal(REWRITE_CHANGE_EXPLANATION_PROMPT_VERSION, 'explain-rewrite-v1')
         const input = JSON.parse(request.messages[1].content)
         assert.equal(input.mode, mode)
         assert.equal(input.originalText, 'Нужна помощ. Нужна помощ.')

@@ -10,15 +10,16 @@ import type { DatabaseClient } from '../sqlite-database'
 import { corrections, explanations, explanationAttempts, modelRequests } from '../schema'
 
 function columns(selection: ExplanationRequest) {
-  const originalRange = 'originalRange' in selection
-    ? selection.originalRange
+  const originalRange = 'originalRange' in selection ? selection.originalRange : { start: 0, end: 0 }
+  const correctedRange = 'correctedRange' in selection
+    ? selection.correctedRange
     : { start: 0, end: 0 }
   return {
     requestId: selection.requestId,
     originalStart: originalRange.start,
     originalEnd: originalRange.end,
-    correctedStart: selection.correctedRange.start,
-    correctedEnd: selection.correctedRange.end,
+    correctedStart: correctedRange.start,
+    correctedEnd: correctedRange.end,
     selectionKey:
       'kind' in selection && selection.kind === 'expression'
         ? expressionExplanationSelectionKey(selection)

@@ -15,7 +15,10 @@ import { Script } from 'node:vm'
 import { MODELS } from '@gramota/contracts'
 import { runBenchmark, BenchmarkInputError } from '../src/benchmark'
 import { prepareExplanationBenchmark, runExplanationBenchmark } from '../src/benchmark/explain-run'
-import { STRICT_EXPLAIN_PROMPT, REWRITE_EXPLAIN_PROMPT } from '../src/explanation/prompt'
+import {
+  REWRITE_CHANGE_EXPLANATION_PROMPT,
+  STRICT_CHANGE_EXPLANATION_PROMPT,
+} from '../src/explanation/prompts'
 import { mockOpenRouterTransport } from './mock-transport'
 
 function directory(t: TestContext) {
@@ -105,7 +108,9 @@ for (const mode of ['strict', 'gentle-rewrite'] as const) {
           assert.equal(request.model, result.modelId)
           assert.equal(
             request.messages[0].content,
-            mode === 'strict' ? STRICT_EXPLAIN_PROMPT : REWRITE_EXPLAIN_PROMPT,
+            mode === 'strict'
+              ? STRICT_CHANGE_EXPLANATION_PROMPT
+              : REWRITE_CHANGE_EXPLANATION_PROMPT,
           )
           assert.equal(isRejectReasoning, false)
           const context = JSON.parse(request.messages[1].content)
@@ -136,7 +141,9 @@ for (const mode of ['strict', 'gentle-rewrite'] as const) {
     )
     assert.equal(
       outcome.run.prompt.text,
-      mode === 'strict' ? STRICT_EXPLAIN_PROMPT : REWRITE_EXPLAIN_PROMPT,
+      mode === 'strict'
+        ? STRICT_CHANGE_EXPLANATION_PROMPT
+        : REWRITE_CHANGE_EXPLANATION_PROMPT,
     )
     assert.equal(
       outcome.run.prompt.version,

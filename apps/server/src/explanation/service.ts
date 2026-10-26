@@ -14,13 +14,13 @@ import { explanationSelection } from '@gramota/contracts/text-diff'
 import { diffText } from '@gramota/text-diff'
 import { CorrectionError, type CorrectionTransport } from '../correction'
 import {
-  EXPLAIN_PROMPT_VERSION,
-  REWRITE_EXPLAIN_PROMPT_VERSION,
-  REWRITE_EXPLAIN_PROMPT,
-  STRICT_EXPLAIN_PROMPT,
-  EXPRESSION_EXPLAIN_PROMPT,
-  EXPRESSION_EXPLAIN_PROMPT_VERSION,
-} from './prompt'
+  EXPRESSION_EXPLANATION_PROMPT,
+  EXPRESSION_EXPLANATION_PROMPT_VERSION,
+  REWRITE_CHANGE_EXPLANATION_PROMPT,
+  REWRITE_CHANGE_EXPLANATION_PROMPT_VERSION,
+  STRICT_CHANGE_EXPLANATION_PROMPT,
+  STRICT_CHANGE_EXPLANATION_PROMPT_VERSION,
+} from './prompts'
 import type { ExplanationRepository } from './types'
 
 import { explanationRequestParameters, GEMINI_EXPLANATION_MODEL_ID } from './constants'
@@ -61,24 +61,31 @@ export function createExplanationService(deps: Dependencies) {
     if (!deps.repository) throw new CorrectionError(ErrorCode.enum.STORAGE_ERROR)
     const selection = parsed.data
     const source = readStorage(() => deps.repository!.getSource(selection.requestId))
+    const expression = 'kind' in selection && selection.kind === 'expression'
+    const sourceText = expression && selection.source === 'original'
+      ? source?.originalText
+      : source?.correctedText
     const validSource =
       source &&
       CorrectionMode.safeParse(source.mode).success &&
-      isValidRange(source.correctedText, selection.correctedRange) &&
-      ('kind' in selection && selection.kind === 'expression'
-        ? selection.mode === source.mode && selection.value.length > 0
-        : isValidRange(source.originalText, selection.originalRange))
+      (expression
+        ? sourceText !== undefined &&
+          isValidRange(sourceText, 'correctedRange' in selection ? selection.correctedRange : selection.originalRange) &&
+          selection.mode === source.mode &&
+          selection.value.length > 0
+        : isValidRange(source.correctedText, selection.correctedRange) &&
+          isValidRange(source.originalText, selection.originalRange))
     if (!validSource)
       throw new CorrectionError(ErrorCode.enum.INVALID_INPUT)
     const original = 'originalRange' in selection
       ? source.originalText.slice(selection.originalRange.start, selection.originalRange.end)
       : ''
-    const corrected = source.correctedText.slice(
-      selection.correctedRange.start,
-      selection.correctedRange.end,
-    )
-    if ('kind' in selection && selection.kind === 'expression') {
-      if (selection.mode !== source.mode || selection.value !== corrected)
+    const corrected = 'correctedRange' in selection
+      ? source.correctedText.slice(selection.correctedRange.start, selection.correctedRange.end)
+      : ''
+    if (expression) {
+      const selected = selection.source === 'original' ? original : corrected
+      if (selection.mode !== source.mode || selection.value !== selected)
         throw new CorrectionError(ErrorCode.enum.INVALID_INPUT)
     } else {
       const key = explanationSelectionKey(selection)
@@ -117,10 +124,10 @@ export function createExplanationService(deps: Dependencies) {
       selection,
       requestedModel: source.modelId,
       promptVersion: expression
-        ? EXPRESSION_EXPLAIN_PROMPT_VERSION
+        ? EXPRESSION_EXPLANATION_PROMPT_VERSION
         : source.mode === CorrectionMode.enum.strict
-          ? EXPLAIN_PROMPT_VERSION
-          : REWRITE_EXPLAIN_PROMPT_VERSION,
+          ? STRICT_CHANGE_EXPLANATION_PROMPT_VERSION
+          : REWRITE_CHANGE_EXPLANATION_PROMPT_VERSION,
       parameters: explanationRequestParameters(source.modelId),
       status: 'pending',
       errorCode: null,
@@ -165,16 +172,28 @@ export function createExplanationService(deps: Dependencies) {
               {
                 role: 'system',
                 content: expression
-                  ? EXPRESSION_EXPLAIN_PROMPT
+                  ? EXPRESSION_EXPLANATION_PROMPT
                   : source.mode === CorrectionMode.enum.strict
-                    ? STRICT_EXPLAIN_PROMPT
-                    : REWRITE_EXPLAIN_PROMPT,
+                    ? STRICT_CHANGE_EXPLANATION_PROMPT
+                    : REWRITE_CHANGE_EXPLANATION_PROMPT,
               },
               {
                 role: 'user',
                 content: JSON.stringify(
                   expression
-                    ? {
+                    ? selection.source === 'original'
+                      ? {
+                          mode: source.mode,
+                          originalText: source.originalText,
+                          selectedExpression: {
+                            source: selection.source,
+                            range: selection.originalRange,
+                            value: selection.value,
+                            positionEncoding: 'UTF-16, zero-based, end-exclusive',
+                          },
+                          positionEncoding: 'UTF-16, zero-based, end-exclusive',
+                        }
+                      : {
                         mode: source.mode,
                         editedText: source.correctedText,
                         selectedExpression: {

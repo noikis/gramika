@@ -30,7 +30,7 @@ export const ExplanationInput = z
   );
 export type ExplanationInput = z.infer<typeof ExplanationInput>;
 
-export const ExpressionExplanationInput = z
+const EditedExpressionExplanationInput = z
   .strictObject({
     version: z.literal(3),
     requestId: z.uuid(),
@@ -44,9 +44,26 @@ export const ExpressionExplanationInput = z
     (selection) =>
       Array.from(selection.value).length <= MAX_INPUT_CHARACTERS,
   );
-export type ExpressionExplanationInput = z.infer<
-  typeof ExpressionExplanationInput
->;
+const OriginalExpressionExplanationInput = z
+  .strictObject({
+    version: z.literal(3),
+    requestId: z.uuid(),
+    kind: z.literal("expression"),
+    mode: CorrectionMode,
+    source: z.literal("original"),
+    originalRange: ExplanationRange,
+    value: z.string().min(1),
+  })
+  .refine(
+    (selection) =>
+      Array.from(selection.value).length <= MAX_INPUT_CHARACTERS,
+  );
+
+export const ExpressionExplanationInput = z.union([
+  EditedExpressionExplanationInput,
+  OriginalExpressionExplanationInput,
+]);
+export type ExpressionExplanationInput = z.infer<typeof ExpressionExplanationInput>;
 
 export const ExplanationRequest = z.union([
   ExplanationInput,
@@ -71,13 +88,16 @@ export function explanationSelectionKey(selection: ExplanationInput) {
 export function expressionExplanationSelectionKey(
   selection: ExpressionExplanationInput,
 ) {
+  const range = "correctedRange" in selection
+    ? selection.correctedRange
+    : selection.originalRange;
   return JSON.stringify([
     selection.version,
     selection.kind,
     selection.requestId,
     selection.mode,
     selection.source,
-    [selection.correctedRange.start, selection.correctedRange.end],
+    [range.start, range.end],
     selection.value,
   ]);
 }

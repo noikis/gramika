@@ -18,11 +18,11 @@ import {
   type ExplanationSource,
 } from '../explanation'
 import {
-  EXPLAIN_PROMPT_VERSION,
-  STRICT_EXPLAIN_PROMPT,
-  REWRITE_EXPLAIN_PROMPT_VERSION,
-  REWRITE_EXPLAIN_PROMPT,
-} from '../explanation/prompt'
+  REWRITE_CHANGE_EXPLANATION_PROMPT,
+  REWRITE_CHANGE_EXPLANATION_PROMPT_VERSION,
+  STRICT_CHANGE_EXPLANATION_PROMPT,
+  STRICT_CHANGE_EXPLANATION_PROMPT_VERSION,
+} from '../explanation/prompts'
 import { BenchmarkInputError } from './run'
 import { renderExplanationReport } from './explain-report'
 
@@ -180,8 +180,14 @@ export async function runExplanationBenchmark(options: Options) {
       isRejectReasoning: false,
       prompt:
         options.plan.mode === CorrectionMode.enum.strict
-          ? { version: EXPLAIN_PROMPT_VERSION, text: STRICT_EXPLAIN_PROMPT }
-          : { version: REWRITE_EXPLAIN_PROMPT_VERSION, text: REWRITE_EXPLAIN_PROMPT },
+          ? {
+              version: STRICT_CHANGE_EXPLANATION_PROMPT_VERSION,
+              text: STRICT_CHANGE_EXPLANATION_PROMPT,
+            }
+          : {
+              version: REWRITE_CHANGE_EXPLANATION_PROMPT_VERSION,
+              text: REWRITE_CHANGE_EXPLANATION_PROMPT,
+            },
       parameters: Object.fromEntries(
         options.plan.results
           .filter((result) => !result.skipped)

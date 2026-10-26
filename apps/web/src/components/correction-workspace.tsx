@@ -1,10 +1,12 @@
-import { useEffect, useLayoutEffect, useRef } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { PointerEvent } from 'react'
 import { CorrectionMode, DEFAULT_MODEL_ID, MAX_INPUT_CHARACTERS } from '@gramota/contracts'
+import type { ExpressionExplanationInput } from '@gramota/contracts'
 import type { useDraft } from '../hooks/use-draft'
 import type { useWritingSession } from '../hooks/use-writing-session'
 import { Button } from './ui/button'
 import { Textarea } from './ui/textarea'
+import { ExpressionExplanationPanel } from './explanation-panel'
 import { ResultView } from './result-view'
 import { modeLabels } from '../lib/history-format'
 import { Icon } from './ui/icon'
@@ -50,6 +52,39 @@ function ModeControl({ correction }: { correction: Correction }) {
 
 function OriginalEditor({ draft, correction, onNew, isBusy }: WorkspaceProps) {
   const { text, edit, paste, pending, inputRef } = draft
+  const [manualSelection, setManualSelection] = useState<ExpressionExplanationInput | null>(null)
+  const result =
+    !correction.draftChanged && correction.visibleResult?.originalText === text
+      ? correction.visibleResult
+      : null
+
+  useEffect(() => {
+    // The selection belongs to the current correction mode and request.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setManualSelection(null)
+  }, [correction.mode, result?.requestId])
+
+  function selectOriginal(start: number, end: number) {
+    if (!result || start === end || start < 0 || end > text.length) {
+      setManualSelection(null)
+      return
+    }
+    const range = start < end ? { start, end } : { start: end, end: start }
+    const value = text.slice(range.start, range.end)
+    if (!value) {
+      setManualSelection(null)
+      return
+    }
+    setManualSelection({
+      version: 3,
+      requestId: result.requestId,
+      kind: 'expression',
+      mode: result.mode,
+      source: 'original',
+      originalRange: range,
+      value,
+    })
+  }
 
   useLayoutEffect(() => {
     const input = inputRef.current
@@ -90,13 +125,19 @@ function OriginalEditor({ draft, correction, onNew, isBusy }: WorkspaceProps) {
         id="original"
         className="editor-input"
         value={text}
-        onChange={(event) => edit(event.target.value)}
+        onChange={(event) => {
+          setManualSelection(null)
+          edit(event.target.value)
+        }}
         ref={inputRef}
         placeholder="Type or paste your text"
         aria-describedby="input-feedback character-count"
         aria-invalid={Boolean(correction.validationMessage)}
         lang="ru"
         spellCheck={false}
+        onSelect={(event) =>
+          selectOriginal(event.currentTarget.selectionStart, event.currentTarget.selectionEnd)
+        }
         onKeyDown={(event) => {
           if (
             (event.ctrlKey || event.metaKey) &&
@@ -108,6 +149,12 @@ function OriginalEditor({ draft, correction, onNew, isBusy }: WorkspaceProps) {
           }
         }}
       />
+      {manualSelection && result && (
+        <ExpressionExplanationPanel
+          key={JSON.stringify(manualSelection)}
+          selection={manualSelection}
+        />
+      )}
       <p id="input-feedback" className="clipboard-feedback" role="status">
         {correction.validationMessage}
       </p>
