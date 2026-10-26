@@ -36,6 +36,7 @@ export function RequestMetrics({
 }) {
   const [isOpen, setIsOpen] = useState(false)
   const [explanationMetrics, setExplanationMetrics] = useState<ExplanationMetrics | null>(null)
+  const [metricsError, setMetricsError] = useState(false)
   const hasExplanations =
     explanationMetrics !== null &&
     (explanationMetrics.attempts.length > 0 || explanationMetrics.legacySelections.length > 0)
@@ -73,6 +74,7 @@ export function RequestMetrics({
           ref={opener}
           onClick={() => {
             setExplanationMetrics(null)
+            setMetricsError(false)
             dialog.current?.showModal()
             setIsOpen(true)
           }}
@@ -130,7 +132,18 @@ export function RequestMetrics({
                 ' Some totals are unavailable because usage was not recorded.'}
             </p>
           )}
-          <MetricFacts request={request} rate={rate} totals={totals} />
+          {!isOpen && <MetricFacts request={request} rate={rate} totals={totals} />}
+          {isOpen && !explanationMetrics && !metricsError && (
+            <p role="status">Loading correction and explanation details...</p>
+          )}
+          {isOpen && metricsError && (
+            <p role="alert" className="history-error">
+              Could not load explanation metrics. Use Retry metrics below.
+            </p>
+          )}
+          {isOpen && explanationMetrics && (
+            <MetricFacts request={request} rate={rate} totals={totals} />
+          )}
         </section>
         {isOpen && request.status === 'succeeded' && (
           <ExplanationRequestMetrics
@@ -138,6 +151,7 @@ export function RequestMetrics({
             original={original}
             rate={rate}
             onLoaded={setExplanationMetrics}
+            onError={setMetricsError}
           />
         )}
       </dialog>

@@ -17,14 +17,24 @@ export function useWritingSession(
   const result = useResultPair(draftRevision, initial)
   const request = useSubmission(draftRevision, initial, result.receive)
   const clipboard = useClipboardCopy(result.visibleResult, (value) =>
-    result.setResultView(value.modelId, 'text', value.requestId),
+    result.setResultView(value.requestId, 'text'),
   )
   const validation = OriginalText.safeParse(text.trim())
   const pending = request.pendingModel !== null
   const canCorrect = config.config !== null && validation.success && !pending
   const canRequestOpinion =
-    canCorrect && !!result.pair && !result.pair.gemini && !result.isModeChanged
-  const canRegenerate = canCorrect && config.config?.available === true && !result.isModeChanged
+    canCorrect &&
+    result.results.length > 0 &&
+    !result.results.some((entry) => entry.result.modelId === SECOND_OPINION_MODEL_ID) &&
+    !result.isModeChanged
+  function canRegenerate(modelId: ModelId) {
+    return (
+      canCorrect &&
+      config.config?.available === true &&
+      !result.isModeChanged &&
+      result.results.filter((entry) => entry.result.modelId === modelId).length < 2
+    )
+  }
   const visibleError =
     request.error?.revision === draftRevision && request.error.mode === result.mode
       ? request.error
@@ -32,15 +42,17 @@ export function useWritingSession(
 
   async function submit(modelId: ModelId, forceRefresh = false) {
     const isOpinion = modelId === SECOND_OPINION_MODEL_ID
-    const prior = result.results.find((entry) => entry.result.modelId === modelId)?.result
-    if (forceRefresh ? !canRegenerate || !prior : isOpinion ? !canRequestOpinion : !canCorrect)
+    const prior = result.results
+      .filter((entry) => entry.result.modelId === modelId)
+      .at(-1)?.result
+    if (forceRefresh ? !canRegenerate(modelId) || !prior : isOpinion ? !canRequestOpinion : !canCorrect)
       return
     return request.submit({
       text: text.trim(),
       modelId,
       forceRefresh,
-      mode: forceRefresh ? prior!.mode : isOpinion ? result.pair!.gemma.result.mode : result.mode,
-      correctionId: isOpinion ? result.pair!.gemma.result.correctionId : undefined,
+      mode: forceRefresh ? prior!.mode : isOpinion ? result.results[0].result.mode : result.mode,
+      correctionId: result.correctionId,
     })
   }
 
@@ -69,9 +81,8 @@ export function useWritingSession(
     dismissInterrupted: request.dismissInterrupted,
     workspace: {
       mode: result.mode,
-      activeModel: result.activeModel,
-      gemma: result.pair?.gemma ?? null,
-      gemini: result.pair?.gemini ?? null,
+      activeRequestId: result.activeRequestId,
+      results: result.history?.results ?? [],
       isRequestPending: pending || request.interrupted,
     } satisfies CorrectionWorkspaceState,
     forgetHistoryEntry,
@@ -84,7 +95,7 @@ export function useWritingSession(
     isOpinionPending: request.pendingModel === SECOND_OPINION_MODEL_ID,
     visibleResult: result.visibleResult,
     results: result.results,
-    activeModel: result.activeModel,
+    activeRequestId: result.activeRequestId,
     selectResult: result.selectResult,
     setResultView: result.setResultView,
     isModeChanged: result.isModeChanged,

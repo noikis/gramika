@@ -1,77 +1,93 @@
 import { useState } from 'react'
-import {
-  CorrectionMode,
-  DEFAULT_MODEL_ID,
-  type CorrectionResult,
-  type ModelId,
-} from '@gramota/contracts'
+import { CorrectionMode, type CorrectionResult } from '@gramota/contracts'
 import type { ResultViewMode } from '../components/result-view'
 import type { CorrectionWorkspaceState, SavedResult } from '../lib/workspace-storage'
 
-type ResultPair = { revision: number; gemma: SavedResult; gemini: SavedResult | null }
+type ResultHistory = { revision: number; results: SavedResult[] }
 
 export function useResultPair(draftRevision: number, initial?: CorrectionWorkspaceState | null) {
   const [mode, setMode] = useState(initial?.mode ?? CorrectionMode.enum.strict)
-  const [pair, setPair] = useState<ResultPair | null>(
-    initial?.gemma ? { revision: 0, gemma: initial.gemma, gemini: initial.gemini } : null,
+  const [history, setHistory] = useState<ResultHistory | null>(
+    initial?.results.length ? { revision: 0, results: initial.results } : null,
   )
-  const [activeModel, setActiveModel] = useState<ModelId>(initial?.activeModel ?? DEFAULT_MODEL_ID)
-  const visiblePair = pair?.revision === draftRevision ? pair : null
-  const results = visiblePair
-    ? [visiblePair.gemma, ...(visiblePair.gemini ? [visiblePair.gemini] : [])]
-    : []
+  const [activeRequestId, setActiveRequestId] = useState<string | null>(
+    initial?.activeRequestId ?? initial?.results.at(-1)?.result.requestId ?? null,
+  )
+  const visibleHistory = history?.revision === draftRevision ? history : null
+  const allResults = visibleHistory?.results ?? []
+  const results = allResults.filter((entry) => entry.result.mode === mode)
   const visibleResult =
-    results.find((entry) => entry.result.modelId === activeModel)?.result ?? null
+    results.find((entry) => entry.result.requestId === activeRequestId)?.result ??
+    results.at(-1)?.result ??
+    null
 
   function receive(result: CorrectionResult, revision: number) {
     const saved: SavedResult = { result, view: 'changes' }
-    setPair((current) =>
-      result.modelId !== DEFAULT_MODEL_ID && current?.revision === revision
-        ? { ...current, gemini: saved }
-        : { revision, gemma: saved, gemini: null },
+    setHistory((current) =>
+      current?.revision === revision
+        ? { ...current, results: [...current.results, saved] }
+        : { revision, results: [saved] },
     )
-    setActiveModel(result.modelId)
+    setActiveRequestId(result.requestId)
   }
 
   function selectMode(value: string) {
     const parsed = CorrectionMode.safeParse(value)
-    if (parsed.success) setMode(parsed.data)
+    if (!parsed.success) return
+    setMode(parsed.data)
+    const latest = allResults.filter((entry) => entry.result.mode === parsed.data).at(-1)
+    setActiveRequestId(latest?.result.requestId ?? null)
   }
 
-  function selectResult(modelId: ModelId) {
-    if (results.some((entry) => entry.result.modelId === modelId)) setActiveModel(modelId)
+  function selectResult(requestId: string) {
+    if (results.some((entry) => entry.result.requestId === requestId)) setActiveRequestId(requestId)
   }
 
-  function setResultView(modelId: ModelId, view: ResultViewMode, requestId: string) {
-    setPair((current) => {
+  function setResultView(requestId: string, view: ResultViewMode) {
+    setHistory((current) => {
       if (!current) return current
-      const key = modelId === DEFAULT_MODEL_ID ? 'gemma' : 'gemini'
-      return current[key]?.result.requestId === requestId
-        ? { ...current, [key]: { ...current[key], view } }
-        : current
+      return {
+        ...current,
+        results: current.results.map((entry) =>
+          entry.result.requestId === requestId ? { ...entry, view } : entry,
+        ),
+      }
     })
   }
 
   function reset() {
-    setPair(null)
-    setActiveModel(DEFAULT_MODEL_ID)
+    setHistory(null)
+    setActiveRequestId(null)
   }
 
+  function clear() {
+    setHistory(null)
+    setActiveRequestId(null)
+  }
+
+  function resetMode() {
+    setMode(CorrectionMode.enum.strict)
+    const latest = allResults.filter((entry) => entry.result.mode === CorrectionMode.enum.strict).at(-1)
+    setActiveRequestId(latest?.result.requestId ?? null)
+  }
+
+  const firstResult = results[0]?.result
   return {
     mode,
-    activeModel,
+    activeRequestId,
     results,
     visibleResult,
-    pair: visiblePair,
-    correctionId: pair?.gemma.result.correctionId,
-    isModeChanged: !!visiblePair && visiblePair.gemma.result.mode !== mode,
-    draftChanged: pair !== null && visiblePair === null,
+    history: visibleHistory,
+    allResults,
+    correctionId: firstResult?.correctionId,
+    isModeChanged: allResults.length > 0 && results.length === 0,
+    draftChanged: history !== null && visibleHistory === null,
     receive,
     selectMode,
     selectResult,
     setResultView,
     reset,
-    clear: () => setPair(null),
-    resetMode: () => setMode(CorrectionMode.enum.strict),
+    clear,
+    resetMode,
   }
 }

@@ -11,7 +11,7 @@ export function useWorkspacePersistence() {
   const correction = useWritingSession(draft.text, draft.revision, restored.workspace)
   const [theme, setTheme] = useState<Theme>(restored.workspace?.theme ?? 'system')
   const serialized = JSON.stringify({
-    version: 1,
+    version: 2,
     text: draft.text,
     theme,
     ...correction.workspace,
@@ -35,7 +35,7 @@ export function useWorkspacePersistence() {
     if (restored.message) notify(restored.message)
     else if (
       restored.workspace?.text ||
-      restored.workspace?.gemma ||
+      restored.workspace?.results.length ||
       restored.workspace?.isRequestPending
     )
       notify('Workspace restored', true)

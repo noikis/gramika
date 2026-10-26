@@ -101,6 +101,11 @@ function OriginalEditor({ draft, correction, onNew, isBusy }: WorkspaceProps) {
       document.fonts.removeEventListener('loadingdone', resize)
     }
   }, [text, inputRef])
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }))
+    return () => cancelAnimationFrame(frame)
+  }, [inputRef])
   return (
     <section className="editor original-editor" aria-labelledby="original-title">
       <div className="editor-heading">
@@ -180,28 +185,35 @@ function OriginalEditor({ draft, correction, onNew, isBusy }: WorkspaceProps) {
 function ResultHeading({ correction }: { correction: Correction }) {
   const headingRef = useRef<HTMLHeadingElement>(null)
   const swipeStart = useRef<{ x: number; y: number } | null>(null)
-  const isGemma = correction.activeModel === DEFAULT_MODEL_ID || !correction.visibleResult
-  const hasBoth = correction.results.length === 2
-  const activeLabel = isGemma ? 'Gemma 4' : correction.opinionModelName
+  const activeIndex = correction.results.findIndex(
+    ({ result }) => result.requestId === correction.activeRequestId,
+  )
+  const hasPrevious = activeIndex > 0
+  const hasNext = activeIndex >= 0 && activeIndex < correction.results.length - 1
+  const activeLabel = correction.visibleResult
+    ? correction.visibleResult.modelId === DEFAULT_MODEL_ID
+      ? 'Gemma 4'
+      : correction.opinionModelName
+    : 'Result'
   const visibleRequestId = correction.visibleResult?.requestId
+  const previousRequestId = useRef<string | null>(null)
 
   useEffect(() => {
-    if (!visibleRequestId) return
-    headingRef.current?.focus({ preventScroll: true })
-    if (window.matchMedia(MOBILE_LAYOUT_QUERY).matches) {
-      headingRef.current?.scrollIntoView({
-        block: 'start',
-        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
-          ? 'instant'
-          : 'smooth',
-      })
-    }
+    if (!visibleRequestId || previousRequestId.current === visibleRequestId) return
+    previousRequestId.current = visibleRequestId
+    if (!window.matchMedia(MOBILE_LAYOUT_QUERY).matches || !headingRef.current) return
+    const bounds = headingRef.current.getBoundingClientRect()
+    if (bounds.top >= 0 && bounds.bottom <= window.innerHeight) return
+    headingRef.current.scrollIntoView({
+      block: 'start',
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
+    })
   }, [visibleRequestId])
 
   function switchResult(isNext: boolean) {
-    if (!hasBoth) return
-    const target = correction.results[isNext ? 1 : 0].result.modelId
-    correction.selectResult(target)
+    const target = correction.results[isNext ? activeIndex + 1 : activeIndex - 1]
+    if (!target) return
+    correction.selectResult(target.result.requestId)
     headingRef.current?.focus({ preventScroll: true })
   }
 
@@ -229,11 +241,11 @@ function ResultHeading({ correction }: { correction: Correction }) {
         swipeStart.current = null
       }}
     >
-      {hasBoth && !isGemma && (
+      {hasPrevious && (
         <Button
           className="previous-model"
           variant="secondary"
-          aria-label="Show Gemma result"
+          aria-label="Show previous result"
           onClick={() => switchResult(false)}
         >
           <svg
@@ -248,13 +260,14 @@ function ResultHeading({ correction }: { correction: Correction }) {
         </Button>
       )}
       <h2 id="result-title" tabIndex={-1} ref={headingRef} aria-live="polite">
-        Result<span className="result-model">{activeLabel}</span>
+        Result {activeIndex >= 0 ? `${activeIndex + 1} of ${correction.results.length}` : ''}
+        <span className="result-model">{activeLabel}</span>
       </h2>
-      {hasBoth && isGemma && (
+      {hasNext && (
         <Button
           className="next-model"
           variant="secondary"
-          aria-label="Show Gemini result"
+          aria-label="Show next result"
           onClick={() => switchResult(true)}
         >
           <svg
@@ -273,7 +286,11 @@ function ResultHeading({ correction }: { correction: Correction }) {
 }
 
 function OpinionAction({ correction }: { correction: Correction }) {
-  if (!correction.results.length || correction.results.length === 2) return null
+  if (
+    !correction.results.length ||
+    correction.results.some(({ result }) => result.modelId !== DEFAULT_MODEL_ID)
+  )
+    return null
   return (
     <div className="opinion-action">
       <Button
@@ -312,6 +329,24 @@ function OpinionAction({ correction }: { correction: Correction }) {
   )
 }
 
+function MobileRegenerateAction({ correction }: { correction: Correction }) {
+  const result = correction.visibleResult
+  if (!result || !correction.canRegenerate(result.modelId)) return null
+  return (
+    <Button
+      className="mobile-regenerate-action"
+      type="button"
+      variant="secondary"
+      disabled={false}
+      onClick={() => correction.regenerate(result.modelId)}
+      aria-label={`Generate ${result.modelId === DEFAULT_MODEL_ID ? 'Gemma' : 'Gemini'} again. New paid request`}
+    >
+      <Icon name="sparkles" />
+      {correction.pendingModel === result.modelId ? 'Generating...' : 'Generate again'}
+    </Button>
+  )
+}
+
 export function CorrectionWorkspace({ draft, correction, onNew, isBusy }: WorkspaceProps) {
   return (
     <>
@@ -327,7 +362,7 @@ export function CorrectionWorkspace({ draft, correction, onNew, isBusy }: Worksp
             <div
               className="workspace-result"
               key={result.requestId}
-              hidden={result.modelId !== correction.activeModel}
+              hidden={result.requestId !== correction.activeRequestId}
             >
               {result.isCached && (
                 <p className="clipboard-feedback" role="status">
@@ -337,8 +372,8 @@ export function CorrectionWorkspace({ draft, correction, onNew, isBusy }: Worksp
               <ResultView
                 result={result}
                 view={view}
-                onViewChange={(next) =>
-                  correction.setResultView(result.modelId, next, result.requestId)
+                  onViewChange={(next) =>
+                  correction.setResultView(result.requestId, next)
                 }
                 labelId={`result-${result.requestId}`}
                 title={`${result.modelId === DEFAULT_MODEL_ID ? 'Gemma 4' : correction.opinionModelName} · ${modeLabels[result.mode]}`}
@@ -356,20 +391,22 @@ export function CorrectionWorkspace({ draft, correction, onNew, isBusy }: Worksp
                       <Icon name="copy" />
                       {correction.copying ? 'Copying...' : 'Copy'}
                     </Button>
-                    <Button
-                      type="button"
-                      className="regenerate-action"
-                      title="New paid request"
-                      variant="secondary"
-                      disabled={!correction.canRegenerate}
-                      onClick={() => correction.regenerate(result.modelId)}
-                      aria-label={`Generate ${result.modelId === DEFAULT_MODEL_ID ? 'Gemma' : 'Gemini'} again. New paid request`}
-                    >
-                      <Icon name="sparkles" />
-                      {correction.pendingModel === result.modelId
-                        ? 'Generating...'
-                        : 'Generate again'}
-                    </Button>
+                    {correction.canRegenerate(result.modelId) && (
+                      <Button
+                        type="button"
+                        className="regenerate-action desktop-regenerate-action"
+                        title="New paid request"
+                        variant="secondary"
+                        disabled={correction.pendingModel === result.modelId}
+                        onClick={() => correction.regenerate(result.modelId)}
+                        aria-label={`Generate ${result.modelId === DEFAULT_MODEL_ID ? 'Gemma' : 'Gemini'} again. New paid request`}
+                      >
+                        <Icon name="sparkles" />
+                        {correction.pendingModel === result.modelId
+                          ? 'Generating...'
+                          : 'Generate again'}
+                      </Button>
+                    )}
                   </>
                 }
               />
@@ -399,6 +436,7 @@ export function CorrectionWorkspace({ draft, correction, onNew, isBusy }: Worksp
           )}
         </section>
         <div className="workspace-opinion">
+          <MobileRegenerateAction correction={correction} />
           <OpinionAction correction={correction} />
         </div>
       </div>

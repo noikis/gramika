@@ -344,26 +344,6 @@ function ResultContent({
             </span>
             {!isHistory && <p className="correction-kind">{description}</p>}
             <dl>
-              {(current.originalSpans.length > 1 ||
-                current.correctedSpans.length > 1 ||
-                current.kind === 'move') && (
-                <div>
-                  <dt>Selected change</dt>
-                  <dd>
-                    {current.originalSpans
-                      .map((range) =>
-                        passage(result.originalText.slice(range.start, range.end), ''),
-                      )
-                      .join(' · ') || '(nothing)'}{' '}
-                    →{' '}
-                    {current.correctedSpans
-                      .map((range) =>
-                        passage(result.correctedText.slice(range.start, range.end), ''),
-                      )
-                      .join(' · ') || '(nothing)'}
-                  </dd>
-                </div>
-              )}
               <div>
                 <dt>Original</dt>
                 <dd>{passage(comparison.original, 'No original text')}</dd>

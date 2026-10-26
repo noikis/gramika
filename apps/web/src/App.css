@@ -558,6 +558,9 @@ h2 {
   color: var(--muted);
   font-size: 14px;
 }
+.mobile-regenerate-action {
+  display: none;
+}
 .opinion-button-cost {
   margin-left: 4px;
   font-size: 12px;
@@ -698,6 +701,14 @@ h2 {
   }
   .opinion-action > button {
     width: 100%;
+  }
+  .desktop-regenerate-action {
+    display: none;
+  }
+  .mobile-regenerate-action {
+    display: flex;
+    width: 100%;
+    justify-content: center;
   }
   .opinion-button-cost {
     margin-left: 0;

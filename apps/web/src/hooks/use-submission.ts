@@ -26,7 +26,9 @@ export function useSubmission(
   const latestRevision = useRef(draftRevision)
   const generation = useRef(0)
   const association = useRef<{ revision: number; correctionId: string } | null>(
-    initial?.gemma ? { revision: 0, correctionId: initial.gemma.result.correctionId } : null,
+    initial?.results[0]
+      ? { revision: 0, correctionId: initial.results[0].result.correctionId }
+      : null,
   )
 
   useLayoutEffect(() => {

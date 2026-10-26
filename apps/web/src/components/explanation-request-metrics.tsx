@@ -66,11 +66,13 @@ export function ExplanationRequestMetrics({
   original,
   rate,
   onLoaded,
+  onError,
 }: {
   request: HistoryRequest
   original: string
   rate: number | null
   onLoaded: (metrics: ExplanationMetrics) => void
+  onError: (isError: boolean) => void
 }) {
   const [data, setData] = useState<ExplanationMetrics | null>(null)
   const [isError, setIsError] = useState(false)
@@ -94,15 +96,19 @@ export function ExplanationRequestMetrics({
           throw Error('Mismatched request metrics')
         if (!controller.signal.aborted) {
           setData(value)
+          onError(false)
           onLoaded(value)
         }
       } catch {
-        if (!controller.signal.aborted) setIsError(true)
+        if (!controller.signal.aborted) {
+          setIsError(true)
+          onError(true)
+        }
       }
     }
     void load()
     return () => controller.abort()
-  }, [request.id, retry, onLoaded])
+  }, [request.id, retry, onLoaded, onError])
 
   return (
     <section className="explanation-metrics" aria-label="Explanation requests">
@@ -118,6 +124,7 @@ export function ExplanationRequestMetrics({
             variant="secondary"
             onClick={() => {
               setIsError(false)
+              onError(false)
               setRetry((value) => value + 1)
             }}
           >

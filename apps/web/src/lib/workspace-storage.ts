@@ -1,28 +1,25 @@
 import {
   CorrectionMode,
   CorrectionSuccess,
-  DEFAULT_MODEL_ID,
-  MODELS,
-  type ModelId,
   type CorrectionResult,
 } from '@gramota/contracts'
 import type { ResultViewMode } from '../components/result-view'
 
 export const WORKSPACE_STORAGE_KEY = 'gramota.workspace'
+const WORKSPACE_VERSION = 2
 export const THEMES = ['system', 'light', 'dark'] as const
 export type Theme = (typeof THEMES)[number]
 export type SavedResult = { result: CorrectionResult; view: ResultViewMode }
 
 export type CorrectionWorkspaceState = {
   mode: CorrectionMode
-  activeModel: ModelId
-  gemma: SavedResult | null
-  gemini: SavedResult | null
+  activeRequestId: string | null
+  results: SavedResult[]
   isRequestPending: boolean
 }
 
 export type LocalWorkspace = CorrectionWorkspaceState & {
-  version: 1
+  version: typeof WORKSPACE_VERSION
   text: string
   theme: Theme
 }
@@ -31,12 +28,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
 }
 
-function readResult(value: unknown, modelId: ModelId): SavedResult | null {
-  if (value === null) return null
+function readResult(value: unknown): SavedResult {
   if (!isRecord(value) || (value.view !== 'text' && value.view !== 'changes'))
     throw Error('Invalid saved result')
   const result = CorrectionSuccess.parse(value.result)
-  if (result.modelId !== modelId) throw Error('Invalid saved model')
   return { result, view: value.view }
 }
 
@@ -55,38 +50,46 @@ export function loadWorkspace(): { workspace: LocalWorkspace | null; message: st
     const value: unknown = JSON.parse(raw)
     if (
       !isRecord(value) ||
-      value.version !== 1 ||
+      value.version !== WORKSPACE_VERSION ||
       typeof value.text !== 'string' ||
       !THEMES.some((theme) => theme === value.theme) ||
-      typeof value.isRequestPending !== 'boolean'
+      typeof value.isRequestPending !== 'boolean' ||
+      !Array.isArray(value.results) ||
+      (value.activeRequestId !== null && typeof value.activeRequestId !== 'string')
     )
       throw Error('Invalid workspace')
     CorrectionMode.parse(value.mode)
-    const gemma = readResult(value.gemma, DEFAULT_MODEL_ID)
-    const gemini = readResult(value.gemini, MODELS[1].id)
+    const results = value.results.map(readResult)
+    const first = results[0]?.result
     if (
-      (gemma && gemma.result.originalText !== value.text.trim()) ||
-      (gemini &&
-        (!gemma ||
-          gemini.result.correctionId !== gemma.result.correctionId ||
-          gemini.result.originalText !== gemma.result.originalText ||
-          gemini.result.mode !== gemma.result.mode))
+      (first && first.originalText !== value.text.trim()) ||
+      results.some(
+        ({ result }) =>
+          result.correctionId !== first?.correctionId ||
+          result.originalText !== first?.originalText,
+      ) ||
+      (value.activeRequestId !== null &&
+        !results.some(({ result }) => result.requestId === value.activeRequestId))
     )
       throw Error('Mismatched workspace results')
     return {
       workspace: {
-        version: 1,
+        version: WORKSPACE_VERSION,
         text: value.text,
         theme: value.theme as Theme,
         mode: CorrectionMode.enum.strict,
-        gemma,
-        gemini,
-        activeModel: value.activeModel === MODELS[1].id && gemini ? MODELS[1].id : DEFAULT_MODEL_ID,
+        results,
+        activeRequestId: value.activeRequestId,
         isRequestPending: value.isRequestPending,
       },
       message: '',
     }
   } catch {
+    try {
+      localStorage.removeItem(WORKSPACE_STORAGE_KEY)
+    } catch {
+      // Keep the same user-facing recovery message when storage is unavailable.
+    }
     return {
       workspace: null,
       message: 'The saved workspace could not be restored. You can start a new correction.',

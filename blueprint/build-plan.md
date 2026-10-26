@@ -134,7 +134,7 @@ ordered and implemented one
 feature at a time. Each item requires its own implementation specification,
 verification, and review before the next item begins.
 
-- [ ] **V3.0 — UI fixes:** restore sensible focus on reopen; remove the
+- [x] **V3.0 — UI fixes:** restore sensible focus on reopen; remove the
   selected-changes UI; add a small conditional result scroll; place Generate
   again above Second opinion on mobile; and improve History explanation
   loading so incomplete details are not briefly shown.
@@ -144,17 +144,19 @@ verification, and review before the next item begins.
   Unicode, whitespace, and Explain integration. Use
   `docs/gramika_text_diff_implementation_handoff.md` as the implementation
   handoff and regression contract.
-- [ ] **V3.2 — Export:** provide export functionality for LLM agents and
+- [x] **V3.2 — Export:** provide export functionality for LLM agents and
   other consumers. Define formats and included correction, diff, explanation,
   and metadata fields in the feature specification.
+  Deferred by the user on 2026-10-26; retained in the backlog and not implemented.
 - [x] **V3.3 — Manual selection in edited text:** implement Stage 1 from
   `docs/gramika_manual_selection_explain_spec.md`, allowing contextual
   explanations for arbitrary selections in corrected or rewritten text.
-- [ ] **V3.4 — Manual selection in original text:** implement Stage 2 from
+- [x] **V3.4 — Manual selection in original text:** implement Stage 2 from
   the same specification as a separate feature after V3.3.
-- [ ] **V3.5 — Contextual original-versus-edited comparison:** implement
+- [x] **V3.5 — Contextual original-versus-edited comparison:** implement
   Stage 3 as a separate feature after V3.4, with reliable correspondence and
   conservative handling of ambiguous mappings.
+  Deferred by the user on 2026-10-26; Stage 3 will not be implemented.
 
 Stages 1, 2, and 3 are all part of V3, but must not be implemented together.
 The text-diff stabilization handoff is an explicit V3 feature, not merely
