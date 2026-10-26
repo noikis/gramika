@@ -1,9 +1,73 @@
-# Current Feature
+# Feature: Manual selection in edited text
 
-> **Generated file.** Holds the one feature, fix, or rollback being built in this checkout. Run
-> `/feature <number-or-name>` to spec a build-plan feature, or `/fix "<bug>"` for
-> an ad-hoc fix. Use `/rollback <completed-feature>` to plan a safe reversal.
-> Build one thing at a time in this checkout; `/complete` archives it under
-> `blueprint/history/` and resets this file.
+**Status:** verified
+**From build-plan:** feature 3.3
+**Build attempt:** 1
+**Branch:** feature/v3-3-manual-selection-in-edited-text
 
-_Nothing in progress. Run `/feature`, `/fix`, or `/rollback` to start._
+## Goal
+
+Let users select any nonempty word, phrase, or sentence in the edited result for either Strict Correction or Gentle Rewrite and request a contextual Russian explanation. Manual expression explanations are a separate intent from automatic diff-change explanations and are saved with the correction in History.
+
+## In scope
+
+- Native-feeling selection in the edited result for Text and Changes views, including unchanged text, text crossing highlighted changes, repeated text, punctuation, whitespace, multiline content, Unicode, emoji, and combining characters.
+- An accessible **Explain selection** action shown only for a valid nonempty selection; choose a small action row directly below the edited result so it does not compete with diff-click actions and remains usable on narrow screens.
+- Exact UTF-16, end-exclusive selection range and selected value, validated against the current corrected text and request ID before generation.
+- A new expression-explanation request kind with a dedicated Russian prompt that explains meaning, grammar, usage, register, or nuance in the supplied context without inventing an error or a correction.
+- Full edited text plus sufficient surrounding context in the model request; the existing Strict/Rewrite mode and model/provider configuration remain authoritative.
+- Separate lookup/cache identity for expression explanations; generated explanations persist through the existing explanation storage and appear in History request details with their selected expression and source marked as edited.
+- Existing click-on-diff Explain behavior, automatic diff groups, loading, retry, error, cancellation, and correction behavior remain unchanged.
+- Use `MAX_INPUT_CHARACTERS` and the existing corrected-text limit; do not add a second selection-length limit.
+
+## Out of scope
+
+- Original-text selection (V3.4 / Stage 2).
+- Automatic mapping between original and edited selections or comparison requests (V3.5 / Stage 3).
+- Accepting/rejecting changes, editing result text through the selection UI, new NLP tooling, new models, benchmark calls, or unrelated UI redesign.
+- Changing the approved Strict Explain or Rewrite Explain prompts for diff-click explanations.
+
+## Build loop
+
+Implement one small step at a time on the feature branch. Run the existing focused server tests, web lint/build, contracts build, and server test gate after the relevant steps. Browser verification requires explicit Playwright permission and is a separate manual check; do not run paid benchmarks or real model calls.
+
+## Build steps
+
+- [x] **1. Define the expression explanation contract and prompt.** Add a discriminated expression-selection input carrying request ID, `source: edited`, corrected UTF-16 range, exact selected value, and the existing correction mode. Validate request ownership/source text, range boundaries, value equality, nonempty selection, and the existing text-size limit. Add a versioned `EXPRESSION_EXPLAIN` prompt and keep change prompts byte-for-byte unchanged.
+  **Done when:** contracts build; invalid, stale, empty, surrogate-splitting, and mismatched-value inputs are rejected; mocked prompt tests show the selected expression and context are treated as data and no correction is implied.
+
+- [x] **2. Extend the server explanation service and persistence.** Route expression requests through the existing lookup/generate/metrics flow with a distinct selection key and request payload. Persist successful expression explanations and attempts with enough selection data for History; preserve existing rows and change-explanation lookups. Use the existing explanation table/repository and a migration only if the current schema cannot represent the discriminated record without weakening existing constraints.
+  **Done when:** mocked server tests cover lookup reuse, one generation, concurrent duplicate requests, failure/retry, metrics, deletion of the parent correction, and coexistence with a saved diff explanation; no explanation or internal reasoning is exposed in metrics or storage records.
+
+- [x] **3. Add edited-result selection and Explain selection UI.** Capture selection ranges from the current corrected text in both Text and Changes views without swallowing diff-click activation. Clear selection on result/request/mode changes, reject empty or invalid selections, preserve keyboard and touch-friendly behavior, and keep the action available while a selection crosses highlighted spans. Render the result in the existing explanation panel with clear loading, retry, error, and stale-response handling.
+  **Done when:** component tests cover unchanged, changed, cross-highlight, repeated, multiline, punctuation, whitespace, Unicode, and cleared selections; direct diff clicks still open change explanations and do not create expression requests.
+
+- [x] **4. Show saved expression explanations in History and finish regression checks.** Extend History details and explanation metrics to display expression selections as edited text without fabricating an original range or change. Keep saved explanations reusable without a new model call and preserve soft-delete behavior.
+  **Done when:** history fixtures show saved expression explanations, metrics and retry states correctly; existing diff explanations and history filtering/detail behavior remain passing; documented lint, build, contracts, and server test gates pass.
+
+## Files / areas
+
+- `packages/contracts/src/explanation.ts` and exports
+- `apps/server/src/explanation/prompt.ts`, `apps/server/src/explanation/service.ts`, `apps/server/src/routes/explanations.ts`
+- `apps/server/src/database/repositories/explanation-repository.ts`, schema/migration only if required
+- `apps/web/src/components/result-view.tsx`, `explanation-panel.tsx`, related hooks/styles
+- `apps/web/src/components/explanation-request-metrics.tsx`, `history-request.tsx`
+- Existing explanation, route, repository, and UI tests under `apps/server/test` and `apps/web` where present
+
+## Data / contracts
+
+Expression selections are a distinct discriminated request kind and never reuse a diff group as their identity. The request includes the correction `requestId`, `mode`, `source: edited`, `correctedRange` (UTF-16, inclusive start/exclusive end), and `value` equal to `correctedText.slice(start, end)`. The full original and corrected texts remain server-owned by `requestId`; the client does not submit untrusted replacement text as authoritative context. The existing `MAX_INPUT_CHARACTERS` limit governs the correction text and therefore the maximum selectable document; no additional selection cap is introduced.
+
+The saved selection record includes the expression kind, source, range, value, request ID, mode/prompt version, and explanation attempt metrics. Its selection key is distinct from change explanations even when ranges overlap. Existing explanation rows and diff-click contracts remain readable. History displays the edited selection and explanation as an expression explanation, with no invented original fragment or comparison.
+
+## Testing
+
+Use mocked transport responses only. Cover contract validation, prompt construction, repository persistence, lookup reuse, concurrent de-duplication, errors, metrics, deletion, and UI selection state. Preserve regression coverage for existing diff-click explanations, both modes, history details, and the V3.1 text-diff behavior. Do not invoke `npm run benchmark`, the benchmark entry point, or any paid model request.
+
+## Notes for the AI
+
+Prefer the smallest repository-native extension of the existing explanation flow. The action placement is intentionally chosen as a result-level action row below the edited pane because the current result Text view is a read-only textarea and the Changes view uses interactive highlight spans. Do not make selection automatically generate a request; the user must activate Explain selection. Treat all selected text and surrounding context as untrusted model input.
+
+## Open questions
+
+None blocking. The user delegated action placement, confirmed that manual explanations are saved in History, and confirmed that the existing character limit governs selectable text.

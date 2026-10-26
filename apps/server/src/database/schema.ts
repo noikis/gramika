@@ -2,7 +2,7 @@ import { sql } from 'drizzle-orm'
 import { check, integer, primaryKey, real, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 import type {
   ExplanationAttempt,
-  ExplanationInput,
+  ExplanationRequest,
   HistoryDetail,
   HistoryRequest,
 } from '@gramota/contracts'
@@ -118,7 +118,7 @@ export const explanations = sqliteTable(
     explanation: text('explanation').notNull(),
     deletedAt: text('deleted_at'),
     selectionKey: text('selection_key').notNull().default('legacy'),
-    selection: text('selection_json', { mode: 'json' }).$type<ExplanationInput>(),
+      selection: text('selection_json', { mode: 'json' }).$type<ExplanationRequest>(),
   },
   (table) => [
     primaryKey({

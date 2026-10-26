@@ -19,6 +19,16 @@ function SelectionFragments({
   original: string
   corrected: string
 }) {
+  if ('kind' in selection && selection.kind === 'expression') {
+    return (
+      <dl className="explanation-fragments">
+        <div>
+          <dt>Selected expression · edited text</dt>
+          <dd lang="ru">{selection.value}</dd>
+        </div>
+      </dl>
+    )
+  }
   const before = original.slice(selection.originalRange.start, selection.originalRange.end)
   const after = corrected.slice(selection.correctedRange.start, selection.correctedRange.end)
   return (

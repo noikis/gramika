@@ -2,7 +2,7 @@ import type { FastifyInstance } from 'fastify'
 import {
   ExplanationFailure,
   ExplanationMetrics,
-  ExplanationInput,
+  ExplanationRequest,
   ExplanationLookup,
   ExplanationSuccess,
   EXPLANATION_ERROR_MESSAGES,
@@ -57,7 +57,7 @@ export async function explanationRoutes(
         isLookup ? '/api/explanations/lookup' : '/api/explanations',
         { bodyLimit: MAX_EXPLANATION_BODY_BYTES },
         async (request) => {
-          const parsed = ExplanationInput.safeParse(request.body)
+          const parsed = ExplanationRequest.safeParse(request.body)
           if (!parsed.success) throw new CorrectionError(ErrorCode.enum.INVALID_INPUT)
           return isLookup
             ? ExplanationLookup.parse(service.lookup(parsed.data))

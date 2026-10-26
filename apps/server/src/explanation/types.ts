@@ -1,4 +1,4 @@
-import type { ExplanationAttempt, ExplanationInput, ExplanationMetrics } from '@gramota/contracts'
+import type { ExplanationAttempt, ExplanationMetrics, ExplanationRequest } from '@gramota/contracts'
 
 export type ExplanationSource = {
   originalText: string
@@ -9,8 +9,8 @@ export type ExplanationSource = {
 
 export interface ExplanationRepository {
   getSource(requestId: string): ExplanationSource | null
-  get(selection: ExplanationInput): string | null
-  save(selection: ExplanationInput, explanation: string): string
+  get(selection: ExplanationRequest): string | null
+  save(selection: ExplanationRequest, explanation: string): string
   recordAttempt(attempt: ExplanationAttempt): void
   metrics(requestId: string): ExplanationMetrics
 }

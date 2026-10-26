@@ -1,26 +1,33 @@
 import { and, eq, isNull } from 'drizzle-orm'
 import {
   ExplanationMetrics,
+  expressionExplanationSelectionKey,
   explanationSelectionKey,
-  type ExplanationInput,
+  type ExplanationRequest,
 } from '@gramota/contracts'
 import type { ExplanationRepository } from '../../explanation'
 import type { DatabaseClient } from '../sqlite-database'
 import { corrections, explanations, explanationAttempts, modelRequests } from '../schema'
 
-function columns(selection: ExplanationInput) {
+function columns(selection: ExplanationRequest) {
+  const originalRange = 'originalRange' in selection
+    ? selection.originalRange
+    : { start: 0, end: 0 }
   return {
     requestId: selection.requestId,
-    originalStart: selection.originalRange.start,
-    originalEnd: selection.originalRange.end,
+    originalStart: originalRange.start,
+    originalEnd: originalRange.end,
     correctedStart: selection.correctedRange.start,
     correctedEnd: selection.correctedRange.end,
-    selectionKey: explanationSelectionKey(selection),
+    selectionKey:
+      'kind' in selection && selection.kind === 'expression'
+        ? expressionExplanationSelectionKey(selection)
+        : explanationSelectionKey(selection),
     selection,
   }
 }
 
-function matches(selection: ExplanationInput) {
+function matches(selection: ExplanationRequest) {
   const value = columns(selection)
   return and(
     eq(explanations.requestId, value.requestId),

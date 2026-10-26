@@ -1,6 +1,6 @@
 import { RequestMetrics } from "./request-metrics.js";
 import { z } from "zod";
-import { ErrorCode } from "./correction.js";
+import { CorrectionMode, ErrorCode, MAX_INPUT_CHARACTERS } from "./correction.js";
 import { ChangeKind, TextRange, MAX_CHANGE_SPANS } from "@gramota/text-diff";
 
 // Half-open UTF-16 offsets match JavaScript strings and the local diff.
@@ -30,6 +30,30 @@ export const ExplanationInput = z
   );
 export type ExplanationInput = z.infer<typeof ExplanationInput>;
 
+export const ExpressionExplanationInput = z
+  .strictObject({
+    version: z.literal(3),
+    requestId: z.uuid(),
+    kind: z.literal("expression"),
+    mode: CorrectionMode,
+    source: z.literal("edited"),
+    correctedRange: ExplanationRange,
+    value: z.string().min(1),
+  })
+  .refine(
+    (selection) =>
+      Array.from(selection.value).length <= MAX_INPUT_CHARACTERS,
+  );
+export type ExpressionExplanationInput = z.infer<
+  typeof ExpressionExplanationInput
+>;
+
+export const ExplanationRequest = z.union([
+  ExplanationInput,
+  ExpressionExplanationInput,
+]);
+export type ExplanationRequest = z.infer<typeof ExplanationRequest>;
+
 export function explanationSelectionKey(selection: ExplanationInput) {
   const range = (value: { start: number; end: number }) => [
     value.start,
@@ -44,8 +68,22 @@ export function explanationSelectionKey(selection: ExplanationInput) {
     range(selection.correctedRange),
   ]);
 }
+export function expressionExplanationSelectionKey(
+  selection: ExpressionExplanationInput,
+) {
+  return JSON.stringify([
+    selection.version,
+    selection.kind,
+    selection.requestId,
+    selection.mode,
+    selection.source,
+    [selection.correctedRange.start, selection.correctedRange.end],
+    selection.value,
+  ]);
+}
 export const RecordedExplanationSelection = z.union([
   ExplanationInput,
+  ExpressionExplanationInput,
   HistoricalExplanationSelection,
 ]);
 export type RecordedExplanationSelection = z.infer<
@@ -53,7 +91,7 @@ export type RecordedExplanationSelection = z.infer<
 >;
 
 export const ExplanationSuccess = z.strictObject({
-  selection: ExplanationInput,
+  selection: ExplanationRequest,
   explanation: z.string().refine((text) => text.trim().length > 0),
 });
 export type ExplanationResult = z.infer<typeof ExplanationSuccess>;

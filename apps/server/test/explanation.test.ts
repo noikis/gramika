@@ -8,7 +8,13 @@ import Fastify from 'fastify'
 import Database from 'better-sqlite3'
 import { drizzle } from 'drizzle-orm/better-sqlite3'
 import { readMigrationFiles } from 'drizzle-orm/migrator'
-import { DEFAULT_MODEL_ID, MODELS, ExplanationInput, type CorrectionMode } from '@gramota/contracts'
+import {
+  DEFAULT_MODEL_ID,
+  MODELS,
+  ExplanationInput,
+  ExpressionExplanationInput,
+  type CorrectionMode,
+} from '@gramota/contracts'
 import { explanationSelection } from '@gramota/contracts/text-diff'
 import { diffText } from '@gramota/text-diff'
 import { SqliteDatabase } from '../src/database'
@@ -22,6 +28,8 @@ import {
   REWRITE_EXPLAIN,
   REWRITE_EXPLAIN_PROMPT,
   REWRITE_EXPLAIN_PROMPT_VERSION,
+  EXPRESSION_EXPLAIN_PROMPT,
+  EXPRESSION_EXPLAIN_PROMPT_VERSION,
 } from '../src/explanation/prompt'
 import application from '../src/app'
 import { mockOpenRouterTransport } from './mock-transport'
@@ -78,6 +86,47 @@ function service(db: SqliteDatabase, send?: CorrectionTransport['send']) {
 function hasCode(code: string) {
   return (error: unknown) => error instanceof CorrectionError && error.code === code
 }
+
+test('expression explanations use edited selection context and persist independently', async (t) => {
+  const db = new SqliteDatabase(':memory:')
+  t.after(() => db.close())
+  const { requestId } = seed(db, DEFAULT_MODEL_ID as string, 'strict', 'Нужна помощь.', 'Нужна помощь!')
+  const selection = ExpressionExplanationInput.parse({
+    version: 3,
+    requestId,
+    kind: 'expression',
+    mode: 'strict',
+    source: 'edited',
+    correctedRange: { start: 6, end: 12 },
+    value: 'помощь',
+  })
+  let calls = 0
+  const explain = service(db, async (body) => {
+    calls++
+    const request = body as { messages: { content: string }[] }
+    assert.equal(request.messages[0].content, EXPRESSION_EXPLAIN_PROMPT)
+    const input = JSON.parse(request.messages[1].content)
+    assert.equal(input.selectedExpression.source, 'edited')
+    assert.equal(input.selectedExpression.value, 'помощь')
+    assert.equal(input.editedText, 'Нужна помощь!')
+    assert.equal(input.originalText, undefined)
+    return { correctedText: answer, errorCode: null, details: { costUsd: 0.2 } }
+  })
+  assert.equal(EXPRESSION_EXPLAIN_PROMPT_VERSION, 'expression-explain-v1')
+  assert.deepEqual(await explain.lookup(selection), { result: null })
+  const result = await explain.explain(selection)
+  assert.equal(result.explanation, answer)
+  assert.equal(calls, 1)
+  assert.deepEqual(await explain.lookup(selection), { result })
+  const recorded = db.explanations.metrics(requestId).attempts[0]?.selection
+  assert.equal(recorded && 'kind' in recorded ? recorded.kind : undefined, 'expression')
+
+  await assert.rejects(
+    explain.explain({ ...selection, value: 'другая' }),
+    hasCode('INVALID_INPUT'),
+  )
+  assert.equal(calls, 1)
+})
 
 for (const mode of ['strict', 'gentle-rewrite'] as const) {
   test(`each correcting model receives the exact prompt, full context and selected occurrence only on demand (${mode})`, async (t) => {

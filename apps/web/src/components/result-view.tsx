@@ -1,7 +1,7 @@
-import { ExplanationPanel } from './explanation-panel'
+import { ExplanationPanel, ExpressionExplanationPanel } from './explanation-panel'
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
-import type { CorrectionResult } from '@gramota/contracts'
+import type { CorrectionResult, ExpressionExplanationInput } from '@gramota/contracts'
 import { diffText, explanationSelection, type TextDiff } from '../lib/text-diff'
 import { correctionDescription } from '../lib/whitespace-display'
 import { Textarea } from './ui/textarea'
@@ -63,6 +63,7 @@ function ResultContent({
   const panelId = useId()
   const isHistory = !compact && Boolean(actions)
   const [selected, setSelected] = useState(0)
+  const [manualSelection, setManualSelection] = useState<ExpressionExplanationInput | null>(null)
   const container = useRef<HTMLDivElement>(null)
   const selectedElement = useRef<HTMLSpanElement>(null)
   const diff = useMemo(
@@ -91,6 +92,50 @@ function ResultContent({
           .join(' · ')
       : correctionDescription(comparison.original, comparison.corrected, spacingOnly)
     : ''
+
+  function setManualRange(start: number, end: number) {
+    if (start === end || start < 0 || end > result.correctedText.length) {
+      setManualSelection(null)
+      return
+    }
+    const range = start < end ? { start, end } : { start: end, end: start }
+    const value = result.correctedText.slice(range.start, range.end)
+    if (!value) setManualSelection(null)
+    else
+      setManualSelection({
+        version: 3,
+        requestId: result.requestId,
+        kind: 'expression',
+        mode: result.mode,
+        source: 'edited',
+        correctedRange: range,
+        value,
+      })
+  }
+
+  function readDomSelection() {
+    if (!container.current) return
+    const selection = window.getSelection()
+    if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
+      setManualSelection(null)
+      return
+    }
+    const range = selection.getRangeAt(0)
+    if (!container.current.contains(range.startContainer) || !container.current.contains(range.endContainer)) return
+    const nodes = document.createTreeWalker(container.current, NodeFilter.SHOW_TEXT)
+    let offset = 0
+    let start: number | null = null
+    let end: number | null = null
+    let node: Node | null
+    while ((node = nodes.nextNode())) {
+      const parent = node.parentElement
+      if (parent?.closest('[aria-hidden="true"]')) continue
+      if (node === range.startContainer) start = offset + range.startOffset
+      if (node === range.endContainer) end = offset + range.endOffset
+      offset += node.textContent?.length ?? 0
+    }
+    if (start !== null && end !== null) setManualRange(start, end)
+  }
 
   function select(index: number, element?: HTMLSpanElement) {
     selectedElement.current = element ?? null
@@ -203,6 +248,9 @@ function ResultContent({
           value={result.correctedText}
           lang="ru"
           spellCheck={false}
+          onSelect={(event) =>
+            setManualRange(event.currentTarget.selectionStart, event.currentTarget.selectionEnd)
+          }
         />
       ) : (
         <div
@@ -212,10 +260,17 @@ function ResultContent({
           tabIndex={0}
           lang="ru"
           ref={container}
+          onMouseUp={readDomSelection}
+          onKeyUp={readDomSelection}
         >
           {parts.map((part, index) => {
             const text = result.correctedText.slice(part.start, part.end)
-            if (!part.groupId) return text
+            if (!part.groupId)
+              return (
+                <span key={index} data-range-start={part.start} data-range-end={part.end}>
+                  {text}
+                </span>
+              )
             const unitIndex = corrections.findIndex((group) => group.id === part.groupId)
             const group = corrections[unitIndex]
             const active = unitIndex === selected
@@ -262,6 +317,9 @@ function ResultContent({
             )
           })}
         </div>
+      )}
+      {manualSelection && (
+        <ExpressionExplanationPanel key={JSON.stringify(manualSelection)} selection={manualSelection} />
       )}
       {compact && (
         <div className="result-actions">

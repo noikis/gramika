@@ -4,6 +4,7 @@ import {
   ExplanationLookup,
   ExplanationSuccess,
   type ExplanationInput,
+  type ExpressionExplanationInput,
 } from '@gramota/contracts'
 import { Button } from './ui/button'
 import { Icon } from './ui/icon'
@@ -94,6 +95,78 @@ export function ExplanationPanel({ selection }: { selection: ExplanationInput })
           {outcome?.error && (
             <p role="alert" className="history-error">
               {outcome.error}
+            </p>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
+export function ExpressionExplanationPanel({
+  selection,
+}: {
+  selection: ExpressionExplanationInput
+}) {
+  const [state, setState] = useState<'idle' | 'loading' | 'done' | 'error'>('idle')
+  const [explanation, setExplanation] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const body = JSON.stringify(selection)
+
+  async function explain() {
+    setState('loading')
+    setError(null)
+    try {
+      const response = await fetch('/api/explanations', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body,
+      })
+      const payload: unknown = await response.json()
+      if (!response.ok) {
+        const failure = ExplanationFailure.safeParse(payload)
+        throw new Error(
+          failure.success ? failure.data.error.message : 'Could not explain the selection.',
+        )
+      }
+      const result = ExplanationSuccess.parse(payload)
+      if (JSON.stringify(result.selection) !== body) throw new Error('Mismatched explanation.')
+      setExplanation(result.explanation)
+      setState('done')
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Could not explain the selection.')
+      setState('error')
+    }
+  }
+
+  return (
+    <div className="explanation-panel" aria-busy={state === 'loading'}>
+      {state === 'done' && explanation ? (
+        <>
+          <p className="explanation-label">Explanation of selection</p>
+          <p className="explanation-text" lang="ru" role="status">
+            {explanation}
+          </p>
+        </>
+      ) : (
+        <>
+          <Button
+            className="explain-button"
+            type="button"
+            variant="secondary"
+            disabled={state === 'loading'}
+            onClick={() => void explain()}
+          >
+            <Icon name="info" />
+            {state === 'loading'
+              ? 'Explaining selection...'
+              : state === 'error'
+                ? 'Retry selection explanation'
+                : 'Explain selection'}
+          </Button>
+          {error && (
+            <p role="alert" className="history-error">
+              {error}
             </p>
           )}
         </>

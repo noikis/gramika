@@ -2,7 +2,8 @@ import { randomUUID } from 'node:crypto'
 import {
   CorrectionMode,
   ErrorCode,
-  ExplanationInput,
+  ExplanationRequest,
+  expressionExplanationSelectionKey,
   explanationSelectionKey,
   ExplanationAttempt,
   ExplanationMetricsInput,
@@ -17,6 +18,8 @@ import {
   REWRITE_EXPLAIN_PROMPT_VERSION,
   REWRITE_EXPLAIN_PROMPT,
   STRICT_EXPLAIN_PROMPT,
+  EXPRESSION_EXPLAIN_PROMPT,
+  EXPRESSION_EXPLAIN_PROMPT_VERSION,
 } from './prompt'
 import type { ExplanationRepository } from './types'
 
@@ -53,34 +56,36 @@ export function createExplanationService(deps: Dependencies) {
   const pending = new Map<string, Promise<string>>()
 
   function read(input: unknown) {
-    const parsed = ExplanationInput.safeParse(input)
+    const parsed = ExplanationRequest.safeParse(input)
     if (!parsed.success) throw new CorrectionError(ErrorCode.enum.INVALID_INPUT)
     if (!deps.repository) throw new CorrectionError(ErrorCode.enum.STORAGE_ERROR)
     const selection = parsed.data
     const source = readStorage(() => deps.repository!.getSource(selection.requestId))
-    if (
-      !source ||
-      !CorrectionMode.safeParse(source.mode).success ||
-      !isValidRange(source.originalText, selection.originalRange) ||
-      !isValidRange(source.correctedText, selection.correctedRange)
-    )
+    const validSource =
+      source &&
+      CorrectionMode.safeParse(source.mode).success &&
+      isValidRange(source.correctedText, selection.correctedRange) &&
+      ('kind' in selection && selection.kind === 'expression'
+        ? selection.mode === source.mode && selection.value.length > 0
+        : isValidRange(source.originalText, selection.originalRange))
+    if (!validSource)
       throw new CorrectionError(ErrorCode.enum.INVALID_INPUT)
-    const original = source.originalText.slice(
-      selection.originalRange.start,
-      selection.originalRange.end,
-    )
+    const original = 'originalRange' in selection
+      ? source.originalText.slice(selection.originalRange.start, selection.originalRange.end)
+      : ''
     const corrected = source.correctedText.slice(
       selection.correctedRange.start,
       selection.correctedRange.end,
     )
-    const key = explanationSelectionKey(selection)
-    if (
-      !diffText(source.originalText, source.correctedText).groups.some(
-        (group) =>
-          explanationSelectionKey(explanationSelection(selection.requestId, group)) === key,
-      )
-    )
-      throw new CorrectionError(ErrorCode.enum.INVALID_INPUT)
+    if ('kind' in selection && selection.kind === 'expression') {
+      if (selection.mode !== source.mode || selection.value !== corrected)
+        throw new CorrectionError(ErrorCode.enum.INVALID_INPUT)
+    } else {
+      const key = explanationSelectionKey(selection)
+      if (!diffText(source.originalText, source.correctedText).groups.some(
+        (group) => explanationSelectionKey(explanationSelection(selection.requestId, group)) === key,
+      )) throw new CorrectionError(ErrorCode.enum.INVALID_INPUT)
+    }
     return { selection, source, original, corrected }
   }
 
@@ -101,6 +106,7 @@ export function createExplanationService(deps: Dependencies) {
 
   async function generate(value: ReturnType<typeof read>) {
     const { selection, source, original, corrected } = value
+    const expression = 'kind' in selection && selection.kind === 'expression'
     if (!deps.isAvailable || !deps.transport)
       throw new CorrectionError(ErrorCode.enum.NOT_CONFIGURED)
     if (!ModelId.safeParse(source.modelId).success)
@@ -110,8 +116,9 @@ export function createExplanationService(deps: Dependencies) {
       id: randomUUID(),
       selection,
       requestedModel: source.modelId,
-      promptVersion:
-        source.mode === CorrectionMode.enum.strict
+      promptVersion: expression
+        ? EXPRESSION_EXPLAIN_PROMPT_VERSION
+        : source.mode === CorrectionMode.enum.strict
           ? EXPLAIN_PROMPT_VERSION
           : REWRITE_EXPLAIN_PROMPT_VERSION,
       parameters: explanationRequestParameters(source.modelId),
@@ -157,36 +164,51 @@ export function createExplanationService(deps: Dependencies) {
             messages: [
               {
                 role: 'system',
-                content:
-                  source.mode === CorrectionMode.enum.strict
+                content: expression
+                  ? EXPRESSION_EXPLAIN_PROMPT
+                  : source.mode === CorrectionMode.enum.strict
                     ? STRICT_EXPLAIN_PROMPT
                     : REWRITE_EXPLAIN_PROMPT,
               },
               {
                 role: 'user',
-                content: JSON.stringify({
-                  mode: source.mode,
-                  originalText: source.originalText,
-                  editedText: source.correctedText,
-                  selectedChange: {
-                    kind: selection.kind,
-                    originalFragments: selection.originalSpans.map((range) => ({
-                      range,
-                      text: source.originalText.slice(range.start, range.end),
-                    })),
-                    editedFragments: selection.correctedSpans.map((range) => ({
-                      range,
-                      text: source.correctedText.slice(range.start, range.end),
-                    })),
-                    positionEncoding: 'UTF-16, zero-based, end-exclusive',
-                  },
-                  comparisonContext: {
-                    originalFragment: original,
-                    editedFragment: corrected,
-                    originalRange: selection.originalRange,
-                    editedRange: selection.correctedRange,
-                  },
-                }),
+                content: JSON.stringify(
+                  expression
+                    ? {
+                        mode: source.mode,
+                        editedText: source.correctedText,
+                        selectedExpression: {
+                          source: selection.source,
+                          range: selection.correctedRange,
+                          value: selection.value,
+                          positionEncoding: 'UTF-16, zero-based, end-exclusive',
+                        },
+                        positionEncoding: 'UTF-16, zero-based, end-exclusive',
+                      }
+                    : {
+                        mode: source.mode,
+                        originalText: source.originalText,
+                        editedText: source.correctedText,
+                        selectedChange: {
+                          kind: selection.kind,
+                          originalFragments: selection.originalSpans.map((range) => ({
+                            range,
+                            text: source.originalText.slice(range.start, range.end),
+                          })),
+                          editedFragments: selection.correctedSpans.map((range) => ({
+                            range,
+                            text: source.correctedText.slice(range.start, range.end),
+                          })),
+                          positionEncoding: 'UTF-16, zero-based, end-exclusive',
+                        },
+                        comparisonContext: {
+                          originalFragment: original,
+                          editedFragment: corrected,
+                          originalRange: selection.originalRange,
+                          editedRange: selection.correctedRange,
+                        },
+                      },
+                ),
               },
             ],
           },
@@ -249,7 +271,9 @@ export function createExplanationService(deps: Dependencies) {
     if (saved !== null) return { selection: value.selection, explanation: saved }
     const key = JSON.stringify([
       value.selection.requestId,
-      explanationSelectionKey(value.selection),
+      'kind' in value.selection && value.selection.kind === 'expression'
+        ? expressionExplanationSelectionKey(value.selection)
+        : explanationSelectionKey(value.selection),
     ])
     let task = pending.get(key)
     if (!task) {
