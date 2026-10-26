@@ -1,5 +1,5 @@
 ---
-name: Gramota
+name: Gramika
 description: A calm, mobile-first writing workspace with readable corrections.
 colors:
   light-canvas: "#f5f3ec"
@@ -34,7 +34,7 @@ rounded:
   highlight: "5px"
 ---
 
-# Gramota design direction
+# Gramika design direction
 
 ## V2.8 branding
 
@@ -51,8 +51,8 @@ Recorded on 2026-10-22 for the V2.6 design handoff and subsequent V2.7
 implementation. This describes the chosen redesign, not the currently shipped
 appearance. It does not mark either roadmap item complete or authorize coding.
 
-The visual reference is the exported [Figma Make app](../prototypes/Redesign%20Gramota%20App/src/App.tsx)
-and its [stylesheet](../prototypes/Redesign%20Gramota%20App/src/index.css), inspected
+The visual reference is the exported [Figma Make app](../prototypes/Redesign%20Gramika%20App/src/App.tsx)
+and its [stylesheet](../prototypes/Redesign%20Gramika%20App/src/index.css), inspected
 in Playwright on desktop and mobile. The user approved its warm light palette,
 larger mobile typography, mode switch, icons, subtle correction highlights, and
 correction inspection/explanation presentation.

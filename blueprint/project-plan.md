@@ -1,18 +1,17 @@
-# Project Plan: Gramota
+# Project Plan: Gramika
 
 **V1 status:** Finished and accepted by the user on 2026-10-20. The agreed scope
 is complete and running in production. Backup/restore, authentication and future
 access work remain deferred; they do not block V1 completion.
 
 **V2 status:** Readable diff (V2.1) is completed and approved by the user on
-2026-10-21. History cost display in Russian kopecks (V2.1a) is planned next,
-before gentle rewrite mode (V2.2), and is not implemented. The V2 direction below extends the shipped V1 baseline. Delivery
+2026-10-21. History cost display in Russian kopecks (V2.1a) was implemented in commit d6d8de0 and is complete. The V2 direction below extends the shipped V1 baseline. Delivery
 order lives in [the build plan](build-plan.md); detailed behavior and acceptance
 criteria belong in each feature specification.
 
 ## 1. Problem
 
-Gramota is a personal writing assistant for correcting short messages and emails before sending them.
+Gramika is a personal writing assistant for correcting short messages and emails before sending them.
 
 It corrects grammar, spelling and punctuation while preserving the author's meaning, intentions, tone and structure. It should avoid unnecessary rewriting.
 
@@ -78,13 +77,12 @@ English and French remain future candidates. Russian is the initial acceptance t
 - **Readable changes:** improve the local diff so dense edits and substantial
   word changes are easier to understand without altering the clean copied result.
   Completed and approved on 2026-10-21.
-- **History costs in Russian kopecks:** before gentle rewriting, convert all
+- **History costs in Russian kopecks:** implemented in commit d6d8de0; convert all
   history cost displays in the frontend using a free USD/RUB rate API and a
   Russian kopeck unit word, including fractional kopecks. Fall back to explicitly
   labeled USD whenever the exchange-rate API or conversion is unavailable or
   fails. Stored costs remain USD; no backend conversion or paid API. Provider,
-  display precision and rate-reuse details belong in the feature spec. Planned
-  only; implementation has not been authorized.
+  display precision and rate-reuse details belong in the feature spec. The frontend implementation uses a free USD/RUB rate with an explicit USD fallback; stored costs remain USD.
 - **Rewrite mode (working UI label: Gentle rewrite):** retain Strict as the
   default, unchanged correction mode. Explicit Rewrite requests different wording:
   minimal natural alternatives for already-good text, phrase improvements for

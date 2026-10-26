@@ -1,4 +1,4 @@
-# Gramota web
+# Gramika web
 
 React/Vite client for Russian proofreading, local Text/Changes views, clipboard
 actions and searchable correction history. Model selection offers Gemma 4 as

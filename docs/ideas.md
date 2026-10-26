@@ -1,4 +1,4 @@
-# Gramota ideas
+# Gramika ideas
 
 A discussion backlog for improving everyday use. This is not the implementation
 roadmap. Items come from another LLM's original suggestions and subsequent
@@ -29,7 +29,7 @@ and a small invited circle with similar needs. Do not assume a public service,
 commercial product or large user base.
 
 The user's focus is the experience of the complete everyday task, not just visual
-UI polish: bring text into Gramota, correct it, review it, copy it, and return to
+UI polish: bring text into Gramika, correct it, review it, copy it, and return to
 the original conversation or app with as little friction as possible.
 
 Finish deployment and learn from daily use before committing to a large feature
@@ -65,7 +65,7 @@ Keep the common strict-v3 prompt; separate style prompts have no demonstrated ne
 
 **Status:** Suggestion.
 
-Switching apps, refreshing or reopening Gramota should not unnecessarily lose a
+Switching apps, refreshing or reopening Gramika should not unnecessarily lose a
 draft. First check what the current draft behavior already covers. Consider
 retention across reopening only if useful, with a clear way to discard locally
 retained text. Decide whether a result or only the original needs restoration.
@@ -115,7 +115,7 @@ The exact control and behavior remain to be designed.
 
 **Status:** Suggestion, after deployment.
 
-Consider a phone home-screen shortcut so opening Gramota takes little effort.
+Consider a phone home-screen shortcut so opening Gramika takes little effort.
 Choose the smallest approach that works on the user's device; this does not
 implicitly require offline correction, notifications or a full PWA feature set.
 

@@ -13,7 +13,7 @@ for optional tool settings.
 
 ## What this is
 
-Gramota is a personal writing assistant for correcting short messages and letters,
+Gramika is a personal writing assistant for correcting short messages and letters,
 with Russian quality, minimal edits, and mobile use as priorities. The repository
 implements correction, local diff, searchable history and persistent model
 selection. The active roadmap, including production packaging/health (6a-6b),
