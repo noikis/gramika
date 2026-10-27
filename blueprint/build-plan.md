@@ -13,7 +13,7 @@ item needs its own feature specification and acceptance criteria before
 implementation.
 
 - [x] **V4.1 — Meaningful text-diff grouping research** — Research deliverable identified and accepted by the user: [`docs/text-diff-improvement-spec.md`](../docs/text-diff-improvement-spec.md), resulting from the [research brief](../docs/gramika_diff_grouping_research_brief.md). Implementation is tracked separately under V4.2.
-- [ ] **V4.2 — Text-diff improvements** — Implement only Steps 1–5 of the [improvement specification](../docs/text-diff-improvement-spec.md), as five separate improvements under the delivery contract below. Steps 6 and 7 are excluded from this workflow.
+- [x] **V4.2 — Text-diff improvements** — Steps 1–5 of the [improvement specification](../docs/text-diff-improvement-spec.md) are implemented and accepted. Steps 6 and 7 remain excluded from this workflow.
 - [ ] **V4.3 — Translation** — Integrate the self-hosted LibreTranslate service and support translating selected text or the whole text. Define source/result scope and target-language behavior in the feature specification.
 - [ ] **V4.4 — Russian dictionary definitions** — Add dictionary lookup for one selected word. Keep dictionary definitions separate from LLM-based Explain and define behavior for inflected or unsupported words.
 - [ ] **V4.5 — Read aloud** — Add text-to-speech for the selected text surfaces, with playback controls, browser limitations and localized labels defined before implementation.
@@ -32,8 +32,8 @@ matching section for detailed requirements and acceptance criteria.
 - [x] **V4.2.1 — Regression and evaluation framework** (spec Step 1): extend the existing `node:test` suite, add synthetic fixtures and structural checks, and save baseline/comparison JSON and Markdown reports. Do not change product behavior.
 - [x] **V4.2.2 — Visible whitespace in comparison cards** (spec Step 2): distinguish changed whitespace, unchanged context and empty sides without changing source text or diff behavior.
 - [x] **V4.2.3 — Separator replacement normalization** (spec Step 3): represent supported space/hyphen replacements as one coherent change while preserving exact spans and unrelated corrections.
-- [ ] **V4.2.4 — Punctuation and token-replacement cleanup** (spec Step 4): apply narrow local rules for punctuation replacements and associated spacing, preserving independent corrections and movements.
-- [ ] **V4.2.5 — Rewrite alignment confidence** (spec Step 5): evaluate conservative phrase fallback behind an internal flag; preserve clear local corrections and enable only after reviewed baseline comparisons demonstrate improvement.
+- [x] **V4.2.4 — Punctuation and token-replacement cleanup** (spec Step 4): apply narrow local rules for punctuation replacements and associated spacing, preserving independent corrections and movements.
+- [x] **V4.2.5 — Rewrite alignment confidence** (spec Step 5): apply conservative phrase fallback for low-confidence local rewrites while preserving clear local corrections and reviewed baseline behavior.
 
 For every item, prepare its own `current-feature.md` and obtain the user's
 spec approval before implementation. Implement and test only that item, then
