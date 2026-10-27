@@ -985,5 +985,85 @@
     "expectation": {
       "min": 1
     }
-  }
-]
+  },
+  {
+    "id": "step4-s4-01",
+    "original": "Добрый день! Файл готов.Проверьте вложение.",
+    "corrected": "Добрый день! Файл готов. Проверьте вложение.",
+    "category": "whitespace",
+    "description": "Missing space after a period owns only the insertion",
+    "evaluation": "confirmed",
+    "expectation": { "kinds": ["whitespace"], "originalFragments": [], "correctedFragments": [" "] }
+  },
+  {
+    "id": "step4-s4-02",
+    "original": "Я отправил файл ,проверьте его сегодня.",
+    "corrected": "Я отправил файл, проверьте его сегодня.",
+    "category": "whitespace",
+    "description": "Comma spacing remains two precise whitespace edits",
+    "evaluation": "confirmed",
+    "expectation": { "count": 2, "kinds": ["whitespace", "whitespace"], "originalFragments": [" "], "correctedFragments": [" "] }
+  },
+  {
+    "id": "step4-s4-03",
+    "original": "Отчёт готов ! Мы можем отправить его.",
+    "corrected": "Отчёт готов! Мы можем отправить его.",
+    "category": "whitespace",
+    "description": "Space before an exclamation mark is removed",
+    "evaluation": "confirmed",
+    "expectation": { "kinds": ["whitespace"], "originalFragments": [" "], "correctedFragments": [] }
+  },
+  {
+    "id": "step4-s4-04",
+    "original": "Это работает?Да, теперь всё в порядке.",
+    "corrected": "Это работает? Да, теперь всё в порядке.",
+    "category": "whitespace",
+    "description": "Missing space after a question mark",
+    "evaluation": "confirmed",
+    "expectation": { "kinds": ["whitespace"], "originalFragments": [], "correctedFragments": [" "] }
+  },
+  {
+    "id": "step4-s4-05",
+    "original": "Мы уже закончили работу! Всё проверено.",
+    "corrected": "Мы уже закончили работу? Всё проверено.",
+    "category": "punctuation-replace",
+    "description": "Punctuation replacement owns only the marks",
+    "evaluation": "confirmed",
+    "expectation": { "kinds": ["replace"], "originalFragments": ["!"], "correctedFragments": ["?"] }
+  },
+  {
+    "id": "step4-s4-06",
+    "original": "Я отправил письмо;жду ответа сегодня.",
+    "corrected": "Я отправил письмо; жду ответа сегодня.",
+    "category": "whitespace",
+    "description": "Missing space after a semicolon",
+    "evaluation": "confirmed",
+    "expectation": { "kinds": ["whitespace"], "originalFragments": [], "correctedFragments": [" "] }
+  },
+  {
+    "id": "step4-s4-07",
+    "original": "Да,, всё готово, можно отправлять отчёт.",
+    "corrected": "Да, всё готово, можно отправлять отчёт.",
+    "category": "punctuation-replace",
+    "description": "Extra comma is deleted locally",
+    "evaluation": "confirmed",
+    "expectation": { "kinds": ["delete"], "originalFragments": [","], "correctedFragments": [] }
+  },
+  {
+    "id": "step4-s4-08",
+    "original": "Я отправил файл ,но забыл приложить отчёт.",
+    "corrected": "Я отправил файл, но забыл приложить отчёт.",
+    "category": "whitespace",
+    "description": "Comma spacing stays independent from surrounding words",
+    "evaluation": "confirmed",
+    "expectation": { "count": 2, "kinds": ["whitespace", "whitespace"], "originalFragments": [" "], "correctedFragments": [" "] }
+  },
+  {
+    "id": "step4-s4-09",
+    "original": "Я отправил файл,но допустил ашибку.",
+    "corrected": "Я отправил файл, но допустил ошибку.",
+    "category": "independent",
+    "description": "Spacing and spelling corrections remain separate",
+    "evaluation": "confirmed",
+    "expectation": { "count": 2, "kinds": ["whitespace", "replace"], "originalFragments": ["ашибку"], "correctedFragments": [" ", "ошибку"] }
+  }]

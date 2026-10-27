@@ -31,7 +31,7 @@ matching section for detailed requirements and acceptance criteria.
 
 - [x] **V4.2.1 — Regression and evaluation framework** (spec Step 1): extend the existing `node:test` suite, add synthetic fixtures and structural checks, and save baseline/comparison JSON and Markdown reports. Do not change product behavior.
 - [x] **V4.2.2 — Visible whitespace in comparison cards** (spec Step 2): distinguish changed whitespace, unchanged context and empty sides without changing source text or diff behavior.
-- [ ] **V4.2.3 — Separator replacement normalization** (spec Step 3): represent supported space/hyphen replacements as one coherent change while preserving exact spans and unrelated corrections.
+- [x] **V4.2.3 — Separator replacement normalization** (spec Step 3): represent supported space/hyphen replacements as one coherent change while preserving exact spans and unrelated corrections.
 - [ ] **V4.2.4 — Punctuation and token-replacement cleanup** (spec Step 4): apply narrow local rules for punctuation replacements and associated spacing, preserving independent corrections and movements.
 - [ ] **V4.2.5 — Rewrite alignment confidence** (spec Step 5): evaluate conservative phrase fallback behind an internal flag; preserve clear local corrections and enable only after reviewed baseline comparisons demonstrate improvement.
 

@@ -22,11 +22,62 @@ export function tokenize(text: string): Token[] {
       pieces[pieces.length - 1].end = part.index + part.segment.length;
       continue;
     }
-    if (part.isWordLike || /^\s+$/u.test(part.segment))
+    if (part.isWordLike) {
+      // Intl.Segmenter keeps adjacent words joined when punctuation has no
+      // surrounding whitespace (for example `готов.Проверьте`). Split only
+      // unambiguous punctuation between letters; keep URL/email-like tokens,
+      // decimals, abbreviations and ellipses intact.
+      const segments = Array.from(graphemes.segment(part.segment));
+      const protectedToken = /[:/@]/u.test(part.segment);
+      const abbreviation = /^(?:\p{L}\.)+\p{L}?$/u.test(part.segment);
+      const domainLike =
+        /^[\p{L}\p{N}]+(?:\.[\p{L}\p{N}-]+)+$/u.test(part.segment) &&
+        part.segment === part.segment.toLocaleLowerCase("ru");
+      const splitAt = new Set<number>();
+      if (!protectedToken && !abbreviation && !domainLike) {
+        for (let index = 1; index < segments.length - 1; index++) {
+          const current = segments[index].segment;
+          const previous = segments[index - 1].segment;
+          const next = segments[index + 1].segment;
+          if (
+            !/^[.,!?;:]$/u.test(current) ||
+            !/^\p{L}$/u.test(previous) ||
+            !/^\p{L}$/u.test(next)
+          )
+            continue;
+          splitAt.add(index);
+        }
+      }
+      let start = 0;
+      for (let index = 0; index < segments.length; index++) {
+        if (!splitAt.has(index)) continue;
+        const first = segments[start], previous = segments[index - 1];
+        if (first && previous)
+          pieces.push({
+            start: part.index + first.index,
+            end: part.index + previous.index + previous.segment.length,
+            isWord: true,
+          });
+        const punctuation = segments[index];
+        pieces.push({
+          start: part.index + punctuation.index,
+          end: part.index + punctuation.index + punctuation.segment.length,
+          isWord: false,
+        });
+        start = index + 1;
+      }
+      const first = segments[start], last = segments.at(-1);
+      if (first && last)
+        pieces.push({
+          start: part.index + first.index,
+          end: part.index + last.index + last.segment.length,
+          isWord: true,
+        });
+    } else if (/^\s+$/u.test(part.segment))
       pieces.push({
         start: part.index,
         end: part.index + part.segment.length,
-        isWord: Boolean(part.isWordLike),
+        isWord: false,
       });
     else
       for (const grapheme of graphemes.segment(part.segment))
