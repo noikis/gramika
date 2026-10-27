@@ -1,9 +1,330 @@
-# Current Feature
+# Feature: Visible whitespace in comparison cards
 
-> **Generated file.** Holds the one feature, fix, or rollback being built in this checkout. Run
-> `/feature <number-or-name>` to spec a build-plan feature, or `/fix "<bug>"` for
-> an ad-hoc fix. Use `/rollback <completed-feature>` to plan a safe reversal.
-> Build one thing at a time in this checkout; `/complete` archives it under
-> `blueprint/history/` and resets this file.
+**From build-plan:** feature V4.2.2
+**Build attempt:** 1
+**Branch:** feature/visible-whitespace-in-comparison-cards
+**Planned archive:** blueprint/history/features/V4.2.2-visible-whitespace-in-comparison-cards.md
+**Status:** Verified Step 2 implementation; accepted by the user in chat
 
-_Nothing in progress. Run `/feature`, `/fix`, or `/rollback` to start._
+## Goal
+
+Make whitespace corrections understandable in Original/Corrected comparison cards
+without changing the diff engine or the source text. Deliver only Step 2 of the
+text-diff improvement work and stop for manual review before any later step.
+
+The acceptance rule is: when a comparison card exists, the user can understand
+its change. Preserve the current policy for which cards exist, including
+whitespace-only cards. Whether trivial whitespace corrections should eventually
+be hidden or grouped remains undecided; Step 2 does not settle that policy.
+
+## Design reference
+
+Preserve the current interface, English labels, light/dark themes and typography
+defined in `docs/DESIGN.md`. Reuse the existing comparison layout and color tokens.
+This is a narrow presentation refinement, not a redesign.
+
+## In scope
+
+- Render existing comparison context from each group's `originalRange` and
+  `correctedRange`, distinguishing actual changes using `originalSpans` and
+  `correctedSpans` on the corresponding side.
+- Mark whitespace only when it belongs to that side's changed spans. Preserve
+  unchanged contextual text and its whitespace without markers or change emphasis.
+- Use visible symbols for changed spaces (`␠`), tabs (`⇥`) and line breaks (`↵`).
+  Use a distinct `NBSP` marker for U+00A0. Keep marker counts faithful to the
+  changed characters; distinguish CR and CRLF accessibly if encountered, without
+  normalizing the underlying text. Other changed whitespace must receive an
+  understandable labeled representation rather than disappear.
+- Clearly emphasize changed content using existing design tokens. Do not style
+  an entire context range as changed when only some spans changed. Handle all
+  spans in a group, including unchanged gaps between them.
+- Keep explicit empty-excerpt labels: `No original text` and `Removed text`.
+  If a side has context but no changed span, retain that context without emphasis;
+  do not replace useful context with an absence label. Whitespace-only excerpts
+  show their actual markers rather than the generic `Whitespace only` placeholder.
+- Apply the shared rendering to workspace and History comparison cards, including
+  compact variants, with meaningful accessible whitespace names and side labels.
+- Preserve Copy, native text selection, correction navigation, and both correction
+  and manual-expression Explain behavior.
+- Preserve existing card eligibility, correction counts and group navigation;
+  improve only the presentation inside the cards that currently appear.
+
+## Out of scope
+
+- Changes to `diffText()`, tokenization, alignment, grouping, IDs, movement markers,
+  change kinds, UTF-16 offsets or ranges.
+- Changing the policy for showing, hiding or grouping whitespace-only corrections.
+  Do not introduce a trivial-whitespace classification or filtering rule.
+- Merging groups or implementing Steps 3-5. Step 3 addresses the two-group
+  separator replacement problem; Step 4 addresses punctuation-related
+  fragmentation. Neither problem is to be repaired through Step 2 rendering.
+- Strict/Rewrite behavior, prompts, transport, persistence, APIs or LLM calls.
+- A new test framework, runtime dependency, browser harness or design system.
+- Commits, merges, pushes, deployment, SSH, or automatic reviewer subagents.
+
+## Build loop
+
+Wait for the user's approval of this spec before implementing. Then create or
+switch to the recorded feature branch before product edits. Follow
+`workflow.stepReview: feature`: complete the small steps and present one review
+packet. Checkpoint commits are disabled. Run relevant checks once when the final
+implementation is ready and reuse passing evidence if unchanged. Review belongs
+to the user under the project's lightweight completion override. Stop after Step 2;
+neither automated success nor this spec approves Step 3 or `/complete`.
+
+## Build steps
+
+- [x] **1. Render comparison excerpts from existing spans.** Inspect the current
+  `ResultView` renderer and whitespace helper, then add the smallest shared
+  presentation helper/component needed to split the existing context range at
+  changed-span boundaries. Render ordinary text safely through React, emphasize
+  changed spans, and substitute visual whitespace representations only there.
+  Keep empty-side labels explicit. Do not change the main corrected-text DOM or
+  textarea used for source-offset selection merely to decorate the cards.
+  **Done when:** the actual cards visibly expose removed/inserted/replaced
+  whitespace, preserve unmarked context and multiple spans, and focused renderer
+  tests pass without modifying engine output, card eligibility or correction
+  counts.
+
+- [x] **2. Verify accessibility and presentation contracts.** Update the Step 1
+  server-rendered presentation assertions and add the matrix below. Give markers
+  accessible names such as `space`, `tab`, `line break`, and `non-breaking space`;
+  Original/Corrected labels provide removal/insertion context. Preserve native
+  source selection and exact Copy/Explain values. Keep the cards readable and
+  wrapping within mobile widths in both themes and History variants.
+  **Done when:** automated presentation tests pass, and a real browser or an
+  appropriate DOM/CSS environment checks the rendered cards, mobile wrapping,
+  keyboard navigation, native selection, Copy and Explain selections. Static
+  server markup alone is insufficient evidence. Record any unverified behavior.
+
+- [x] **3. Run regression checks and present Step 2 for review.** Locate and verify
+  the saved Step 1 baseline, run the existing evaluator against it, and compare
+  complete `TextDiff` results for the original 47 cases. Preserve the saved
+  baseline and fixture inputs. Run server tests, both lint checks and the web
+  build. Report failures without repairing unrelated behavior.
+  **Done when:** all required checks pass; source strings, spans, ranges, groups,
+  runs and markers match baseline; browser evidence is recorded; and the final
+  packet lists files changed, root cause, before/after examples, tests, remaining
+  UX issues and unchanged-engine confirmation. Stop for user review.
+
+## Files / areas
+
+- `apps/web/src/components/result-view.tsx`: shared workspace/History rendering,
+  comparison cards, selection and Explain integration.
+- `apps/web/src/lib/whitespace-display.ts`: existing whitespace descriptions;
+  extend or reuse only as needed for presentation.
+- A small adjacent presentation helper/component if needed to avoid duplication.
+- `apps/web/src/App.css` and, only if necessary, `components/history.css`:
+  span distinction, marker readability and responsive behavior.
+- `apps/server/test/text-diff-framework.test.ts` and
+  `apps/server/test/support/text-diff/presentation.ts`: existing actual-renderer
+  bridge and presentation assertions. Extend the bridge only as tests require.
+- Existing evaluator and synthetic fixtures are regression references, not
+  engine-change targets. Additional presentation-only cases may live in tests.
+
+## Data / contracts
+
+The frontend owns this change. There is no server or persisted-data change.
+`TextDiff` is read-only input. Slice the untouched source strings using the
+existing UTF-16 ranges; do not trim, normalize, recompute, expand, merge or mutate
+them. Symbols and labels exist only in the comparison presentation.
+
+The main Text view, corrected Changes content and Copy continue to use actual
+corrected text. Correction Explain continues to use `explanationSelection()`;
+manual expression Explain continues to derive real text and UTF-16 ranges from
+the existing source surfaces. Neither payload may contain decorative markers.
+Render user-provided text as escaped React content, never raw HTML. Preserve
+existing movement rendering and manual selection behavior.
+
+## Testing
+
+The user updated `apps/server/test/fixtures/text-diff.json` with 12 natural-message
+Step 2 cases: comma spacing, sentence spacing, double spaces, newline/tab/NBSP
+replacement, leading/trailing spaces, emoji spacing, mixed spelling/spacing,
+two independent spacing edits and an exploratory space-to-hyphen example. Use
+these for presentation coverage alongside the required edge cases below. Their
+UI notes do not authorize marking unchanged spaces or changing grouping.
+
+**Regression corpus dependency, resolved by user approval in chat:** the update replaced all 35 Step 1
+JSON cases rather than appending to them. With the 12 generated performance
+cases, the current corpus has 24 cases. Existing tests require at least 30 and
+look up removed IDs `separator-forward` and `report-markup`. This is identified
+from inspection, not an executed test failure. A normal evaluator run against
+the saved baseline would report the old JSON cases missing and the new cases
+added, so it cannot prove unchanged output for all original 47 cases.
+Approved resolution: retain the original 35 JSON cases
+alongside the 12 new cases, preserving IDs and inputs (59 cases including the
+12 generated performance cases). Do not overwrite the user's fixture changes,
+weaken existing checks or silently replace the baseline to resolve this.
+
+Update the Step 1 test that currently asserts absence of `␠`; replace it with
+assertions for visible changed whitespace and distinct unchanged context.
+Cover the actual comparison renderer, not only a string-formatting helper:
+
+| Case | Required observation |
+| --- | --- |
+| `слово ,` -> `слово,` | The removed space is visible as `␠` beside the comma; existing engine context is retained. |
+| `Привет  мир` -> `Привет мир` | Removed whitespace is marked; contextual spaces are not. |
+| `Привет мир` -> `Привет  мир` | Inserted whitespace is marked on the corrected side only. |
+| `Привет !` -> `Привет!` | The removed space is visible beside punctuation. |
+| Space -> newline | The sides show distinct space and line-break markers. |
+| Tab insertion and removal | `⇥` is visible with an understandable accessible name. |
+| NBSP insertion/removal and NBSP <-> ordinary space | NBSP is distinguishable from an ordinary space. |
+| Leading and trailing whitespace edits | Boundary whitespace remains visible and counted. |
+| Multiple spans in one group | All spans render; unchanged gaps receive no change emphasis or markers. |
+| Empty-side insertion and deletion, including whitespace-only text | Explicit absence labels appear only for truly empty excerpts. |
+| Unchanged whitespace in comparison context | It stays ordinary whitespace, even beside marked changes. |
+
+Also assert safe escaping, unchanged source values and `TextDiff` objects before
+and after rendering, exact correction Explain selections, and unchanged movement
+markers. Where the current engine does not naturally yield a required multi-span
+presentation case, test the renderer with a valid synthetic group rather than
+changing the engine. Test the shared workspace and History/compact paths.
+Confirm existing whitespace-only corrections remain reachable through the same
+navigation and counts. Do not make tests assert a future hide/group policy or
+expect Step 3 separator merging or Step 4 punctuation cleanup.
+
+During implementation run from the repository root:
+
+```text
+npm run --silent diff:evaluate -- --baseline <verified-saved-Step-1-results.json>
+npm test -w apps/server
+npm run lint -w apps/web
+npm run lint -w apps/server
+npm run build -w apps/web
+```
+
+Resolve and record the exact existing baseline path before running the evaluator;
+do not silently generate a replacement baseline if it is missing. Report that as
+a verification blocker. Timing samples and run metadata may vary; all underlying
+`TextDiff` output must remain identical. Evaluator comparison summaries alone
+must not substitute for checking complete saved `actual` output equality.
+
+In a real browser or suitable DOM/CSS environment inspect both themes at a
+320-390px mobile width and desktop width, whitespace and empty-side cards,
+workspace and History. Verify markers remain visible, context stays distinct,
+content wraps without horizontal overflow, and marker labels are exposed to
+assistive technology. Verify native selection across unchanged/changed text and
+deletion markers, clean corrected-text copying, correction Explain and manual
+selection Explain values/ranges without making model calls. Record what was
+observed and any limits; do not claim full screen-reader testing from markup.
+
+## Notes for the AI
+
+- Confirmed root cause: `ResultView` slices each group's context range and renders
+  it through `passage()` as undifferentiated text. Whitespace-only strings become
+  `Whitespace only`; other whitespace has no visible glyph. The existing
+  comparison CSS already uses `white-space: pre-wrap`, so this is not a trimming
+  or CSS collapsing bug. Changed spans are available but unused by these cards.
+- Step 1 presentation coverage uses React server rendering and has no DOM,
+  effects or CSS evidence. Do not mistake it for browser verification.
+- No combined Verify or Browser tests command is configured. Do not install a
+  runner or start a development server as a side effect. When a live check needs
+  a server, ask the user to start it. Before any Playwright MCP call, obtain
+  explicit permission stating the target URL/action. No SSH is needed.
+- Planning uses the current build plan and the user's Step 2 task. The overview
+  still has older V4 numbering; do not propagate that numbering or refresh
+  unrelated planning documents during this work.
+- The planning pass executed no checks. Implementation evidence follows.
+
+## Step 2 verification — 2026-10-27
+
+- User approved the spec, retaining both fixture sets, and Playwright checks at
+  `http://localhost:5173`. Worked on the recorded branch. Existing staged entries
+  were preserved; no commit, merge, push, SSH, model call or manual benchmark ran.
+  The user started the development server; the agent did not start one.
+- Root cause: comparison cards used context slices as undifferentiated text and
+  replaced whitespace-only excerpts with a placeholder. `ComparisonExcerpt`
+  now splits those same ranges at existing span boundaries, underlines changed
+  content, and labels whitespace glyphs only inside changed spans. Ordinary
+  context, movement markers, card eligibility, counts and navigation are retained.
+- Before/after: `слово ,` previously displayed an invisible space beside `,`;
+  Original now shows `␠,` with only the space emphasized. A space/newline
+  replacement previously showed two `Whitespace only` placeholders; it now shows
+  `␠` / `↵`. NBSP has its own `NBSP` marker; tabs show `⇥`.
+- Corpus: restored all 35 original JSON cases alongside the user's unchanged
+  12 examples, plus the existing 12 generated cases. Fixture values and IDs are
+  preserved, and the saved baseline was not overwritten.
+- Saved Step 1 baseline:
+  `test-results/text-diff/2026-10-27T10-11-37-517Z-8t853w/results.json`.
+  Confirmed completed status, 47 cases, and matching original fixture inputs.
+  Ran `npm run --silent diff:evaluate -- --baseline` with that exact path.
+  New report: `test-results/text-diff/2026-10-27T14-23-58-305Z-rsTrhe/results.json`.
+  All 59 cases passed (9,367 assertions), including all 12 Step 2 examples.
+  A separate `assert.deepEqual` comparison checked every original fixture and
+  its complete saved `actual` TextDiff: **47/47 identical**, including spans,
+  ranges, groups, runs, IDs and movement markers. Timing metadata was excluded.
+- Passed `npm test -w apps/server`, `npm run lint -w apps/web`,
+  `npm run lint -w apps/server`, and `npm run build -w apps/web`.
+  The focused `node --test -r ts-node/register test/text-diff-framework.test.ts`
+  run from `apps/server` passed 40/40 after the final renderer adjustment.
+  Web lint initially rejected a mutable render cursor; indexing existing spans
+  fixed it, and web lint/build passed afterward. No unrelated check failures.
+- Browser: actual React ResultView modules in Chromium, with the app's real CSS
+  and intercepted API requests. Checked 26 scenarios (all 12 user examples plus
+  whitespace/empty-side/movement edges), both themes, workspace/History/compact,
+  at 320, 390 and 1280px: **522 card checks passed**, every existing group
+  reachable, expected marker/span counts, named visible markers, correct absence
+  labels, no card or page horizontal overflow. Isolated renderer mounting also
+  covered empty-source states excluded by the application's correction contract.
+- Visually inspected mobile light/dark captures:
+  `test-results/text-diff/step2-mobile-light.png` and `step2-mobile-dark.png`.
+  Accessibility snapshot exposed `space` as a named image within Original;
+  CR, CRLF, tab, NBSP and other whitespace labels also passed presentation tests.
+- Real workspace Copy wrote exactly `слово,` to the browser clipboard. Real
+  HistoryRequest Copy wrote exactly `Привет мир?`. Native mouse selection across
+  a deletion marker returned `слово,`; across changed/unchanged History text it
+  returned `Привет мир?`. Manual Explain bodies matched those exact values and
+  ranges `0–6` / `0–11`. Textarea Ctrl+A then Shift+Left selected `слово` (`0–5`)
+  and submitted that exact manual Explain body. Correction Explain matched
+  `explanationSelection()` exactly. Enter/Space activation, Tab focus between
+  correction targets, and Next navigation passed. All model requests were mocked.
+- Limits: browser viewport checks are not physical-phone or full screen-reader
+  testing. Synthetic mounting/interception verifies presentation and payloads,
+  not provider generation or persisted History/API behavior. An element-boundary
+  DOM Range probe produced no manual selection with the existing reader; native
+  mouse and text-node selections passed. Probe setup initially used an incorrect
+  ReactDOM export and incomplete synthetic metrics; both were corrected without
+  product changes.
+- No findings or independent review request recorded; review remains manual.
+  Separator two-group behavior is deferred to engine Step 3; punctuation
+  fragmentation to Step 4. Whitespace-only card policy remains undecided and
+  unchanged. This completes only V4.2.2 / improvement Step 2, including its
+  regression-check checklist item; no later improvement step was started.
+
+## Review refinement — removed-space inline marker
+
+The user requested replacing the inline minus for removed whitespace with one
+centered dot and red highlighting, matching the inserted-space visual language.
+This explicitly extends the approved presentation scope to the existing inline
+deletion marker. It does not change comparison markers or TextDiff output.
+
+- `ResultView` identifies deletion markers whose existing original spans contain
+  only whitespace. They display a decorative `·`; ordinary text deletions still
+  display `−`, and movement sources still display `↪`.
+- Uses the existing removed-text foreground/background tokens in both themes;
+  the selected dot has a red inset outline instead of a green fill or underline.
+  The existing `aria-hidden` and `user-select: none` behavior excludes the dot
+  from source offsets, native copying and manual Explain selection.
+- Focused framework/presentation suite: 41/41 passed. Web lint and build passed.
+  Browser checked red theme tokens in light/dark at 390px, no horizontal overflow,
+  and visually inspected `test-results/text-diff/step2-removed-space-dot.png`.
+  Real native mouse selection and workspace Copy both returned exactly `слово,`.
+  The first mouse probe missed the text vertically; retrying with actual text
+  bounds passed. No engine, source-string, range, grouping or payload changes.
+
+The user also requested red for removed spaces, tabs and other whitespace in
+comparison cards. Original-side changed spans now use the existing removal
+background/underline tokens, and their whitespace markers use the removal
+foreground; Corrected-side markers retain green addition styling. This is CSS
+only. Browser computed-color checks passed for space, tab, LF, CR, CRLF, NBSP
+and U+2003 on both sides in both themes (28 marker checks). Web lint/build and
+Git whitespace checks passed; existing logic-test evidence remains applicable.
+
+Approved maintainability refinement: replaced the nested marker ternary in
+`comparison-excerpt.tsx` with a typed character lookup of `{ symbol, label }`
+objects and one fallback helper. Symbols, accessible labels and rendering stay
+unchanged. Focused tests passed 41/41; web lint and build passed.
+
+The user accepted Step 2 and its review refinements in chat. No commit, merge,
+or later improvement step is authorized by this acceptance alone.

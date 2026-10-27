@@ -7,6 +7,7 @@ import { correctionDescription } from '../lib/whitespace-display'
 import { Textarea } from './ui/textarea'
 import { Button } from './ui/button'
 import { Icon } from './ui/icon'
+import { ComparisonExcerpt } from './comparison-excerpt'
 
 export type ResultViewMode = 'text' | 'changes'
 
@@ -121,7 +122,11 @@ function ResultContent({
       return
     }
     const range = selection.getRangeAt(0)
-    if (!container.current.contains(range.startContainer) || !container.current.contains(range.endContainer)) return
+    if (
+      !container.current.contains(range.startContainer) ||
+      !container.current.contains(range.endContainer)
+    )
+      return
     const nodes = document.createTreeWalker(container.current, NodeFilter.SHOW_TEXT)
     let offset = 0
     let start: number | null = null
@@ -275,6 +280,12 @@ function ResultContent({
             const group = corrections[unitIndex]
             const active = unitIndex === selected
             const spacing = group.kind === 'whitespace'
+            const isRemovedWhitespace =
+              part.marker === 'deletion' &&
+              group.originalSpans.length > 0 &&
+              group.originalSpans.every((range) =>
+                /^\s+$/u.test(result.originalText.slice(range.start, range.end)),
+              )
             const before = result.originalText.slice(
               group.originalRange.start,
               group.originalRange.end,
@@ -295,7 +306,7 @@ function ResultContent({
                 data-change={group.id}
                 role="button"
                 tabIndex={0}
-                className={`correction-highlight${part.marker ? ' correction-deletion' : ''}${/^\s+$/u.test(text) ? ' correction-whitespace' : ''}${spacing ? ' correction-spacing-only' : ''}`}
+                className={`correction-highlight${part.marker ? ' correction-deletion' : ''}${/^\s+$/u.test(text) ? ' correction-whitespace' : ''}${spacing ? ' correction-spacing-only' : ''}${isRemovedWhitespace ? ' correction-removed-whitespace' : ''}`}
                 aria-pressed={active}
                 aria-controls={panelId}
                 aria-label={`Correction ${unitIndex + 1} of ${corrections.length}. ${label}. Original context: ${passage(before, 'No original text')}. Corrected context: ${passage(after, 'Removed text')}`}
@@ -309,7 +320,9 @@ function ResultContent({
                 }}
               >
                 {part.marker ? (
-                  <span aria-hidden="true">{part.marker === 'move-source' ? '↪' : '−'}</span>
+                  <span aria-hidden="true">
+                    {part.marker === 'move-source' ? '↪' : isRemovedWhitespace ? '·' : '−'}
+                  </span>
                 ) : (
                   text
                 )}
@@ -319,7 +332,10 @@ function ResultContent({
         </div>
       )}
       {manualSelection && (
-        <ExpressionExplanationPanel key={JSON.stringify(manualSelection)} selection={manualSelection} />
+        <ExpressionExplanationPanel
+          key={JSON.stringify(manualSelection)}
+          selection={manualSelection}
+        />
       )}
       {compact && (
         <div className="result-actions">
@@ -346,11 +362,25 @@ function ResultContent({
             <dl>
               <div>
                 <dt>Original</dt>
-                <dd>{passage(comparison.original, 'No original text')}</dd>
+                <dd>
+                  <ComparisonExcerpt
+                    text={result.originalText}
+                    range={current.originalRange}
+                    spans={current.originalSpans}
+                    empty="No original text"
+                  />
+                </dd>
               </div>
               <div>
                 <dt>Corrected</dt>
-                <dd>{passage(comparison.corrected, 'Removed text')}</dd>
+                <dd>
+                  <ComparisonExcerpt
+                    text={result.correctedText}
+                    range={current.correctedRange}
+                    spans={current.correctedSpans}
+                    empty="Removed text"
+                  />
+                </dd>
               </div>
             </dl>
           </div>

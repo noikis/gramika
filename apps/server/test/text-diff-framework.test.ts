@@ -1,6 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { diffText, MAX_CHANGE_SPANS, type TextDiff } from '@gramota/text-diff'
+import { explanationSelection } from '@gramota/contracts/text-diff'
 import { fixtures, validateFixtures } from './fixtures/text-diff-fixtures'
 import { evaluateCase } from './support/text-diff/evaluate'
 import {
@@ -8,7 +9,7 @@ import {
   assertSpanUnionPreserved,
   invariants,
 } from './support/text-diff/invariants'
-import { renderResult } from './support/text-diff/presentation'
+import { renderExcerpt, renderResult } from './support/text-diff/presentation'
 
 test('corpus metadata validates IDs, expectations and exact timing lengths', () => {
   assert(
@@ -178,12 +179,34 @@ test('changed-span union check permits regrouping but rejects lost, duplicated a
   }
 })
 
-test('renderer integration characterizes whitespace context without pretending it is visible whitespace markup', () => {
+test('renderer integration marks changed whitespace and retains ordinary context', () => {
   const html = renderResult('слово ,', 'слово,')
-  assert.match(html, /<dt>Original<\/dt><dd> ,<\/dd>/u)
+  assert.match(html, /aria-label="space">␠<\/span><\/span>,<\/dd>/u)
   assert.match(html, /<dt>Corrected<\/dt><dd>,<\/dd>/u)
   assert.match(html, /Removed an extra space/u)
-  assert(!html.includes('␠'))
+  assert(html.includes('␠'))
+})
+
+test('removed whitespace uses one decorative dot while other deletions retain their markers', () => {
+  for (const variant of ['workspace', 'history', 'compact'] as const) {
+    for (const [original, corrected] of [
+      ['слово ,', 'слово,'],
+      [' ', ''],
+      ['\t', ''],
+    ]) {
+      const html = renderResult(original, corrected, variant)
+      assert.match(html, /correction-removed-whitespace/u)
+      assert.match(html, /aria-hidden="true">·<\/span>/u)
+      assert(!html.includes('aria-hidden="true">−</span>'))
+    }
+    assert.match(renderResult('Привет', '', variant), /aria-hidden="true">−<\/span>/u)
+    assert.match(
+      renderResult('Я пока не могу.', 'Я не могу пока.', variant),
+      /aria-hidden="true">↪<\/span>/u,
+    )
+    const inserted = renderResult('Приветмир', 'Привет мир', variant)
+    assert(!inserted.includes('correction-removed-whitespace'))
+  }
 })
 
 test('renderer integration shows empty-side labels, deletions and punctuation', () => {
@@ -193,7 +216,10 @@ test('renderer integration shows empty-side labels, deletions and punctuation', 
   assert.match(deleted, /aria-hidden="true">−<\/span>/u)
   const punctuation = renderResult('Привет', 'Привет!')
   assert.match(punctuation, /data-range-start="0" data-range-end="6">Привет<\/span>/u)
-  assert.match(punctuation, /<dt>Corrected<\/dt><dd>!<\/dd>/u)
+  assert.match(
+    punctuation,
+    /<dt>Corrected<\/dt><dd><span class="comparison-change">!<\/span><\/dd>/u,
+  )
 })
 
 test('renderer integration preserves multi-span movement and distinct unchanged context', () => {
@@ -211,4 +237,120 @@ test('renderer integration preserves multi-span movement and distinct unchanged 
       move.correctedSpans.length + 1,
   )
   assert.match(html, /data-range-start="0" data-range-end="10">я не могу <\/span>/u)
+})
+
+const whitespaceCases = [
+  ['слово ,', 'слово,'],
+  ['Привет  мир', 'Привет мир'],
+  ['Привет мир', 'Привет  мир'],
+  ['Привет !', 'Привет!'],
+  [' ', '\n'],
+  ['', '\t'],
+  ['\t', ''],
+  ['', '\u00a0'],
+  ['\u00a0', ''],
+  ['\u00a0', ' '],
+  [' ', '\u00a0'],
+  ['  Привет', 'Привет'],
+  ['Привет  ', 'Привет'],
+  ['', ' '],
+  [' ', ''],
+  ['', ''],
+  ['', '\r'],
+  ['', '\r\n'],
+  ['', '\u2003'],
+] as const
+
+for (const [original, corrected] of whitespaceCases)
+  test(`comparison renderer preserves sources for ${JSON.stringify([original, corrected])}`, () => {
+    const diff = diffText(original, corrected)
+    const before = structuredClone(diff)
+    const selections = diff.groups.map((group) => explanationSelection('request', group))
+    for (const variant of ['workspace', 'history', 'compact'] as const) {
+      const html = renderResult(original, corrected, variant)
+      assert(!html.includes('<dd>Whitespace only</dd>'))
+      if (diff.groups.length) {
+        assert.match(html, /<dt>Original<\/dt>/u)
+        assert.match(html, /<dt>Corrected<\/dt>/u)
+        const group = diff.groups[0]
+        for (const [text, range, spans] of [
+          [original, group.originalRange, group.originalSpans],
+          [corrected, group.correctedRange, group.correctedSpans],
+        ] as const) {
+          const excerpt = renderExcerpt(text, range, spans)
+          if (range.start !== range.end) assert(html.includes(`<dd>${excerpt}</dd>`))
+          assert.equal((excerpt.match(/class="comparison-change"/gu) ?? []).length, spans.length)
+          const changed = spans.map((span) => text.slice(span.start, span.end)).join('')
+          assert.equal(
+            (excerpt.match(/class="comparison-whitespace"/gu) ?? []).length,
+            (changed.match(/\r\n|\s/gu) ?? []).length,
+          )
+        }
+      }
+    }
+    assert.deepEqual(diff, before)
+    assert.deepEqual(
+      diff.groups.map((group) => explanationSelection('request', group)),
+      selections,
+    )
+    assert.deepEqual(diffText(original, corrected), before)
+  })
+
+test('marker names distinguish whitespace types and preserve counts', () => {
+  const text = '  \t\n\r\r\n\u00a0\u2003'
+  const range = { start: 0, end: text.length }
+  const html = renderExcerpt(text, range, [range])
+  for (const label of [
+    'space',
+    'tab',
+    'line break',
+    'carriage return',
+    'line break (carriage return and line feed)',
+    'non-breaking space',
+    'U+2003 whitespace character',
+  ])
+    assert(html.includes(`aria-label="${label}"`))
+  assert.equal((html.match(/aria-label="space"/gu) ?? []).length, 2)
+  assert.match(html, />NBSP<\/span>/u)
+})
+
+test('multiple changed spans preserve unmarked gaps, offsets, emoji and safe escaping', () => {
+  const text = '🙂 <b>  gap\tend '
+  const range = { start: 0, end: text.length }
+  const spans = [
+    { start: 7, end: 8 },
+    { start: 11, end: 12 },
+    { start: 15, end: 16 },
+  ]
+  const html = renderExcerpt(text, range, spans)
+  assert.match(html, /🙂 &lt;b&gt; /u)
+  assert.match(html, /<\/span>gap<span class="comparison-change">/u)
+  assert.equal((html.match(/class="comparison-change"/gu) ?? []).length, 3)
+  assert.equal((html.match(/aria-label="space"/gu) ?? []).length, 2)
+  assert.match(html, /aria-label="tab"/u)
+  assert.equal(renderExcerpt(' context \t', { start: 0, end: 10 }, []), ' context \t')
+})
+
+test('all user Step 2 examples render through shared workspace and History cards', () => {
+  const examples = fixtures.filter((fixture) => fixture.id.startsWith('step2-'))
+  assert.equal(examples.length, 12)
+  for (const fixture of examples) {
+    const before = diffText(fixture.original, fixture.corrected)
+    for (const variant of ['workspace', 'history', 'compact'] as const) {
+      const html = renderResult(fixture.original, fixture.corrected, variant)
+      assert.match(html, /class="correction-comparison"/u)
+      assert.match(html, /class="comparison-change"/u)
+      assert(!html.includes('<dd>Whitespace only</dd>'))
+    }
+    for (const group of before.groups) {
+      for (const [text, range, spans] of [
+        [fixture.original, group.originalRange, group.originalSpans],
+        [fixture.corrected, group.correctedRange, group.correctedSpans],
+      ] as const) {
+        const html = renderExcerpt(text, range, spans)
+        assert.equal((html.match(/class="comparison-change"/gu) ?? []).length, spans.length)
+      }
+    }
+    assert.deepEqual(diffText(fixture.original, fixture.corrected), before)
+  }
 })

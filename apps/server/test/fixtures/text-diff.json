@@ -406,5 +406,125 @@
       "min": 1,
       "max": 3
     }
+  },
+
+  {
+    "id": "step2-short-space-before-comma",
+    "original": "Привет! Я отправил документы вчера , посмотри их утром.",
+    "corrected": "Привет! Я отправил документы вчера, посмотри их утром.",
+    "category": "whitespace",
+    "description": "Removed space before a comma in a short message.",
+    "evaluation": "confirmed",
+    "expectation": { "min": 1 },
+    "notes": "UI: The removed space before the comma must be visible."
+  },
+  {
+    "id": "step2-short-space-after-period",
+    "original": "Добрый день! Файл готов.Проверьте, пожалуйста, вложение.",
+    "corrected": "Добрый день! Файл готов. Проверьте, пожалуйста, вложение.",
+    "category": "whitespace",
+    "description": "Inserted space between sentences.",
+    "evaluation": "confirmed",
+    "expectation": { "min": 1 },
+    "notes": "UI: Show the inserted space without highlighting unchanged words."
+  },
+  {
+    "id": "step2-short-double-space",
+    "original": "Я сегодня  задержусь на встрече, начинайте без меня.",
+    "corrected": "Я сегодня задержусь на встрече, начинайте без меня.",
+    "category": "whitespace",
+    "description": "Two spaces reduced to one in a natural sentence.",
+    "evaluation": "confirmed",
+    "expectation": { "min": 1 },
+    "notes": "UI: Original shows two spaces; corrected shows one."
+  },
+  {
+    "id": "step2-short-newline-to-space",
+    "original": "Я проверил список.\nТеперь можно отправлять его команде.",
+    "corrected": "Я проверил список. Теперь можно отправлять его команде.",
+    "category": "whitespace",
+    "description": "Newline replaced with a space.",
+    "evaluation": "confirmed",
+    "expectation": { "min": 1 },
+    "notes": "UI: Distinguish the original line break from the corrected space."
+  },
+  {
+    "id": "step2-short-tab-to-space",
+    "original": "Задачи на завтра:\n1.\tПозвонить клиенту.\n2. Отправить счёт.",
+    "corrected": "Задачи на завтра:\n1. Позвонить клиенту.\n2. Отправить счёт.",
+    "category": "whitespace",
+    "description": "Tab replaced with a space in a short task list.",
+    "evaluation": "confirmed",
+    "expectation": { "min": 1 },
+    "notes": "UI: Tab and space must have distinguishable markers."
+  },
+  {
+    "id": "step2-short-nbsp",
+    "original": "Счёт на 15\u00a0000 рублей готов, отправлю его после обеда.",
+    "corrected": "Счёт на 15 000 рублей готов, отправлю его после обеда.",
+    "category": "unicode",
+    "description": "Non-breaking space replaced with ordinary space.",
+    "evaluation": "confirmed",
+    "expectation": { "min": 1 },
+    "notes": "UI: NBSP must be distinguishable from an ordinary space."
+  },
+  {
+    "id": "step2-short-leading-space",
+    "original": "  Привет! Я немного опоздаю, начинайте без меня.",
+    "corrected": "Привет! Я немного опоздаю, начинайте без меня.",
+    "category": "boundary",
+    "description": "Leading spaces removed from a message.",
+    "evaluation": "confirmed",
+    "expectation": { "min": 1 },
+    "notes": "UI: Both leading spaces must be visible in the original excerpt."
+  },
+  {
+    "id": "step2-short-trailing-space",
+    "original": "Спасибо за помощь! Завтра напишу, как всё прошло.  ",
+    "corrected": "Спасибо за помощь! Завтра напишу, как всё прошло.",
+    "category": "boundary",
+    "description": "Trailing spaces removed from a message.",
+    "evaluation": "confirmed",
+    "expectation": { "min": 1 },
+    "notes": "UI: Removed trailing spaces must not disappear from the card."
+  },
+  {
+    "id": "step2-short-emoji-spacing",
+    "original": "Привет 🙂  Я выбрал фотографии, пришлю тебе вечером.",
+    "corrected": "Привет 🙂 Я выбрал фотографии, пришлю тебе вечером.",
+    "category": "unicode",
+    "description": "Extra space after an emoji.",
+    "evaluation": "confirmed",
+    "expectation": { "min": 1 },
+    "notes": "UI: Show the changed whitespace and preserve the emoji."
+  },
+  {
+    "id": "step2-short-mixed-spelling-space",
+    "original": "Привет! Я отпровил файл вчера , проверь, пожалуйста.",
+    "corrected": "Привет! Я отправил файл вчера, проверь, пожалуйста.",
+    "category": "independent",
+    "description": "Spelling correction and whitespace removal in one message.",
+    "evaluation": "confirmed",
+    "expectation": { "min": 1 },
+    "notes": "UI: Both corrections must be understandable; do not require a specific grouping."
+  },
+  {
+    "id": "step2-short-two-space-errors",
+    "original": "Я  отправил файл утром, а вечером  напишу ещё раз.",
+    "corrected": "Я отправил файл утром, а вечером напишу ещё раз.",
+    "category": "independent",
+    "description": "Two independent whitespace corrections in one sentence.",
+    "evaluation": "confirmed",
+    "expectation": { "min": 1 },
+    "notes": "UI: Both removed extra spaces must be visible."
+  },
+  {
+    "id": "step2-short-hyphen-baseline",
+    "original": "Мы настроили чат бот для поддержки, завтра покажу демо.",
+    "corrected": "Мы настроили чат-бот для поддержки, завтра покажу демо.",
+    "category": "separator",
+    "description": "Space-to-hyphen change inside a normal sentence.",
+    "evaluation": "exploratory",
+    "notes": "UI: Removed space must be visible. Do not require merging groups until Step 3."
   }
 ]

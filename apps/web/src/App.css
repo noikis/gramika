@@ -437,6 +437,14 @@ h2 {
 .correction-spacing-only.correction-whitespace::after {
   color: var(--muted);
 }
+.correction-highlight.correction-removed-whitespace {
+  color: var(--removed);
+  background: var(--removed-bg);
+  text-decoration: none;
+}
+.correction-removed-whitespace[aria-pressed='true'] {
+  box-shadow: inset 0 0 0 1px var(--removed);
+}
 .correction-details {
   margin-top: 16px;
   padding: 20px;
@@ -500,6 +508,24 @@ h2 {
   font: 19px/1.6 var(--font-writing);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+.comparison-change {
+  background: var(--added-bg);
+  text-decoration: underline;
+  text-decoration-color: var(--accent);
+  text-underline-offset: 3px;
+}
+.comparison-whitespace {
+  color: var(--accent);
+  font-family: var(--font-sans);
+  font-size: 0.85em;
+}
+.correction-comparison dl > div:first-child .comparison-change {
+  background: var(--removed-bg);
+  text-decoration-color: var(--removed);
+}
+.correction-comparison dl > div:first-child .comparison-whitespace {
+  color: var(--removed);
 }
 .result-toggle {
   display: inline-flex;

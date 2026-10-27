@@ -3,6 +3,7 @@ import { createRequire } from 'node:module'
 import { resolve, dirname } from 'node:path'
 import { Script } from 'node:vm'
 import ts from 'typescript'
+import type { ChangeGroup } from '@gramota/text-diff'
 import type { ComponentType } from '../../../../web/node_modules/@types/react'
 
 // React and its types belong to the web workspace; reuse them without adding server dependencies.
@@ -55,7 +56,11 @@ function loadWebModule(
   return module.exports
 }
 
-export function renderResult(original: string, corrected: string) {
+export function renderResult(
+  original: string,
+  corrected: string,
+  variant: 'workspace' | 'history' | 'compact' = 'workspace',
+) {
   const { ResultView } = loadWebModule(
     resolve(__dirname, '../../../../web/src/components/result-view.tsx'),
   )
@@ -70,6 +75,26 @@ export function renderResult(original: string, corrected: string) {
       view: 'changes',
       onViewChange: () => {},
       labelId: 'result-label',
+      compact: variant === 'compact',
+      actions: variant === 'workspace' ? undefined : createElement('button', null, 'Copy'),
+    }),
+  )
+}
+
+export function renderExcerpt(
+  text: string,
+  range: ChangeGroup['originalRange'],
+  spans: ChangeGroup['originalSpans'],
+) {
+  const { ComparisonExcerpt } = loadWebModule(
+    resolve(__dirname, '../../../../web/src/components/comparison-excerpt.tsx'),
+  )
+  return renderToStaticMarkup(
+    createElement(ComparisonExcerpt as ComponentType<Record<string, unknown>>, {
+      text,
+      range,
+      spans,
+      empty: 'Empty',
     }),
   )
 }
