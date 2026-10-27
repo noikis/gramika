@@ -382,13 +382,55 @@ export function diffText(original: string, corrected: string): TextDiff {
     ...matches,
     [old.length, next.length] as Pair,
   ]) {
-    changed(
-      old.slice(i, oldIndex),
-      next.slice(j, newIndex),
-      old[oldIndex]?.range.start ?? original.length,
-      next[newIndex]?.range.start ?? corrected.length,
-    );
-    if (oldIndex < old.length) spacing([old[oldIndex]], [next[newIndex]]);
+    const oldLeft = old[i - 1],
+      newLeft = next[j - 1],
+      oldRight = old[oldIndex],
+      newRight = next[newIndex];
+    // Consecutive retained word anchors prove ownership before punctuation and
+    // gap handling can split the same separator into insertion/deletion groups.
+    const oldSeparator = {
+      start: oldLeft?.range.end ?? 0,
+      end: oldRight?.range.start ?? 0,
+    };
+    const newSeparator = {
+      start: newLeft?.range.end ?? 0,
+      end: newRight?.range.start ?? 0,
+    };
+    const isSeparatorReplacement =
+      oldLeft?.isWord &&
+      oldRight?.isWord &&
+      newLeft?.isWord &&
+      newRight?.isWord &&
+      // Intl word-like tokens include numbers; numeric separators are excluded.
+      /^\p{L}/u.test(oldLeft.text) &&
+      /^\p{L}/u.test(oldRight.text) &&
+      oldSeparator.end - oldSeparator.start === 1 &&
+      newSeparator.end - newSeparator.start === 1 &&
+      ((original[oldSeparator.start] === " " &&
+        corrected[newSeparator.start] === "-") ||
+        (original[oldSeparator.start] === "-" &&
+          corrected[newSeparator.start] === " ")) &&
+      !gapsOld.has(oldRight) &&
+      !gapsNew.has(newRight);
+    if (isSeparatorReplacement) {
+      add(
+        [oldSeparator],
+        [newSeparator],
+        { start: oldLeft.range.start, end: oldRight.range.end },
+        { start: newLeft.range.start, end: newRight.range.end },
+        "replace",
+      );
+      gapsOld.add(oldRight);
+      gapsNew.add(newRight);
+    } else {
+      changed(
+        old.slice(i, oldIndex),
+        next.slice(j, newIndex),
+        oldRight?.range.start ?? original.length,
+        newRight?.range.start ?? corrected.length,
+      );
+      if (oldRight) spacing([oldRight], [newRight]);
+    }
     i = oldIndex + 1;
     j = newIndex + 1;
   }

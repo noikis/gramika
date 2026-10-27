@@ -1,330 +1,509 @@
-# Feature: Visible whitespace in comparison cards
+# Feature: Separator replacement normalization
 
-**From build-plan:** feature V4.2.2
+**From build-plan:** feature V4.2.3
 **Build attempt:** 1
-**Branch:** feature/visible-whitespace-in-comparison-cards
-**Planned archive:** blueprint/history/features/V4.2.2-visible-whitespace-in-comparison-cards.md
-**Status:** Verified Step 2 implementation; accepted by the user in chat
+**Branch:** feature/separator-replacement-normalization
+**Planned archive:** blueprint/history/features/V4.2.3-separator-replacement-normalization.md
+**Status:** Step 3 implemented and verified; ready for user review
+**Priority:** P1
 
 ## Goal
 
-Make whitespace corrections understandable in Original/Corrected comparison cards
-without changing the diff engine or the source text. Deliver only Step 2 of the
-text-diff improvement work and stop for manual review before any later step.
-
-The acceptance rule is: when a comparison card exists, the user can understand
-its change. Preserve the current policy for which cards exist, including
-whitespace-only cards. Whether trivial whitespace corrections should eventually
-be hidden or grouped remains undecided; Step 2 does not settle that policy.
-
-## Design reference
-
-Preserve the current interface, English labels, light/dark themes and typography
-defined in `docs/DESIGN.md`. Reuse the existing comparison layout and color tokens.
-This is a narrow presentation refinement, not a redesign.
+Implement only improvement Step 3: represent exactly one ordinary space (U+0020)
+exchanged with one ASCII hyphen-minus (U+002D) between unchanged, ordered word
+tokens as one separator-only `replace` group. The detailed supplied spec below
+is authoritative for scope and acceptance.
 
 ## In scope
 
-- Render existing comparison context from each group's `originalRange` and
-  `correctedRange`, distinguishing actual changes using `originalSpans` and
-  `correctedSpans` on the corresponding side.
-- Mark whitespace only when it belongs to that side's changed spans. Preserve
-  unchanged contextual text and its whitespace without markers or change emphasis.
-- Use visible symbols for changed spaces (`␠`), tabs (`⇥`) and line breaks (`↵`).
-  Use a distinct `NBSP` marker for U+00A0. Keep marker counts faithful to the
-  changed characters; distinguish CR and CRLF accessibly if encountered, without
-  normalizing the underlying text. Other changed whitespace must receive an
-  understandable labeled representation rather than disappear.
-- Clearly emphasize changed content using existing design tokens. Do not style
-  an entire context range as changed when only some spans changed. Handle all
-  spans in a group, including unchanged gaps between them.
-- Keep explicit empty-excerpt labels: `No original text` and `Removed text`.
-  If a side has context but no changed span, retain that context without emphasis;
-  do not replace useful context with an absence label. Whitespace-only excerpts
-  show their actual markers rather than the generic `Whitespace only` placeholder.
-- Apply the shared rendering to workspace and History comparison cards, including
-  compact variants, with meaningful accessible whitespace names and side labels.
-- Preserve Copy, native text selection, correction navigation, and both correction
-  and manual-expression Explain behavior.
-- Preserve existing card eligibility, correction counts and group navigation;
-  improve only the presentation inside the cards that currently appear.
+Narrow deterministic engine normalization, all specified positive/negative and
+boundary tests, full baseline comparisons, and Step 2 presentation compatibility.
 
 ## Out of scope
 
-- Changes to `diffText()`, tokenization, alignment, grouping, IDs, movement markers,
-  change kinds, UTF-16 offsets or ranges.
-- Changing the policy for showing, hiding or grouping whitespace-only corrections.
-  Do not introduce a trivial-whitespace classification or filtering rule.
-- Merging groups or implementing Steps 3-5. Step 3 addresses the two-group
-  separator replacement problem; Step 4 addresses punctuation-related
-  fragmentation. Neither problem is to be repaired through Step 2 rendering.
-- Strict/Rewrite behavior, prompts, transport, persistence, APIs or LLM calls.
-- A new test framework, runtime dependency, browser harness or design system.
-- Commits, merges, pushes, deployment, SSH, or automatic reviewer subagents.
+No implementation during this handoff. No Step 4, general punctuation cleanup,
+broad tokenization changes, unrelated grouping, new dependencies/test harness,
+paid calls, manual benchmark, commits, merges, pushes, deployment or SSH.
 
 ## Build loop
 
-Wait for the user's approval of this spec before implementing. Then create or
-switch to the recorded feature branch before product edits. Follow
-`workflow.stepReview: feature`: complete the small steps and present one review
-packet. Checkpoint commits are disabled. Run relevant checks once when the final
-implementation is ready and reuse passing evidence if unchanged. Review belongs
-to the user under the project's lightweight completion override. Stop after Step 2;
-neither automated success nor this spec approves Step 3 or `/complete`.
+The user asked only to record this spec. A future agent must wait for an explicit
+implementation request, read AGENTS.md and the local Implement skill, and
+create/switch to the recorded branch before product edits. Use feature-level
+review and disabled checkpoint commits. Preserve staged/unstaged changes. Review
+belongs to the user; stop after Step 3's report without starting Step 4 or Git
+landing operations. The detailed spec's ready status does not authorize coding
+in this planning session.
 
 ## Build steps
 
-- [x] **1. Render comparison excerpts from existing spans.** Inspect the current
-  `ResultView` renderer and whitespace helper, then add the smallest shared
-  presentation helper/component needed to split the existing context range at
-  changed-span boundaries. Render ordinary text safely through React, emphasize
-  changed spans, and substitute visual whitespace representations only there.
-  Keep empty-side labels explicit. Do not change the main corrected-text DOM or
-  textarea used for source-offset selection merely to decorate the cards.
-  **Done when:** the actual cards visibly expose removed/inserted/replaced
-  whitespace, preserve unmarked context and multiple spans, and focused renderer
-  tests pass without modifying engine output, card eligibility or correction
-  counts.
-
-- [x] **2. Verify accessibility and presentation contracts.** Update the Step 1
-  server-rendered presentation assertions and add the matrix below. Give markers
-  accessible names such as `space`, `tab`, `line break`, and `non-breaking space`;
-  Original/Corrected labels provide removal/insertion context. Preserve native
-  source selection and exact Copy/Explain values. Keep the cards readable and
-  wrapping within mobile widths in both themes and History variants.
-  **Done when:** automated presentation tests pass, and a real browser or an
-  appropriate DOM/CSS environment checks the rendered cards, mobile wrapping,
-  keyboard navigation, native selection, Copy and Explain selections. Static
-  server markup alone is insufficient evidence. Record any unverified behavior.
-
-- [x] **3. Run regression checks and present Step 2 for review.** Locate and verify
-  the saved Step 1 baseline, run the existing evaluator against it, and compare
-  complete `TextDiff` results for the original 47 cases. Preserve the saved
-  baseline and fixture inputs. Run server tests, both lint checks and the web
-  build. Report failures without repairing unrelated behavior.
-  **Done when:** all required checks pass; source strings, spans, ranges, groups,
-  runs and markers match baseline; browser evidence is recorded; and the final
-  packet lists files changed, root cause, before/after examples, tests, remaining
-  UX issues and unchanged-engine confirmation. Stop for user review.
+- [x] **1. Diagnose and normalize exact separator substitutions.** Inspect the
+  pipeline, alignment, `changed()`, `spacing()` and draft ownership first. Use
+  existing token/alignment information for a small deterministic rule.
+  **Done when:** both minimal directions produce one `replace` group owning
+  only `[3, 4)` on each side, no neighboring edits are consumed, and focused
+  engine tests and structural invariants pass.
+- [x] **2. Cover realistic messages, exclusions and presentation.** Add every
+  S3-01–S3-06, negative and boundary case below while retaining existing fixture
+  IDs/inputs. **Done when:** exclusions hold without overconstraining group
+  counts, independent edits remain separate, and the actual renderer bridge or
+  app shows one understandable card with precise separator highlighting and
+  preserved Copy/Explain source values.
+- [x] **3. Evaluate regressions and report.** Run the documented evaluator,
+  server tests, both lint checks and web build. Compare complete saved outputs
+  and performance samples. **Done when:** the existing 59 cases and additions
+  pass, every changed output is individually justified, no unrelated output or
+  structural invariant regresses, and the required report is ready for review.
+  Never replace a baseline merely to make comparisons pass.
 
 ## Files / areas
 
-- `apps/web/src/components/result-view.tsx`: shared workspace/History rendering,
-  comparison cards, selection and Explain integration.
-- `apps/web/src/lib/whitespace-display.ts`: existing whitespace descriptions;
-  extend or reuse only as needed for presentation.
-- A small adjacent presentation helper/component if needed to avoid duplication.
-- `apps/web/src/App.css` and, only if necessary, `components/history.css`:
-  span distinction, marker readability and responsive behavior.
-- `apps/server/test/text-diff-framework.test.ts` and
-  `apps/server/test/support/text-diff/presentation.ts`: existing actual-renderer
-  bridge and presentation assertions. Extend the bridge only as tests require.
-- Existing evaluator and synthetic fixtures are regression references, not
-  engine-change targets. Additional presentation-only cases may live in tests.
+- `packages/text-diff/src/text-diff.ts`, `tokenize.ts`, `align.ts`,
+  `word-moves.ts` and `diff-types.ts`.
+- Existing server text-diff tests, `apps/server/test/fixtures/text-diff.json`,
+  and `apps/server/test/support/text-diff/` evaluator/presentation bridge.
+- Existing frontend renderer is a compatibility surface, not a rewrite target.
 
 ## Data / contracts
 
-The frontend owns this change. There is no server or persisted-data change.
-`TextDiff` is read-only input. Slice the untouched source strings using the
-existing UTF-16 ranges; do not trim, normalize, recompute, expand, merge or mutate
-them. Symbols and labels exist only in the comparison presentation.
-
-The main Text view, corrected Changes content and Copy continue to use actual
-corrected text. Correction Explain continues to use `explanationSelection()`;
-manual expression Explain continues to derive real text and UTF-16 ranges from
-the existing source surfaces. Neither payload may contain decorative markers.
-Render user-provided text as escaped React content, never raw HTML. Preserve
-existing movement rendering and manual selection behavior.
+Preserve exact source text and UTF-16 half-open offsets. Qualifying groups
+intentionally change representation; preserve deterministic IDs, valid runs,
+grapheme boundaries, nonoverlapping ownership, move markers and explanation
+schemas. Copy stays exact corrected text. Explain uses actual source values and
+ranges, never decorative glyphs. No persisted-data/API contract changes.
 
 ## Testing
 
-The user updated `apps/server/test/fixtures/text-diff.json` with 12 natural-message
-Step 2 cases: comma spacing, sentence spacing, double spaces, newline/tab/NBSP
-replacement, leading/trailing spaces, emoji spacing, mixed spelling/spacing,
-two independent spacing edits and an exploratory space-to-hyphen example. Use
-these for presentation coverage alongside the required edge cases below. Their
-UI notes do not authorize marking unchanged spaces or changing grouping.
+Use all cases, checks and report requirements in the detailed spec below.
+Latest inspected completed 59-case pre-Step-3 report:
 
-**Regression corpus dependency, resolved by user approval in chat:** the update replaced all 35 Step 1
-JSON cases rather than appending to them. With the 12 generated performance
-cases, the current corpus has 24 cases. Existing tests require at least 30 and
-look up removed IDs `separator-forward` and `report-markup`. This is identified
-from inspection, not an executed test failure. A normal evaluator run against
-the saved baseline would report the old JSON cases missing and the new cases
-added, so it cannot prove unchanged output for all original 47 cases.
-Approved resolution: retain the original 35 JSON cases
-alongside the 12 new cases, preserving IDs and inputs (59 cases including the
-12 generated performance cases). Do not overwrite the user's fixture changes,
-weaken existing checks or silently replace the baseline to resolve this.
+`test-results/text-diff/2026-10-27T14-52-54-306Z-twtu3w/results.json`
 
-Update the Step 1 test that currently asserts absence of `␠`; replace it with
-assertions for visible changed whitespace and distinct unchanged context.
-Cover the actual comparison renderer, not only a string-formatting helper:
+It reports 59 passed cases and 9,367 passed assertions. Its recorded revision is
+`7b3bb4c039d6cd5ea66f32dc73b3c32e92f5e057`; it predates the Step 2 landing
+commit while capturing its unchanged engine. Before engine edits, verify its
+fixture identities/inputs and complete saved `actual` output against the current
+pre-Step-3 engine. If missing/mismatched, report the issue and preserve it; never
+silently substitute or overwrite it. Preserve the original 47-case Step 1
+baseline and later reports too. New cases supplement the existing 59.
 
-| Case | Required observation |
-| --- | --- |
-| `слово ,` -> `слово,` | The removed space is visible as `␠` beside the comma; existing engine context is retained. |
-| `Привет  мир` -> `Привет мир` | Removed whitespace is marked; contextual spaces are not. |
-| `Привет мир` -> `Привет  мир` | Inserted whitespace is marked on the corrected side only. |
-| `Привет !` -> `Привет!` | The removed space is visible beside punctuation. |
-| Space -> newline | The sides show distinct space and line-break markers. |
-| Tab insertion and removal | `⇥` is visible with an understandable accessible name. |
-| NBSP insertion/removal and NBSP <-> ordinary space | NBSP is distinguishable from an ordinary space. |
-| Leading and trailing whitespace edits | Boundary whitespace remains visible and counted. |
-| Multiple spans in one group | All spans render; unchanged gaps receive no change emphasis or markers. |
-| Empty-side insertion and deletion, including whitespace-only text | Explicit absence labels appear only for truly empty excerpts. |
-| Unchanged whitespace in comparison context | It stays ordinary whitespace, even beside marked changes. |
-
-Also assert safe escaping, unchanged source values and `TextDiff` objects before
-and after rendering, exact correction Explain selections, and unchanged movement
-markers. Where the current engine does not naturally yield a required multi-span
-presentation case, test the renderer with a valid synthetic group rather than
-changing the engine. Test the shared workspace and History/compact paths.
-Confirm existing whitespace-only corrections remain reachable through the same
-navigation and counts. Do not make tests assert a future hide/group policy or
-expect Step 3 separator merging or Step 4 punctuation cleanup.
-
-During implementation run from the repository root:
-
-```text
-npm run --silent diff:evaluate -- --baseline <verified-saved-Step-1-results.json>
-npm test -w apps/server
-npm run lint -w apps/web
-npm run lint -w apps/server
-npm run build -w apps/web
-```
-
-Resolve and record the exact existing baseline path before running the evaluator;
-do not silently generate a replacement baseline if it is missing. Report that as
-a verification blocker. Timing samples and run metadata may vary; all underlying
-`TextDiff` output must remain identical. Evaluator comparison summaries alone
-must not substitute for checking complete saved `actual` output equality.
-
-In a real browser or suitable DOM/CSS environment inspect both themes at a
-320-390px mobile width and desktop width, whitespace and empty-side cards,
-workspace and History. Verify markers remain visible, context stays distinct,
-content wraps without horizontal overflow, and marker labels are exposed to
-assistive technology. Verify native selection across unchanged/changed text and
-deletion markers, clean corrected-text copying, correction Explain and manual
-selection Explain values/ranges without making model calls. Record what was
-observed and any limits; do not claim full screen-reader testing from markup.
+No tests, evaluator, browser verification or development server were run while
+recording this spec. There is no combined Verify or Browser tests command. The
+user starts required dev servers. Obtain explicit permission for Playwright MCP
+with the target URL/action and for any SSH connection.
 
 ## Notes for the AI
 
-- Confirmed root cause: `ResultView` slices each group's context range and renders
-  it through `passage()` as undifferentiated text. Whitespace-only strings become
-  `Whitespace only`; other whitespace has no visible glyph. The existing
-  comparison CSS already uses `white-space: pre-wrap`, so this is not a trimming
-  or CSS collapsing bug. Changed spans are available but unused by these cards.
-- Step 1 presentation coverage uses React server rendering and has no DOM,
-  effects or CSS evidence. Do not mistake it for browser verification.
-- No combined Verify or Browser tests command is configured. Do not install a
-  runner or start a development server as a side effect. When a live check needs
-  a server, ask the user to start it. Before any Playwright MCP call, obtain
-  explicit permission stating the target URL/action. No SSH is needed.
-- Planning uses the current build plan and the user's Step 2 task. The overview
-  still has older V4 numbering; do not propagate that numbering or refresh
-  unrelated planning documents during this work.
-- The planning pass executed no checks. Implementation evidence follows.
+Step 2 was accepted in this chat and landed on master as `8f61ac0`. Its finished
+spec is preserved in the V4.2.2 archive. Preserve its red removal markers,
+green additions and typed symbol/label lookup.
 
-## Step 2 verification — 2026-10-27
+The supplied context's real LLM/API verification statement is user-reported;
+this planning pass did not independently verify it. Earlier agent browser
+verification used intercepted responses. Do not claim new execution evidence.
+The overview has older V4 numbering; use the current build plan's V4.2.3.
 
-- User approved the spec, retaining both fixture sets, and Playwright checks at
-  `http://localhost:5173`. Worked on the recorded branch. Existing staged entries
-  were preserved; no commit, merge, push, SSH, model call or manual benchmark ran.
-  The user started the development server; the agent did not start one.
-- Root cause: comparison cards used context slices as undifferentiated text and
-  replaced whitespace-only excerpts with a placeholder. `ComparisonExcerpt`
-  now splits those same ranges at existing span boundaries, underlines changed
-  content, and labels whitespace glyphs only inside changed spans. Ordinary
-  context, movement markers, card eligibility, counts and navigation are retained.
-- Before/after: `слово ,` previously displayed an invisible space beside `,`;
-  Original now shows `␠,` with only the space emphasized. A space/newline
-  replacement previously showed two `Whitespace only` placeholders; it now shows
-  `␠` / `↵`. NBSP has its own `NBSP` marker; tabs show `⇥`.
-- Corpus: restored all 35 original JSON cases alongside the user's unchanged
-  12 examples, plus the existing 12 generated cases. Fixture values and IDs are
-  preserved, and the saved baseline was not overwritten.
-- Saved Step 1 baseline:
-  `test-results/text-diff/2026-10-27T10-11-37-517Z-8t853w/results.json`.
-  Confirmed completed status, 47 cases, and matching original fixture inputs.
-  Ran `npm run --silent diff:evaluate -- --baseline` with that exact path.
-  New report: `test-results/text-diff/2026-10-27T14-23-58-305Z-rsTrhe/results.json`.
-  All 59 cases passed (9,367 assertions), including all 12 Step 2 examples.
-  A separate `assert.deepEqual` comparison checked every original fixture and
-  its complete saved `actual` TextDiff: **47/47 identical**, including spans,
-  ranges, groups, runs, IDs and movement markers. Timing metadata was excluded.
-- Passed `npm test -w apps/server`, `npm run lint -w apps/web`,
-  `npm run lint -w apps/server`, and `npm run build -w apps/web`.
-  The focused `node --test -r ts-node/register test/text-diff-framework.test.ts`
-  run from `apps/server` passed 40/40 after the final renderer adjustment.
-  Web lint initially rejected a mutable render cursor; indexing existing spans
-  fixed it, and web lint/build passed afterward. No unrelated check failures.
-- Browser: actual React ResultView modules in Chromium, with the app's real CSS
-  and intercepted API requests. Checked 26 scenarios (all 12 user examples plus
-  whitespace/empty-side/movement edges), both themes, workspace/History/compact,
-  at 320, 390 and 1280px: **522 card checks passed**, every existing group
-  reachable, expected marker/span counts, named visible markers, correct absence
-  labels, no card or page horizontal overflow. Isolated renderer mounting also
-  covered empty-source states excluded by the application's correction contract.
-- Visually inspected mobile light/dark captures:
-  `test-results/text-diff/step2-mobile-light.png` and `step2-mobile-dark.png`.
-  Accessibility snapshot exposed `space` as a named image within Original;
-  CR, CRLF, tab, NBSP and other whitespace labels also passed presentation tests.
-- Real workspace Copy wrote exactly `слово,` to the browser clipboard. Real
-  HistoryRequest Copy wrote exactly `Привет мир?`. Native mouse selection across
-  a deletion marker returned `слово,`; across changed/unchanged History text it
-  returned `Привет мир?`. Manual Explain bodies matched those exact values and
-  ranges `0–6` / `0–11`. Textarea Ctrl+A then Shift+Left selected `слово` (`0–5`)
-  and submitted that exact manual Explain body. Correction Explain matched
-  `explanationSelection()` exactly. Enter/Space activation, Tab focus between
-  correction targets, and Next navigation passed. All model requests were mocked.
-- Limits: browser viewport checks are not physical-phone or full screen-reader
-  testing. Synthetic mounting/interception verifies presentation and payloads,
-  not provider generation or persisted History/API behavior. An element-boundary
-  DOM Range probe produced no manual selection with the existing reader; native
-  mouse and text-node selections passed. Probe setup initially used an incorrect
-  ReactDOM export and incomplete synthetic metrics; both were corrected without
-  product changes.
-- No findings or independent review request recorded; review remains manual.
-  Separator two-group behavior is deferred to engine Step 3; punctuation
-  fragmentation to Step 4. Whitespace-only card policy remains undecided and
-  unchanged. This completes only V4.2.2 / improvement Step 2, including its
-  regression-check checklist item; no later improvement step was started.
+## Detailed user-supplied specification
 
-## Review refinement — removed-space inline marker
+All supplied requirements follow in full, with heading levels adjusted only.
 
-The user requested replacing the inline minus for removed whitespace with one
-centered dot and red highlighting, matching the inserted-space visual language.
-This explicitly extends the approved presentation scope to the existing inline
-deletion marker. It does not change comparison markers or TextDiff output.
+## Грамика — Implementation Task: Step 3
 
-- `ResultView` identifies deletion markers whose existing original spans contain
-  only whitespace. They display a decorative `·`; ordinary text deletions still
-  display `−`, and movement sources still display `↪`.
-- Uses the existing removed-text foreground/background tokens in both themes;
-  the selected dot has a red inset outline instead of a green fill or underline.
-  The existing `aria-hidden` and `user-select: none` behavior excludes the dot
-  from source offsets, native copying and manual Explain selection.
-- Focused framework/presentation suite: 41/41 passed. Web lint and build passed.
-  Browser checked red theme tokens in light/dark at 390px, no horizontal overflow,
-  and visually inspected `test-results/text-diff/step2-removed-space-dot.png`.
-  Real native mouse selection and workspace Copy both returned exactly `слово,`.
-  The first mouse probe missed the text vertically; retrying with actual text
-  bounds passed. No engine, source-string, range, grouping or payload changes.
+### Normalize space ↔ hyphen separator changes
 
-The user also requested red for removed spaces, tabs and other whitespace in
-comparison cards. Original-side changed spans now use the existing removal
-background/underline tokens, and their whitespace markers use the removal
-foreground; Corrected-side markers retain green addition styling. This is CSS
-only. Browser computed-color checks passed for space, tab, LF, CR, CRLF, NBSP
-and U+2003 on both sides in both themes (28 marker checks). Web lint/build and
-Git whitespace checks passed; existing logic-test evidence remains applicable.
+**Priority:** P1\
+**Scope:** Text-diff engine and targeted regression tests\
+**Status:** Ready for implementation\
+**Prerequisite:** Step 2 completed and manually verified in the UI
 
-Approved maintainability refinement: replaced the nested marker ternary in
-`comparison-excerpt.tsx` with a typed character lookup of `{ symbol, label }`
-objects and one fallback helper. Symbols, accessible labels and rendering stay
-unchanged. Focused tests passed 41/41; web lint and build passed.
+---
 
-The user accepted Step 2 and its review refinements in chat. No commit, merge,
-or later improvement step is authorized by this acceptance alone.
+### 1. Context
+
+Грамика is a Russian proofreading and rewriting application.
+
+The text-diff engine produces correction groups used by the frontend to highlight changes and display Original → Corrected comparison cards.
+
+The existing implementation is in `packages/text-diff`, with relevant logic in files such as:
+
+- `text-diff.ts`
+- `tokenize.ts`
+- `align.ts`
+- `word-moves.ts`
+- `diff-types.ts`
+
+Step 1 introduced an offline regression evaluator and baseline comparison.
+
+Step 2 made changed whitespace visible in comparison cards. It has passed the 59-case evaluation, and a real LLM/API UI test confirmed the whitespace markers work.
+
+**Step 3 must improve the diff engine, not the whitespace renderer.**
+
+### 2. Problem
+
+Currently, changing a space between two words into a hyphen may produce two separate correction groups:
+
+**Original:** `чат бот`\
+**Corrected:** `чат-бот`
+
+Current behavior:
+
+- One group for inserting `-`.
+- Another group for deleting the space.
+
+This is confusing because the user made one logical correction: replacing the separator between two unchanged words.
+
+The reverse transformation has the same problem:
+
+`чат-бот → чат бот`
+
+### 3. Goal
+
+Recognize a simple space ↔ hyphen substitution between otherwise unchanged words as **one correction group**.
+
+#### Required result
+
+| Original | Corrected | Expected |
+|---|---|---|
+| `чат бот` | `чат-бот` | One separator replacement |
+| `чат-бот` | `чат бот` | One separator replacement |
+
+The single group must:
+
+- Have `kind: "replace"`.
+- Own only the changed separator on each side.
+- Preserve the unchanged words outside the changed spans.
+- Produce one comparison card.
+- Highlight only the changed separator in the corrected text.
+- Remain compatible with the visible-whitespace UI from Step 2.
+
+For `чат бот → чат-бот`, the ideal changed spans are:
+
+```text
+Original:  чат[ ]бот
+                 ^
+           [3, 4) = " "
+
+Corrected: чат[-]бот
+                 ^
+           [3, 4) = "-"
+```
+
+These are UTF-16 half-open offsets.
+
+The original-side comparison should visibly represent the changed space as `␠`. The corrected side should display `-`.
+
+**Do not highlight `чат` or `бот` as changed.**
+
+### 4. Implementation approach
+
+Inspect the existing `diffText()` pipeline before modifying it.
+
+In particular, understand how `align.ts`, `changed()`, `spacing()`, and draft-group generation interact. Identify why a single separator substitution currently becomes two groups.
+
+Implement a narrowly scoped deterministic normalization.
+
+#### Candidate detection
+
+A separator substitution qualifies only when all of these conditions hold:
+
+1. Two neighboring word tokens are identical in the original and corrected text.
+2. Their order is unchanged.
+3. The text between them changes from exactly one ordinary space (`U+0020`) to exactly one ASCII hyphen-minus (`U+002D`), or the reverse.
+4. The surrounding word tokens are not themselves modified.
+5. The candidate is not part of a move or a larger ambiguous replacement.
+6. The resulting separator spans can be owned without overlapping another correction group.
+
+Use existing token and alignment information wherever possible.
+
+#### Normalization
+
+For a qualifying candidate:
+
+- Produce exactly one replacement group.
+- Use the original separator as the original changed span.
+- Use the corrected separator as the corrected changed span.
+- Remove or avoid the redundant insertion/deletion groups for that same separator.
+- Preserve valid `originalRange`, `correctedRange`, runs, IDs, and markers.
+
+Prefer detecting the substitution at a point in the pipeline where its ownership can be established reliably.
+
+A post-processing merge is acceptable only if it can prove that the two groups represent exactly the same separator substitution and cannot accidentally consume neighboring edits.
+
+**Do not merge groups merely because they are adjacent.**
+
+#### Initial scope
+
+Support only:
+
+```text
+" " ↔ "-"
+```
+
+between unchanged word tokens.
+
+Do not generalize this step to every punctuation mark or every kind of whitespace.
+
+### 5. Important safeguards
+
+#### Preserve exact source text
+
+Do not modify:
+
+- Original text.
+- Corrected text.
+- Whitespace characters in either source.
+- The LLM output.
+- Copy behavior.
+- Explain payloads.
+
+This is a change to how corrections are represented, not to the corrected text.
+
+#### Preserve diff invariants
+
+All existing structural guarantees must continue to hold:
+
+- UTF-16 half-open offsets.
+- Valid grapheme boundaries.
+- Unique, deterministic group IDs.
+- Valid original and corrected spans.
+- No overlapping span ownership.
+- Complete and valid text-run partitions.
+- Consistent group/range relationships.
+- Correct move markers.
+- Schema-valid explanation selections.
+- Deterministic output for identical inputs.
+
+#### Preserve unrelated corrections
+
+Do not combine independent word corrections.
+
+For example:
+
+`Она был готов → Она была готова`
+
+must continue to produce two independent word-level corrections.
+
+A separator change must also remain separate from an unrelated spelling correction elsewhere in the sentence.
+
+#### Preserve Step 2
+
+The existing frontend whitespace rendering must continue working.
+
+Do not change comparison-card rendering unless a narrowly identified compatibility issue requires it. Report any such change explicitly.
+
+### 6. Positive test cases
+
+Add targeted automated tests.
+
+Use both minimal engine-level examples and short realistic messages. Do not build the entire suite around one-word fragments or unnecessarily long paragraphs.
+
+| ID | Original | Corrected | Expected |
+|---|---|---|---|
+| S3-01 | `чат бот` | `чат-бот` | Exactly one `replace` group |
+| S3-02 | `чат-бот` | `чат бот` | Exactly one `replace` group |
+| S3-03 | `Мы настроили чат бот вчера.` | `Мы настроили чат-бот вчера.` | One separator group |
+| S3-04 | `Я проверил чат-бот, всё работает.` | `Я проверил чат бот, всё работает.` | One separator group |
+| S3-05 | `Новый чат бот уже отвечает клиентам.` | `Новый чат-бот уже отвечает клиентам.` | One separator group |
+| S3-06 | `Я настроил чат бот и отпровил отчёт.` | `Я настроил чат-бот и отправил отчёт.` | Separator and spelling changes remain independent |
+
+For the first five cases, assert:
+
+- Exactly one correction group.
+- `kind === "replace"`.
+- The original changed fragment is exactly `" "` or `"-"`.
+- The corrected changed fragment is exactly `"-"` or `" "`.
+- Unchanged surrounding words are not owned by the group.
+- The generated runs and ranges are valid.
+
+For S3-06, assert that the separator correction is one group and the unrelated spelling correction remains independent. Do not force an unrelated grouping behavior that the existing engine does not guarantee.
+
+### 7. Negative and boundary tests
+
+The new rule must be conservative.
+
+Test cases that should **not** be normalized into a simple one-character separator replacement:
+
+| Original | Corrected | Reason |
+|---|---|---|
+| `чат  бот` | `чат-бот` | Two spaces, not one |
+| `чат\tбот` | `чат-бот` | Tab, not ordinary space |
+| `чат\nбот` | `чат-бот` | Newline, not ordinary space |
+| `чат бот` | `чат-бот` | Non-breaking space |
+| `чат — бот` | `чат-бот` | Different punctuation structure |
+| `чат бот` | `чат-сервис` | Neighboring word changed |
+| `5 000` | `5-000` | Numeric separator, outside initial word-token scope |
+| `Привет ,мир` | `Привет, мир` | Punctuation spacing, not Step 3 |
+
+These cases must remain structurally valid and must not be falsely classified as the narrow separator substitution.
+
+Do not require a particular number of groups for these negative cases unless that behavior is already guaranteed by an existing test.
+
+Also test separator changes near the start and end of a sentence, repeated occurrences, and punctuation immediately following an unchanged word.
+
+### 8. Regression evaluation
+
+Use the existing Step 1 evaluator and the latest preserved pre-Step-3 baseline.
+
+Expected behavior:
+
+- The 59 existing cases continue to pass.
+- The known space-to-hyphen case changes intentionally from two groups to one.
+- The reverse case changes similarly.
+- Other qualifying separator cases may change in the same narrowly defined way.
+- Unrelated cases retain their previous behavior.
+- No structural invariants fail.
+
+Run:
+
+```bash
+npm run --silent diff:evaluate
+```
+
+Compare against the saved baseline:
+
+```bash
+npm run --silent diff:evaluate -- --baseline test-results/text-diff/<baseline-run>/results.json
+```
+
+**Important:** The baseline comparison may report differences in the targeted cases. These are expected, not automatic failures.
+
+For every changed case, explain:
+
+1. Which groups changed.
+2. Why the change is intentional.
+3. Whether the changed spans became more precise.
+4. Whether any unrelated output changed.
+
+Do not broadly update snapshots or expected results merely to make the evaluation pass.
+
+Keep the previous baseline available for future comparisons.
+
+### 9. Test and build commands
+
+Run the existing checks:
+
+```bash
+npm test -w apps/server
+npm run lint -w apps/server
+npm run lint -w apps/web
+npm run build -w apps/web
+```
+
+Run the relevant text-diff unit tests and frontend presentation tests as well.
+
+If the evaluator includes performance measurements, compare them against the prior local run. Do not introduce a new expensive full-text scan for every candidate if the same information is already available in token alignment.
+
+### 10. UI verification
+
+Verify at least these two transformations in the actual application or the existing presentation-test bridge:
+
+**Case A**
+
+Original: `Мы настроили чат бот вчера.`\
+Corrected: `Мы настроили чат-бот вчера.`
+
+Expected:
+
+- One correction card for the separator.
+- Original-side changed space visible using Step 2 notation.
+- Corrected-side changed hyphen visible.
+- `чат` and `бот` remain unchanged context.
+
+**Case B**
+
+Original: `Я проверил чат-бот, всё работает.`\
+Corrected: `Я проверил чат бот, всё работает.`
+
+Expected:
+
+- One correction card.
+- Hyphen replaced by a visibly marked space.
+- No redundant deletion or insertion card.
+
+Confirm that main Copy and Explain still operate on actual text rather than decorative whitespace symbols.
+
+### 11. Out of scope
+
+Do not implement:
+
+- General punctuation normalization.
+- Comma, period, colon, or dash grouping.
+- Multi-character whitespace normalization.
+- Broad tokenization changes.
+- Rewrite phrase fallback.
+- Grouping of unrelated edits.
+- LLM-assisted diff grouping.
+- A new frontend comparison system.
+- A general refactor of the diff engine.
+
+Those belong to later roadmap steps or separate issues.
+
+In particular, **do not attempt to fix all punctuation fragmentation as part of this task**.
+
+### 12. Acceptance criteria
+
+Step 3 is complete only when:
+
+- [ ] `чат бот → чат-бот` produces exactly one `replace` group.
+- [ ] `чат-бот → чат бот` produces exactly one `replace` group.
+- [ ] The changed spans contain only the separators.
+- [ ] Both directions work inside short realistic sentences.
+- [ ] Unrelated spelling and grammar corrections remain independent.
+- [ ] Negative cases do not trigger incorrect separator normalization.
+- [ ] All structural diff invariants pass.
+- [ ] The existing 59-case regression suite passes.
+- [ ] Baseline differences are limited to justified separator-related changes.
+- [ ] Step 2's whitespace UI remains correct.
+- [ ] Tests, lint, and build pass.
+
+### 13. Required implementation report
+
+After implementation, provide:
+
+1. **Root cause:** Why the old pipeline split a separator replacement into two groups.
+2. **Files changed:** With a short explanation of each change.
+3. **Algorithm:** Where separator normalization occurs and why.
+4. **Before/after:** Exact group count, kind, and spans for both directions.
+5. **Tests:** New tests added and command results.
+6. **Baseline comparison:** All changed cases, with expected versus unexpected differences.
+7. **UI verification:** Whether the Step 2 comparison-card rendering still works.
+8. **Remaining limitations:** Any ambiguous cases deliberately excluded.
+
+Keep the implementation small, deterministic, testable, and reversible.
+
+**Stop after Step 3. Do not start Step 4 until the implementation report has been reviewed and approved.**
+
+## Implementation report — 2026-10-27
+
+- Root cause: alignment retained the unchanged words, then `changed()` created a
+  hyphen insertion while `spacing()` created a separate space deletion. The new
+  narrow ownership check runs at the retained-token boundary before either path,
+  and creates one `replace` draft only for one ordinary space ↔ one ASCII hyphen
+  between unchanged letter-starting word tokens. It excludes numbers, other
+  whitespace/punctuation, modified words, moves and ambiguous ownership.
+- Files changed: `packages/text-diff/src/text-diff.ts` adds the deterministic
+  separator boundary normalization; `apps/server/test/fixtures/text-diff.json`
+  retains all original 47 JSON cases and adds 36 Step 3 positive, boundary and
+  exclusion cases; `apps/server/test/text-diff-separators.test.ts` covers exact
+  spans, kinds, invariants, Explain selections, renderer variants and negative
+  cases. No frontend code changed.
+- Minimal outputs: `чат бот → чат-бот` and reverse now each produce exactly one
+  `replace` group with original/corrected span `[3,4)`, no deletion marker, and
+  unchanged `чат`/`бот` context. The realistic and repeated cases behave the
+  same; S3-06 retains a separate spelling group.
+- Baseline: the preserved 59-case report was verified before editing. The new
+  95-case evaluation passed 95/95 with 10,015 assertions. Of the original 59,
+  56 complete outputs are identical; only `separator-forward`,
+  `separator-reverse` and `step2-short-hyphen-baseline` changed intentionally.
+  All 22 exclusion outputs remain identical. The baseline file was not changed.
+  Performance medians stayed within local-run variance; no full-text candidate
+  scan was introduced.
+- Checks: focused Step 3 plus existing text-diff/presentation tests passed;
+  full server tests passed 347/347; server lint, web lint and web build passed.
+  The existing server-rendered bridge verified workspace/History/compact cards,
+  separator-only highlighting, Step 2 visible-space compatibility, exact Copy/
+  Explain source contracts and valid UTF-16 spans. No OpenRouter calls, manual
+  benchmark, dev server, Playwright, commit or merge was run.
+- Remaining limits: the rule intentionally excludes punctuation normalization,
+  non-ASCII hyphens, multi-character whitespace, numeric separators and moves.
+  Step 4 remains separate. Stop here for user review.

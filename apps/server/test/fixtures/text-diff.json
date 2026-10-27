@@ -526,5 +526,464 @@
     "description": "Space-to-hyphen change inside a normal sentence.",
     "evaluation": "exploratory",
     "notes": "UI: Removed space must be visible. Do not require merging groups until Step 3."
+  },
+
+  {
+    "id": "step3-s3-01",
+    "original": "чат бот",
+    "corrected": "чат-бот",
+    "category": "separator",
+    "description": "S3-01: minimal space to hyphen.",
+    "evaluation": "confirmed",
+    "expectation": {
+      "count": 1,
+      "kinds": [
+        "replace"
+      ],
+      "originalFragments": [
+        " "
+      ],
+      "correctedFragments": [
+        "-"
+      ],
+      "unchanged": [
+        "чат",
+        "бот"
+      ]
+    }
+  },
+  {
+    "id": "step3-s3-02",
+    "original": "чат-бот",
+    "corrected": "чат бот",
+    "category": "separator",
+    "description": "S3-02: minimal hyphen to space.",
+    "evaluation": "confirmed",
+    "expectation": {
+      "count": 1,
+      "kinds": [
+        "replace"
+      ],
+      "originalFragments": [
+        "-"
+      ],
+      "correctedFragments": [
+        " "
+      ],
+      "unchanged": [
+        "чат",
+        "бот"
+      ]
+    }
+  },
+  {
+    "id": "step3-s3-03",
+    "original": "Мы настроили чат бот вчера.",
+    "corrected": "Мы настроили чат-бот вчера.",
+    "category": "separator",
+    "description": "S3-03: separator in a short sentence.",
+    "evaluation": "confirmed",
+    "expectation": {
+      "count": 1,
+      "kinds": [
+        "replace"
+      ]
+    }
+  },
+  {
+    "id": "step3-s3-04",
+    "original": "Я проверил чат-бот, всё работает.",
+    "corrected": "Я проверил чат бот, всё работает.",
+    "category": "separator",
+    "description": "S3-04: reverse separator before punctuation.",
+    "evaluation": "confirmed",
+    "expectation": {
+      "count": 1,
+      "kinds": [
+        "replace"
+      ]
+    }
+  },
+  {
+    "id": "step3-s3-05",
+    "original": "Новый чат бот уже отвечает клиентам.",
+    "corrected": "Новый чат-бот уже отвечает клиентам.",
+    "category": "separator",
+    "description": "S3-05: natural-message separator.",
+    "evaluation": "confirmed",
+    "expectation": {
+      "count": 1,
+      "kinds": [
+        "replace"
+      ]
+    }
+  },
+  {
+    "id": "step3-s3-06",
+    "original": "Я настроил чат бот и отпровил отчёт.",
+    "corrected": "Я настроил чат-бот и отправил отчёт.",
+    "category": "separator",
+    "description": "S3-06: separator and independent spelling correction.",
+    "evaluation": "confirmed",
+    "expectation": {
+      "min": 2
+    }
+  },
+  {
+    "id": "step3-start",
+    "original": "чат бот уже готов.",
+    "corrected": "чат-бот уже готов.",
+    "category": "separator",
+    "description": "Separator near the start.",
+    "evaluation": "confirmed",
+    "expectation": {
+      "count": 1,
+      "kinds": [
+        "replace"
+      ]
+    }
+  },
+  {
+    "id": "step3-end",
+    "original": "Я настроил чат бот",
+    "corrected": "Я настроил чат-бот",
+    "category": "separator",
+    "description": "Separator near the end.",
+    "evaluation": "confirmed",
+    "expectation": {
+      "count": 1,
+      "kinds": [
+        "replace"
+      ]
+    }
+  },
+  {
+    "id": "step3-repeated",
+    "original": "чат бот и чат бот",
+    "corrected": "чат-бот и чат-бот",
+    "category": "separator",
+    "description": "Repeated ordered pairs stay separate.",
+    "evaluation": "confirmed",
+    "expectation": {
+      "count": 2,
+      "kinds": [
+        "replace",
+        "replace"
+      ]
+    }
+  },
+  {
+    "id": "step3-repeated-reverse",
+    "original": "чат-бот и чат-бот",
+    "corrected": "чат бот и чат бот",
+    "category": "separator",
+    "description": "Repeated reverse replacements.",
+    "evaluation": "confirmed",
+    "expectation": {
+      "count": 2,
+      "kinds": [
+        "replace",
+        "replace"
+      ]
+    }
+  },
+  {
+    "id": "step3-chain",
+    "original": "чат бот помощник",
+    "corrected": "чат-бот-помощник",
+    "category": "separator",
+    "description": "Consecutive separators share an unchanged anchor.",
+    "evaluation": "confirmed",
+    "expectation": {
+      "count": 2,
+      "kinds": [
+        "replace",
+        "replace"
+      ]
+    }
+  },
+  {
+    "id": "step3-punctuation",
+    "original": "чат бот,",
+    "corrected": "чат-бот,",
+    "category": "separator",
+    "description": "Unchanged word followed immediately by punctuation.",
+    "evaluation": "confirmed",
+    "expectation": {
+      "count": 1,
+      "kinds": [
+        "replace"
+      ]
+    }
+  },
+  {
+    "id": "step3-unicode",
+    "original": "🙂 Ещё чат бот.",
+    "corrected": "🙂 Ещё чат-бот.",
+    "category": "separator",
+    "description": "UTF-16 offsets after emoji.",
+    "evaluation": "confirmed",
+    "expectation": {
+      "count": 1,
+      "kinds": [
+        "replace"
+      ]
+    }
+  },
+  {
+    "id": "step3-grapheme",
+    "original": "е́ кот",
+    "corrected": "е́-кот",
+    "category": "separator",
+    "description": "Combining-mark grapheme before separator.",
+    "evaluation": "confirmed",
+    "expectation": {
+      "count": 1,
+      "kinds": [
+        "replace"
+      ]
+    }
+  },
+  {
+    "id": "step3-negative-two-spaces",
+    "original": "чат  бот",
+    "corrected": "чат-бот",
+    "category": "separator",
+    "description": "Excluded from the narrow separator rule: two-spaces",
+    "evaluation": "confirmed",
+    "expectation": {
+      "min": 1
+    }
+  },
+  {
+    "id": "step3-negative-two-spaces-reverse",
+    "original": "чат-бот",
+    "corrected": "чат  бот",
+    "category": "separator",
+    "description": "Reverse exclusion: two-spaces",
+    "evaluation": "confirmed",
+    "expectation": {
+      "min": 1
+    }
+  },
+  {
+    "id": "step3-negative-tab",
+    "original": "чат\tбот",
+    "corrected": "чат-бот",
+    "category": "separator",
+    "description": "Excluded from the narrow separator rule: tab",
+    "evaluation": "confirmed",
+    "expectation": {
+      "min": 1
+    }
+  },
+  {
+    "id": "step3-negative-tab-reverse",
+    "original": "чат-бот",
+    "corrected": "чат\tбот",
+    "category": "separator",
+    "description": "Reverse exclusion: tab",
+    "evaluation": "confirmed",
+    "expectation": {
+      "min": 1
+    }
+  },
+  {
+    "id": "step3-negative-newline",
+    "original": "чат\nбот",
+    "corrected": "чат-бот",
+    "category": "separator",
+    "description": "Excluded from the narrow separator rule: newline",
+    "evaluation": "confirmed",
+    "expectation": {
+      "min": 1
+    }
+  },
+  {
+    "id": "step3-negative-newline-reverse",
+    "original": "чат-бот",
+    "corrected": "чат\nбот",
+    "category": "separator",
+    "description": "Reverse exclusion: newline",
+    "evaluation": "confirmed",
+    "expectation": {
+      "min": 1
+    }
+  },
+  {
+    "id": "step3-negative-nbsp",
+    "original": "чат бот",
+    "corrected": "чат-бот",
+    "category": "separator",
+    "description": "Excluded from the narrow separator rule: nbsp",
+    "evaluation": "confirmed",
+    "expectation": {
+      "min": 1
+    }
+  },
+  {
+    "id": "step3-negative-nbsp-reverse",
+    "original": "чат-бот",
+    "corrected": "чат бот",
+    "category": "separator",
+    "description": "Reverse exclusion: nbsp",
+    "evaluation": "confirmed",
+    "expectation": {
+      "min": 1
+    }
+  },
+  {
+    "id": "step3-negative-dash",
+    "original": "чат — бот",
+    "corrected": "чат-бот",
+    "category": "separator",
+    "description": "Excluded from the narrow separator rule: dash",
+    "evaluation": "confirmed",
+    "expectation": {
+      "min": 1
+    }
+  },
+  {
+    "id": "step3-negative-dash-reverse",
+    "original": "чат-бот",
+    "corrected": "чат — бот",
+    "category": "separator",
+    "description": "Reverse exclusion: dash",
+    "evaluation": "confirmed",
+    "expectation": {
+      "min": 1
+    }
+  },
+  {
+    "id": "step3-negative-word-edit",
+    "original": "чат бот",
+    "corrected": "чат-сервис",
+    "category": "separator",
+    "description": "Excluded from the narrow separator rule: word-edit",
+    "evaluation": "confirmed",
+    "expectation": {
+      "min": 1
+    }
+  },
+  {
+    "id": "step3-negative-word-edit-reverse",
+    "original": "чат-сервис",
+    "corrected": "чат бот",
+    "category": "separator",
+    "description": "Reverse exclusion: word-edit",
+    "evaluation": "confirmed",
+    "expectation": {
+      "min": 1
+    }
+  },
+  {
+    "id": "step3-negative-numeric",
+    "original": "5 000",
+    "corrected": "5-000",
+    "category": "separator",
+    "description": "Excluded from the narrow separator rule: numeric",
+    "evaluation": "confirmed",
+    "expectation": {
+      "min": 1
+    }
+  },
+  {
+    "id": "step3-negative-numeric-reverse",
+    "original": "5-000",
+    "corrected": "5 000",
+    "category": "separator",
+    "description": "Reverse exclusion: numeric",
+    "evaluation": "confirmed",
+    "expectation": {
+      "min": 1
+    }
+  },
+  {
+    "id": "step3-negative-punctuation",
+    "original": "Привет ,мир",
+    "corrected": "Привет, мир",
+    "category": "separator",
+    "description": "Excluded from the narrow separator rule: punctuation",
+    "evaluation": "confirmed",
+    "expectation": {
+      "min": 1
+    }
+  },
+  {
+    "id": "step3-negative-punctuation-reverse",
+    "original": "Привет, мир",
+    "corrected": "Привет ,мир",
+    "category": "separator",
+    "description": "Reverse exclusion: punctuation",
+    "evaluation": "confirmed",
+    "expectation": {
+      "min": 1
+    }
+  },
+  {
+    "id": "step3-negative-unicode-hyphen",
+    "original": "чат бот",
+    "corrected": "чат‐бот",
+    "category": "separator",
+    "description": "Excluded from the narrow separator rule: unicode-hyphen",
+    "evaluation": "confirmed",
+    "expectation": {
+      "min": 1
+    }
+  },
+  {
+    "id": "step3-negative-unicode-hyphen-reverse",
+    "original": "чат‐бот",
+    "corrected": "чат бот",
+    "category": "separator",
+    "description": "Reverse exclusion: unicode-hyphen",
+    "evaluation": "confirmed",
+    "expectation": {
+      "min": 1
+    }
+  },
+  {
+    "id": "step3-negative-nonbreaking-hyphen",
+    "original": "чат бот",
+    "corrected": "чат‑бот",
+    "category": "separator",
+    "description": "Excluded from the narrow separator rule: nonbreaking-hyphen",
+    "evaluation": "confirmed",
+    "expectation": {
+      "min": 1
+    }
+  },
+  {
+    "id": "step3-negative-nonbreaking-hyphen-reverse",
+    "original": "чат‑бот",
+    "corrected": "чат бот",
+    "category": "separator",
+    "description": "Reverse exclusion: nonbreaking-hyphen",
+    "evaluation": "confirmed",
+    "expectation": {
+      "min": 1
+    }
+  },
+  {
+    "id": "step3-negative-moved-pair",
+    "original": "чат бот я не могу",
+    "corrected": "я не могу чат-бот",
+    "category": "separator",
+    "description": "Excluded from the narrow separator rule: moved-pair",
+    "evaluation": "confirmed",
+    "expectation": {
+      "min": 1
+    }
+  },
+  {
+    "id": "step3-negative-moved-pair-reverse",
+    "original": "я не могу чат-бот",
+    "corrected": "чат бот я не могу",
+    "category": "separator",
+    "description": "Reverse exclusion: moved-pair",
+    "evaluation": "confirmed",
+    "expectation": {
+      "min": 1
+    }
   }
 ]
