@@ -1066,4 +1066,94 @@
     "description": "Spacing and spelling corrections remain separate",
     "evaluation": "confirmed",
     "expectation": { "count": 2, "kinds": ["whitespace", "replace"], "originalFragments": ["ашибку"], "correctedFragments": [" ", "ошибку"] }
+  },
+  {
+    "id": "step5-s5-01",
+    "original": "Мы очень хорошо выполнили эту работу.",
+    "corrected": "Мы просто отлично выполнили эту работу.",
+    "category": "rewrite",
+    "description": "Two-word rewrite becomes one local phrase replacement",
+    "evaluation": "confirmed",
+    "expectation": { "count": 1, "kinds": ["replace"], "originalFragments": ["очень хорошо"], "correctedFragments": ["просто отлично"], "unchanged": ["Мы", "выполнили эту работу"] }
+  },
+  {
+    "id": "step5-s5-02",
+    "original": "Он быстро написал письмо и проверил адрес.",
+    "corrected": "Он тщательно подготовил сообщение и проверил адрес.",
+    "category": "rewrite",
+    "description": "Three-word rewrite stops at an unchanged anchor",
+    "evaluation": "confirmed",
+    "expectation": { "count": 1, "kinds": ["replace"], "originalFragments": ["быстро написал письмо"], "correctedFragments": ["тщательно подготовил сообщение"], "unchanged": ["и проверил адрес"] }
+  },
+  {
+    "id": "step5-s5-03",
+    "original": "На встрече мы обсудили важные детали проекта.",
+    "corrected": "На встрече мы рассмотрели ключевые вопросы проекта.",
+    "category": "rewrite",
+    "description": "Rewrite inside a sentence remains local",
+    "evaluation": "confirmed",
+    "expectation": { "count": 1, "kinds": ["replace"], "originalFragments": ["обсудили важные детали"], "correctedFragments": ["рассмотрели ключевые вопросы"], "unchanged": ["На встрече мы", "проекта"] }
+  },
+  {
+    "id": "step5-s5-04",
+    "original": "Она был готов, когда началась встреча.",
+    "corrected": "Она была готова, когда началась встреча.",
+    "category": "independent",
+    "description": "Adjacent grammar corrections retain precise word groups",
+    "evaluation": "confirmed",
+    "expectation": { "count": 2, "kinds": ["replace", "replace"], "originalFragments": ["был", "готов"], "correctedFragments": ["была", "готова"] }
+  },
+  {
+    "id": "step5-s5-05",
+    "original": "Я допустил ашибку при отправке письма.",
+    "corrected": "Я допустил ошибку при отправке письма.",
+    "category": "spelling",
+    "description": "Single spelling correction remains precise",
+    "evaluation": "confirmed",
+    "expectation": { "count": 1, "kinds": ["replace"], "originalFragments": ["ашибку"], "correctedFragments": ["ошибку"] }
+  },
+  {
+    "id": "step5-s5-06",
+    "original": "Мы отправили старый отчёт клиенту вчера.",
+    "corrected": "Мы отправили новый отчёт клиенту вчера.",
+    "category": "independent",
+    "description": "Single-word vocabulary replacement remains precise",
+    "evaluation": "confirmed",
+    "expectation": { "count": 1, "kinds": ["replace"], "originalFragments": ["старый"], "correctedFragments": ["новый"] }
+  },
+  {
+    "id": "step5-s5-07",
+    "original": "Мы быстро сделали отчёт, но допустили ашибку.",
+    "corrected": "Мы тщательно подготовили документ, но допустили ошибку.",
+    "category": "rewrite",
+    "description": "Rewrite and spelling correction remain independent",
+    "evaluation": "confirmed",
+    "expectation": { "count": 2, "kinds": ["replace", "replace"], "originalFragments": ["быстро сделали отчёт", "ашибку"], "correctedFragments": ["тщательно подготовили документ", "ошибку"] }
+  },
+  {
+    "id": "step5-s5-08",
+    "original": "Она был готов, а отчёт оказался неверным.",
+    "corrected": "Она была готова, а отчёт оказался неправильным.",
+    "category": "independent",
+    "description": "Grammar and vocabulary corrections do not merge sentence-wide",
+    "evaluation": "confirmed",
+    "expectation": { "count": 3, "kinds": ["replace", "replace", "replace"], "originalFragments": ["был", "готов", "неверным"], "correctedFragments": ["была", "готова", "неправильным"] }
+  },
+  {
+    "id": "step5-s5-09",
+    "original": "Мы настроили чат бот и проверили его ответы.",
+    "corrected": "Мы настроили чат-бот и проверили его ответы.",
+    "category": "separator",
+    "description": "Step 3 separator normalization remains precise",
+    "evaluation": "confirmed",
+    "expectation": { "count": 1, "kinds": ["replace"], "originalFragments": [" "], "correctedFragments": ["-"] }
+  },
+  {
+    "id": "step5-s5-10",
+    "original": "Добрый день! Файл готов.Проверьте вложение.",
+    "corrected": "Добрый день! Файл готов. Проверьте вложение.",
+    "category": "whitespace",
+    "description": "Step 4 punctuation-boundary spacing remains precise",
+    "evaluation": "confirmed",
+    "expectation": { "count": 1, "kinds": ["whitespace"], "originalFragments": [], "correctedFragments": [" "] }
   }]

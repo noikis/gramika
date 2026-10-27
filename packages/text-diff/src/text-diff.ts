@@ -18,6 +18,7 @@ export { resolveWordMoves } from "./word-moves.js";
 
 const COMPARISON_BUDGET = 65536;
 const MAX_MOVE_DISCOVERY_WINDOWS = 4096;
+const MAX_PHRASE_FALLBACK_TOKENS = 8;
 
 type Draft = ChangeGroup & { anchor: number; sourceAnchor?: number };
 
@@ -285,6 +286,62 @@ export function diffText(original: string, corrected: string): TextDiff {
       lexical(a) === lexical(b) &&
       a.every((token) => token.isWord || /^[-‐‑]$/u.test(token.text)) &&
       b.every((token) => token.isWord || /^[-‐‑]$/u.test(token.text));
+    function hasStrongLocalSimilarity(left: Token, right: Token) {
+      if (
+        !left.isWord ||
+        !right.isWord ||
+        /^\p{N}/u.test(left.text + right.text)
+      )
+        return false;
+      const x = Array.from(
+        graphemes.segment(left.text),
+        (part) => part.segment,
+      );
+      const y = Array.from(
+        graphemes.segment(right.text),
+        (part) => part.segment,
+      );
+      let prefix = 0,
+        suffix = 0;
+      while (prefix < Math.min(x.length, y.length) && x[prefix] === y[prefix])
+        prefix++;
+      while (
+        suffix < Math.min(x.length, y.length) - prefix &&
+        x[x.length - suffix - 1] === y[y.length - suffix - 1]
+      )
+        suffix++;
+      const MIN_SHARED_GRAPHEMES = 2,
+        MIN_SHARED_FRACTION = 0.65;
+      return (
+        prefix + suffix >= MIN_SHARED_GRAPHEMES &&
+        (prefix + suffix) / Math.max(x.length, y.length) >= MIN_SHARED_FRACTION
+      );
+    }
+    // Equal token counts do not prove meaningful correspondence. If every
+    // positional pair is a substantially different word, preserve the exact
+    // local phrase as one replacement instead of inventing word pairings.
+    const isLowConfidencePhrase =
+      !isJoin &&
+      a.length === b.length &&
+      a.length >= 2 &&
+      a.length <= MAX_PHRASE_FALLBACK_TOKENS &&
+      a.every((token, index) => token.isWord && b[index]?.isWord) &&
+      a.every((token, index) => token.text !== b[index]?.text) &&
+      a.every((token, index) => !hasStrongLocalSimilarity(token, b[index]));
+    if (isLowConfidencePhrase) {
+      const oldPhrase = {
+        start: a[0].range.start,
+        end: a.at(-1)!.range.end,
+      };
+      const newPhrase = {
+        start: b[0].range.start,
+        end: b.at(-1)!.range.end,
+      };
+      add([oldPhrase], [newPhrase], oldPhrase, newPhrase, "replace");
+      a.forEach((token) => gapsOld.add(token));
+      b.forEach((token) => gapsNew.add(token));
+      return;
+    }
     if (
       !isJoin &&
       a.length !== b.length &&
@@ -293,44 +350,12 @@ export function diffText(original: string, corrected: string): TextDiff {
       a.length + b.length <= MAX_COMPARISON_TOKENS
     ) {
       // An obvious spelling edit at the edge must not absorb a nearby split/join.
-      const similar = (left: Token, right: Token) => {
-        if (
-          !left.isWord ||
-          !right.isWord ||
-          /^\p{N}/u.test(left.text + right.text)
-        )
-          return false;
-        const x = Array.from(
-          graphemes.segment(left.text),
-          (part) => part.segment,
-        );
-        const y = Array.from(
-          graphemes.segment(right.text),
-          (part) => part.segment,
-        );
-        let prefix = 0,
-          suffix = 0;
-        while (prefix < Math.min(x.length, y.length) && x[prefix] === y[prefix])
-          prefix++;
-        while (
-          suffix < Math.min(x.length, y.length) - prefix &&
-          x[x.length - suffix - 1] === y[y.length - suffix - 1]
-        )
-          suffix++;
-        const MIN_SHARED_GRAPHEMES = 2,
-          MIN_SHARED_FRACTION = 0.65;
-        return (
-          prefix + suffix >= MIN_SHARED_GRAPHEMES &&
-          (prefix + suffix) / Math.max(x.length, y.length) >=
-            MIN_SHARED_FRACTION
-        );
-      };
-      if (similar(a[0], b[0])) {
+      if (hasStrongLocalSimilarity(a[0], b[0])) {
         changed(a.slice(0, 1), b.slice(0, 1), oldAt, newAt);
         changed(a.slice(1), b.slice(1), oldAt, newAt);
         return;
       }
-      if (similar(a.at(-1)!, b.at(-1)!)) {
+      if (hasStrongLocalSimilarity(a.at(-1)!, b.at(-1)!)) {
         changed(a.slice(0, -1), b.slice(0, -1), oldAt, newAt);
         changed(a.slice(-1), b.slice(-1), oldAt, newAt);
         return;
