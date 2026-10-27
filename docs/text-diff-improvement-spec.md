@@ -6,6 +6,16 @@
 **Implementation strategy:** Seven independent, sequential improvements  
 **Primary objective:** Make highlighted corrections and comparison cards more accurate, understandable, and useful without replacing the existing diff engine unnecessarily.
 
+> **Approved delivery scope (2026-10-27):** This document is the V4.1 research
+> deliverable. Roadmap **V4.2 — Text-diff improvements** implements **Steps 1–5
+> only**, tracked separately as V4.2.1–V4.2.5 in the
+> [build plan](../blueprint/build-plan.md#v42-delivery-contract--one-improvement-at-a-time).
+> Each step requires its own approved feature spec, implementation, testing and
+> explicit user acceptance before the next step starts. Steps 6 and 7 are
+> excluded from this workflow; their descriptions below are future research
+> options, not authorized implementation. This scope overrides broader
+> seven-step and release-bundling language elsewhere in this document.
+
 ---
 
 # 1. Product context

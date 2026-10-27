@@ -1,0 +1,410 @@
+[
+  {
+    "id": "identical",
+    "original": "Я дома",
+    "corrected": "Я дома",
+    "category": "identical",
+    "description": "Identical text has no changes.",
+    "evaluation": "confirmed",
+    "expectation": {
+      "count": 0
+    }
+  },
+  {
+    "id": "empty-identical",
+    "original": "",
+    "corrected": "",
+    "category": "boundary",
+    "description": "Empty identical inputs have no runs or changes.",
+    "evaluation": "confirmed",
+    "expectation": {
+      "count": 0
+    }
+  },
+  {
+    "id": "empty-insert",
+    "original": "",
+    "corrected": "Привет",
+    "category": "boundary",
+    "description": "Whole input insertion.",
+    "evaluation": "confirmed",
+    "expectation": {
+      "count": 1,
+      "kinds": ["insert"],
+      "correctedFragments": ["Привет"]
+    }
+  },
+  {
+    "id": "empty-delete",
+    "original": "Привет",
+    "corrected": "",
+    "category": "boundary",
+    "description": "Whole input deletion with source marker.",
+    "evaluation": "confirmed",
+    "expectation": {
+      "count": 1,
+      "kinds": ["delete"],
+      "originalFragments": ["Привет"],
+      "marker": "deletion"
+    }
+  },
+  {
+    "id": "spelling",
+    "original": "превет",
+    "corrected": "привет",
+    "category": "spelling",
+    "description": "A spelling replacement highlights the word.",
+    "evaluation": "confirmed",
+    "expectation": {
+      "count": 1,
+      "kinds": ["replace"],
+      "originalFragments": ["превет"],
+      "correctedFragments": ["привет"]
+    }
+  },
+  {
+    "id": "inflection",
+    "original": "Она был готов",
+    "corrected": "Она была готова",
+    "category": "inflection",
+    "description": "Two independent local grammar corrections.",
+    "evaluation": "confirmed",
+    "expectation": {
+      "count": 2,
+      "kinds": ["replace", "replace"],
+      "correctedFragments": ["была", "готова"],
+      "unchanged": ["Она"]
+    }
+  },
+  {
+    "id": "punctuation-insert",
+    "original": "Привет",
+    "corrected": "Привет!",
+    "category": "punctuation-insert",
+    "description": "Punctuation insertion leaves the word unchanged.",
+    "evaluation": "confirmed",
+    "expectation": {
+      "count": 1,
+      "kinds": ["insert"],
+      "correctedFragments": ["!"],
+      "unchanged": ["Привет"]
+    }
+  },
+  {
+    "id": "punctuation-replace",
+    "original": "Привет?",
+    "corrected": "Привет!",
+    "category": "punctuation-replace",
+    "description": "Punctuation replacement leaves the word unchanged.",
+    "evaluation": "confirmed",
+    "expectation": {
+      "count": 1,
+      "kinds": ["replace"],
+      "unchanged": ["Привет"]
+    }
+  },
+  {
+    "id": "punctuation-delete",
+    "original": "Привет!!",
+    "corrected": "Привет!",
+    "category": "punctuation-replace",
+    "description": "Deleted punctuation has a marker.",
+    "evaluation": "confirmed",
+    "expectation": {
+      "min": 1,
+      "max": 2,
+      "marker": "deletion"
+    }
+  },
+  {
+    "id": "space-before-comma",
+    "original": "слово ,",
+    "corrected": "слово,",
+    "category": "whitespace",
+    "description": "Removed space should eventually be visible inside the card.",
+    "evaluation": "exploratory"
+  },
+  {
+    "id": "space-before-bang",
+    "original": "Привет !",
+    "corrected": "Привет!",
+    "category": "whitespace",
+    "description": "Whitespace near punctuation should eventually be visibly distinct.",
+    "evaluation": "exploratory"
+  },
+  {
+    "id": "comma-spacing",
+    "original": "Привет ,мир",
+    "corrected": "Привет, мир",
+    "category": "whitespace",
+    "description": "Related punctuation spacing is evaluated without requiring a future grouping rule.",
+    "evaluation": "exploratory"
+  },
+  {
+    "id": "extra-space",
+    "original": "Привет  мир",
+    "corrected": "Привет мир",
+    "category": "whitespace",
+    "description": "Repeated ordinary spaces remain exact.",
+    "evaluation": "confirmed",
+    "expectation": {
+      "count": 1,
+      "kinds": ["whitespace"],
+      "unchanged": ["Привет", "мир"]
+    }
+  },
+  {
+    "id": "newline-space",
+    "original": "Привет\nмир",
+    "corrected": "Привет мир",
+    "category": "whitespace",
+    "description": "A line break becomes a space.",
+    "evaluation": "confirmed",
+    "expectation": {
+      "count": 1,
+      "kinds": ["whitespace"]
+    }
+  },
+  {
+    "id": "separator-forward",
+    "original": "чат бот",
+    "corrected": "чат-бот",
+    "category": "separator",
+    "description": "Eventually one separator correction, retaining both words unhighlighted.",
+    "evaluation": "exploratory"
+  },
+  {
+    "id": "separator-reverse",
+    "original": "чат-бот",
+    "corrected": "чат бот",
+    "category": "separator",
+    "description": "Evaluate reverse separator replacement independently.",
+    "evaluation": "exploratory"
+  },
+  {
+    "id": "join",
+    "original": "по этому",
+    "corrected": "поэтому",
+    "category": "split-join",
+    "description": "Join is one correction.",
+    "evaluation": "confirmed",
+    "expectation": {
+      "count": 1
+    }
+  },
+  {
+    "id": "split",
+    "original": "неверно",
+    "corrected": "не верно",
+    "category": "split-join",
+    "description": "Split remains one understandable correction.",
+    "evaluation": "confirmed",
+    "expectation": {
+      "count": 1
+    }
+  },
+  {
+    "id": "move",
+    "original": "Я пока не могу точно обещать.",
+    "corrected": "Я не могу пока точно обещать.",
+    "category": "movement",
+    "description": "Unique local word relocation retains source marker.",
+    "evaluation": "confirmed",
+    "expectation": {
+      "count": 1,
+      "kinds": ["move"],
+      "originalFragments": ["пока"],
+      "correctedFragments": ["пока"],
+      "marker": "move-source"
+    }
+  },
+  {
+    "id": "move-multiword",
+    "original": "сейчас же я не могу",
+    "corrected": "я не могу сейчас же",
+    "category": "movement",
+    "description": "Multiword move preserves exact fragments and separators.",
+    "evaluation": "confirmed",
+    "expectation": {
+      "min": 1,
+      "max": 3,
+      "marker": "move-source"
+    }
+  },
+  {
+    "id": "move-disjoint",
+    "original": "Я пока не могу и сразу не хочу.",
+    "corrected": "Я не могу пока и не хочу сразу.",
+    "category": "movement",
+    "description": "Disjoint relocations remain independent.",
+    "evaluation": "confirmed",
+    "expectation": {
+      "count": 2,
+      "kinds": ["move", "move"],
+      "marker": "move-source"
+    }
+  },
+  {
+    "id": "ambiguous-repeat",
+    "original": "кот кот пёс",
+    "corrected": "кот пёс кот",
+    "category": "movement",
+    "description": "Ambiguous repeated words are not asserted to be a move.",
+    "evaluation": "confirmed",
+    "expectation": {
+      "min": 1,
+      "max": 4
+    }
+  },
+  {
+    "id": "independent",
+    "original": "Я отправел письмо вчера",
+    "corrected": "Я отправил письмо вчера.",
+    "category": "independent",
+    "description": "Spelling and punctuation remain separate; the equal island remains unhighlighted.",
+    "evaluation": "confirmed",
+    "expectation": {
+      "count": 2,
+      "kinds": ["replace", "insert"],
+      "correctedFragments": ["отправил", "."],
+      "unchanged": ["письмо вчера"]
+    }
+  },
+  {
+    "id": "rewrite",
+    "original": "Очень хорошо",
+    "corrected": "Просто отлично",
+    "category": "rewrite",
+    "description": "Evaluate positional pairing; conservative phrase fallback belongs to Step 5.",
+    "evaluation": "exploratory"
+  },
+  {
+    "id": "rewrite-phrase",
+    "original": "Новая фраза здесь.",
+    "corrected": "Другая мысль тут.",
+    "category": "rewrite",
+    "description": "Evaluate substantial rewrite independently of mode.",
+    "evaluation": "exploratory"
+  },
+  {
+    "id": "unicode-emoji",
+    "original": "😀 превет",
+    "corrected": "😀 привет",
+    "category": "unicode",
+    "description": "Astral emoji before a spelling correction keeps UTF-16 offsets.",
+    "evaluation": "confirmed",
+    "expectation": {
+      "count": 1,
+      "unchanged": ["😀"]
+    }
+  },
+  {
+    "id": "unicode-graphemes",
+    "original": "👩‍💻е́",
+    "corrected": "👩‍🔬ё",
+    "category": "unicode",
+    "description": "ZWJ and combining characters are never split.",
+    "evaluation": "confirmed",
+    "expectation": {
+      "min": 1,
+      "max": 4
+    }
+  },
+  {
+    "id": "unicode-modifier",
+    "original": "👍🏽 Привет",
+    "corrected": "👍🏽 Привет!",
+    "category": "unicode",
+    "description": "Emoji modifier stays intact.",
+    "evaluation": "confirmed",
+    "expectation": {
+      "count": 1,
+      "unchanged": ["👍🏽"]
+    }
+  },
+  {
+    "id": "unicode-mixed",
+    "original": "API превет v2",
+    "corrected": "API привет v2",
+    "category": "unicode",
+    "description": "Mixed scripts and numbers remain unchanged.",
+    "evaluation": "confirmed",
+    "expectation": {
+      "count": 1,
+      "unchanged": ["API", "v2"]
+    }
+  },
+  {
+    "id": "nbsp",
+    "original": "Привет мир",
+    "corrected": "Привет мир",
+    "category": "unicode",
+    "description": "Non-breaking and ordinary spaces remain distinct.",
+    "evaluation": "confirmed",
+    "expectation": {
+      "count": 1,
+      "kinds": ["whitespace"]
+    }
+  },
+  {
+    "id": "tab",
+    "original": "Привет\tмир",
+    "corrected": "Привет мир",
+    "category": "whitespace",
+    "description": "Tab replacement retains source characters.",
+    "evaluation": "confirmed",
+    "expectation": {
+      "count": 1,
+      "kinds": ["whitespace"]
+    }
+  },
+  {
+    "id": "crlf",
+    "original": "Привет\r\nмир",
+    "corrected": "Привет\nмир",
+    "category": "whitespace",
+    "description": "CRLF is a grapheme-safe line ending.",
+    "evaluation": "confirmed",
+    "expectation": {
+      "count": 1,
+      "kinds": ["whitespace"]
+    }
+  },
+  {
+    "id": "boundary-space",
+    "original": " Привет ",
+    "corrected": "Привет",
+    "category": "boundary",
+    "description": "Leading/trailing whitespace deletion is accounted for.",
+    "evaluation": "confirmed",
+    "expectation": {
+      "min": 1,
+      "max": 2
+    }
+  },
+  {
+    "id": "only-whitespace",
+    "original": "\t",
+    "corrected": " ",
+    "category": "boundary",
+    "description": "Whitespace-only inputs retain exact changed fragments.",
+    "evaluation": "confirmed",
+    "expectation": {
+      "count": 1,
+      "originalFragments": ["\t"],
+      "correctedFragments": [" "]
+    }
+  },
+  {
+    "id": "report-markup",
+    "original": "<b>|` & [текст]\n",
+    "corrected": "<b>|` & [текст]!\n",
+    "category": "punctuation-insert",
+    "description": "Fixture syntax must not become report Markdown/HTML.",
+    "evaluation": "confirmed",
+    "expectation": {
+      "min": 1,
+      "max": 3
+    }
+  }
+]

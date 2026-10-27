@@ -12,15 +12,52 @@ needs product, architecture or UX decisions from the user comes later. Each
 item needs its own feature specification and acceptance criteria before
 implementation.
 
-- [ ] **V4.1 — Meaningful text-diff grouping research** — Complete the research-only investigation in [`docs/gramika_diff_grouping_research_brief.md`](../docs/gramika_diff_grouping_research_brief.md). Deliver the current-state audit, external research, approach comparison, Russian examples, recommendation and validation proposal. Do not implement grouping changes, modify prompts or make paid model calls during this research.
-- [ ] **V4.2 — Translation** — Integrate the self-hosted LibreTranslate service and support translating selected text or the whole text. Define source/result scope and target-language behavior in the feature specification.
-- [ ] **V4.3 — Russian dictionary definitions** — Add dictionary lookup for one selected word. Keep dictionary definitions separate from LLM-based Explain and define behavior for inflected or unsupported words.
-- [ ] **V4.4 — Read aloud** — Add text-to-speech for the selected text surfaces, with playback controls, browser limitations and localized labels defined before implementation.
-- [ ] **V4.5 — Multilingual interface** — Add French, Russian and English catalogs; detect the browser/device language on first launch; fall back to English; allow and remember an explicit language choice; keep interface language separate from correction language.
-- [ ] **V4.6 — Separate user workspaces and histories** — Prevent relatives from sharing one workspace or history. Authentication, invitations, account creation, session handling and migration of existing data are intentionally deferred until this feature is planned.
-- [ ] **V4.7 — Installation UX** — Improve mobile PWA discoverability and guidance with localized copy, clear install affordances, native prompts where available and understandable manual instructions where they are not. APK and React Native are out of scope.
-- [ ] **V4.8 — History UX redesign** — Make History clear and usable while preserving its working search, filters, sorting, pagination, deletion, result inspection, explanations, copy actions and request metrics.
-- [ ] **V4.9 — General UX improvement** — Improve the main correction flow, mobile navigation, copy/result feedback, empty/loading/error states and first-use comprehension while preserving working correction behavior.
+- [x] **V4.1 — Meaningful text-diff grouping research** — Research deliverable identified and accepted by the user: [`docs/text-diff-improvement-spec.md`](../docs/text-diff-improvement-spec.md), resulting from the [research brief](../docs/gramika_diff_grouping_research_brief.md). Implementation is tracked separately under V4.2.
+- [ ] **V4.2 — Text-diff improvements** — Implement only Steps 1–5 of the [improvement specification](../docs/text-diff-improvement-spec.md), as five separate improvements under the delivery contract below. Steps 6 and 7 are excluded from this workflow.
+- [ ] **V4.3 — Translation** — Integrate the self-hosted LibreTranslate service and support translating selected text or the whole text. Define source/result scope and target-language behavior in the feature specification.
+- [ ] **V4.4 — Russian dictionary definitions** — Add dictionary lookup for one selected word. Keep dictionary definitions separate from LLM-based Explain and define behavior for inflected or unsupported words.
+- [ ] **V4.5 — Read aloud** — Add text-to-speech for the selected text surfaces, with playback controls, browser limitations and localized labels defined before implementation.
+- [ ] **V4.6 — Multilingual interface** — Add French, Russian and English catalogs; detect the browser/device language on first launch; fall back to English; allow and remember an explicit language choice; keep interface language separate from correction language.
+- [ ] **V4.7 — Separate user workspaces and histories** — Prevent relatives from sharing one workspace or history. Authentication, invitations, account creation, session handling and migration of existing data are intentionally deferred until this feature is planned.
+- [ ] **V4.8 — Installation UX** — Improve mobile PWA discoverability and guidance with localized copy, clear install affordances, native prompts where available and understandable manual instructions where they are not. APK and React Native are out of scope.
+- [ ] **V4.9 — History UX redesign** — Make History clear and usable while preserving its working search, filters, sorting, pagination, deletion, result inspection, explanations, copy actions and request metrics.
+- [ ] **V4.10 — General UX improvement** — Improve the main correction flow, mobile navigation, copy/result feedback, empty/loading/error states and first-use comprehension while preserving working correction behavior.
+
+### V4.2 delivery contract — one improvement at a time
+
+User decision (2026-10-27): each numbered step is a separate work item, not
+an implementation subtask to batch into one feature. Use the specification's
+matching section for detailed requirements and acceptance criteria.
+
+- [x] **V4.2.1 — Regression and evaluation framework** (spec Step 1): extend the existing `node:test` suite, add synthetic fixtures and structural checks, and save baseline/comparison JSON and Markdown reports. Do not change product behavior.
+- [ ] **V4.2.2 — Visible whitespace in comparison cards** (spec Step 2): distinguish changed whitespace, unchanged context and empty sides without changing source text or diff behavior.
+- [ ] **V4.2.3 — Separator replacement normalization** (spec Step 3): represent supported space/hyphen replacements as one coherent change while preserving exact spans and unrelated corrections.
+- [ ] **V4.2.4 — Punctuation and token-replacement cleanup** (spec Step 4): apply narrow local rules for punctuation replacements and associated spacing, preserving independent corrections and movements.
+- [ ] **V4.2.5 — Rewrite alignment confidence** (spec Step 5): evaluate conservative phrase fallback behind an internal flag; preserve clear local corrections and enable only after reviewed baseline comparisons demonstrate improvement.
+
+For every item, prepare its own `current-feature.md` and obtain the user's
+spec approval before implementation. Implement and test only that item, then
+present the results for manual user review. Do not start the next item until
+the previous item has been tested and explicitly approved by the user.
+Passing automated tests alone is not approval. Archive and complete each
+approved item separately using the project's lightweight completion policy;
+mark V4.2 complete only after all five items are accepted.
+
+After V4.2.4, explicitly review the accumulated results with the user before
+starting V4.2.5. Spec Step 6 (selective meaningful grouping) and Step 7
+(LLM-assisted grouping) are excluded, not automatic follow-up work. They
+require a separate future roadmap decision.
+
+Preserve synchronous deterministic `diffText()`, UTF-16 offsets, exact spans,
+movement markers, manual selection and browser/server Explain compatibility.
+Use mocked transports for integration tests; do not run model benchmarks or
+paid calls. Keep prompts unchanged. Playwright MCP requires explicit permission.
+
+Agent handoff: start with V4.2.1, inspect the current code and tests, and use the
+linked specification as the detailed source. Do not overwrite another active
+work item's spec: reconcile the existing checkout's active work with the user
+before replacing it. This roadmap authorizes planning scope, not a batch run
+of all five improvements or Git landing operations.
 
 ## Deferred or rejected work
 

@@ -34,6 +34,7 @@ import {
 } from '../src/explanation/prompts'
 import application from '../src/app'
 import { mockOpenRouterTransport } from './mock-transport'
+import { fixtures as diffFixtures } from './fixtures/text-diff-fixtures'
 
 const at = '2026-10-21T00:00:00.000Z'
 const answer = 'Слово «помощь» пишется с мягким знаком на конце.'
@@ -91,7 +92,13 @@ function hasCode(code: string) {
 test('expression explanations use edited selection context and persist independently', async (t) => {
   const db = new SqliteDatabase(':memory:')
   t.after(() => db.close())
-  const { requestId } = seed(db, DEFAULT_MODEL_ID as string, 'strict', 'Нужна помощь.', 'Нужна помощь!')
+  const { requestId } = seed(
+    db,
+    DEFAULT_MODEL_ID as string,
+    'strict',
+    'Нужна помощь.',
+    'Нужна помощь!',
+  )
   const selection = ExpressionExplanationInput.parse({
     version: 3,
     requestId,
@@ -122,17 +129,20 @@ test('expression explanations use edited selection context and persist independe
   const recorded = db.explanations.metrics(requestId).attempts[0]?.selection
   assert.equal(recorded && 'kind' in recorded ? recorded.kind : undefined, 'expression')
 
-  await assert.rejects(
-    explain.explain({ ...selection, value: 'другая' }),
-    hasCode('INVALID_INPUT'),
-  )
+  await assert.rejects(explain.explain({ ...selection, value: 'другая' }), hasCode('INVALID_INPUT'))
   assert.equal(calls, 1)
 })
 
 test('expression explanations use original selection context and a distinct identity', async (t) => {
   const db = new SqliteDatabase(':memory:')
   t.after(() => db.close())
-  const { requestId } = seed(db, DEFAULT_MODEL_ID as string, 'strict', 'Нужна помощь.', 'Нужна помощь!')
+  const { requestId } = seed(
+    db,
+    DEFAULT_MODEL_ID as string,
+    'strict',
+    'Нужна помощь.',
+    'Нужна помощь!',
+  )
   const selection = ExpressionExplanationInput.parse({
     version: 3,
     requestId,
@@ -168,10 +178,7 @@ test('expression explanations use original selection context and a distinct iden
     value: 'помощь',
   })
   assert.deepEqual(await explain.lookup(edited), { result: null })
-  await assert.rejects(
-    explain.explain({ ...selection, value: 'помощ!' }),
-    hasCode('INVALID_INPUT'),
-  )
+  await assert.rejects(explain.explain({ ...selection, value: 'помощ!' }), hasCode('INVALID_INPUT'))
 })
 
 for (const mode of ['strict', 'gentle-rewrite'] as const) {
@@ -197,9 +204,7 @@ for (const mode of ['strict', 'gentle-rewrite'] as const) {
         )
         assert.equal(
           request.messages[0].content,
-          mode === 'strict'
-            ? STRICT_CHANGE_EXPLANATION_PROMPT
-            : REWRITE_CHANGE_EXPLANATION_PROMPT,
+          mode === 'strict' ? STRICT_CHANGE_EXPLANATION_PROMPT : REWRITE_CHANGE_EXPLANATION_PROMPT,
         )
         assert.equal(
           STRICT_CHANGE_EXPLANATION_PROMPT,
@@ -309,6 +314,17 @@ for (const mode of ['strict', 'gentle-rewrite'] as const) {
       ['Привет!!', 'Привет!'],
       ['😀  привет', '😀 привет'],
       ['никого подтверждение', 'никакого подтверждения'],
+      ...diffFixtures
+        .filter((fixture) =>
+          [
+            'separator-forward',
+            'separator-reverse',
+            'move-multiword',
+            'unicode-graphemes',
+            'rewrite',
+          ].includes(fixture.id),
+        )
+        .map((fixture) => [fixture.original, fixture.corrected]),
     ]) {
       const { requestId } = seed(db, DEFAULT_MODEL_ID, mode, original, corrected)
       for (const group of diffText(original, corrected).groups) {
@@ -331,7 +347,9 @@ for (const mode of ['strict', 'gentle-rewrite'] as const) {
           )
           return { correctedText: answer, errorCode: null, details: {} }
         })
+        assert.deepEqual(explain.lookup(selection), { result: null })
         await explain.explain(selection)
+        assert(explain.lookup(selection).result, 'genuine recomputed selection remains available')
         await assert.rejects(
           explain.explain({ ...selection, originalRange: { start: 1, end: 2 } }),
           hasCode('INVALID_INPUT'),

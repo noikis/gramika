@@ -2,77 +2,15 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { explanationSelection } from '@gramota/contracts/text-diff'
 import { diffText, resolveWordMoves } from '@gramota/text-diff'
-import { ExplanationInput, explanationSelectionKey } from '@gramota/contracts'
+import { explanationSelectionKey } from '@gramota/contracts'
 
-const graphemes = new Intl.Segmenter('ru', { granularity: 'grapheme' })
-function verify(original: string, corrected: string) {
-  const result = diffText(original, corrected)
-  assert.deepEqual(result, diffText(original, corrected), 'deterministic output')
-  const equal: string[] = []
-  for (const [text, runs, side] of [
-    [original, result.originalRuns, 'originalSpans'],
-    [corrected, result.correctedRuns, 'correctedSpans'],
-  ] as const) {
-    const boundaries = new Set([
-      text.length,
-      ...Array.from(graphemes.segment(text), (part) => part.index),
-    ])
-    let offset = 0
-    for (const run of runs) {
-      assert.equal(run.range.start, offset, 'runs partition the text without gaps/overlaps')
-      assert(run.range.end > run.range.start)
-      assert(boundaries.has(run.range.start) && boundaries.has(run.range.end))
-      offset = run.range.end
-      if (run.groupId) {
-        const group = result.groups.find((value) => value.id === run.groupId)!
-        assert(group)
-        assert(
-          group[side].some((span) => span.start === run.range.start && span.end === run.range.end),
-        )
-      }
-    }
-    assert.equal(offset, text.length)
-    assert.equal(runs.map((run) => text.slice(run.range.start, run.range.end)).join(''), text)
-    equal.push(
-      runs
-        .filter((run) => !run.groupId)
-        .map((run) => text.slice(run.range.start, run.range.end))
-        .join(''),
-    )
-  }
-  // Independent coverage check: removing all claimed changes leaves the same text.
-  if (result.groups.some((group) => group.kind === 'move')) {
-    // Removing a moved word leaves a separator at its former slot. Compare the
-    // retained lexical order and exact separator sequence independently.
-    assert.equal(
-      equal[0].replace(/\s/gu, ''),
-      equal[1].replace(/\s/gu, ''),
-      'retained lexical order',
-    )
-    assert.equal(
-      equal[0].replace(/\S/gu, ''),
-      equal[1].replace(/\S/gu, ''),
-      'exact retained separators',
-    )
-  } else assert.equal(equal[0], equal[1], 'all remaining differences must be accounted for')
-  for (const group of result.groups) {
-    assert(
-      ExplanationInput.safeParse(
-        explanationSelection('00000000-0000-4000-8000-000000000000', group),
-      ).success,
-    )
-    for (const [spans, context] of [
-      [group.originalSpans, group.originalRange],
-      [group.correctedSpans, group.correctedRange],
-    ] as const)
-      for (const span of spans) assert(span.start >= context.start && span.end <= context.end)
-  }
-  for (const marker of result.markers) {
-    assert(marker.correctedOffset >= 0 && marker.correctedOffset <= corrected.length)
-    assert(result.groups.some((group) => group.id === marker.groupId))
-  }
-  return result
-}
+import { verify } from './support/text-diff/invariants'
+import { fixtures } from './fixtures/text-diff-fixtures'
+import { evaluateCase } from './support/text-diff/evaluate'
+import { assertOutcomes } from './support/text-diff/invariants'
+
+for (const fixture of fixtures)
+  test('corpus: ' + fixture.id, () => assertOutcomes(evaluateCase(fixture).assertions))
 
 test('whole words, punctuation and related grammar remain independent; unchanged context is not highlighted', () => {
   const original = 'Я отправел письмо вчера'
@@ -237,7 +175,6 @@ test('bounded fallback preserves unique equal islands and large text', () => {
   const elapsed = performance.now() - started
   assert(stress.groups.length > 0)
   assert(Number.isFinite(elapsed))
-  console.log(`text-diff stress fallback: ${Math.round(elapsed)}ms for 8,000 words`)
 })
 
 test('selection keys separate exact targets even when context is identical', () => {

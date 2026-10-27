@@ -7,6 +7,7 @@
     "doc": "docs"
   },
   "scripts": {
+    "diff:evaluate": "node apps/server/test/support/text-diff/cli.mjs",
     "dev:server": "npm run dev -w apps/server",
     "dev:web": "npm run dev -w apps/web",
     "format": "npm run format -w apps/web && npm run format -w apps/server",

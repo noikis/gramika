@@ -23,6 +23,7 @@ apps/server/benchmark-data/
 *.sqlite-shm
 *.sqlite-journal
 .playwright-mcp/
+/test-results/text-diff/
 
 # Blueprint generated local state
 blueprint/.state/
