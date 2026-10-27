@@ -1,8 +1,6 @@
 # Gramika - Project Overview
 
-<!-- blueprint:source-hash 0e7f6d11476ad8dbe6aeec08767d75a6d387d07dacb8313723aeafb9662ea253 -->
-
-Derived from [project-plan.md](../project-plan.md) and
+<!-- d9eec2f5fac3d544b44b7d721a9c0240bd9c0c7d1a45b0b0c3a6e38e2522074fn.md](../project-plan.md) and
 [build-plan.md](../build-plan.md). The Build Plan is the concise status index;
 completion history contains detailed specifications and evidence.
 
