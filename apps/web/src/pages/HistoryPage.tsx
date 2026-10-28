@@ -12,7 +12,7 @@ import { useHistory } from '../hooks/use-history'
 import { useExchangeRate } from '../hooks/use-exchange-rate'
 import { Icon } from '../components/ui/icon'
 import '../styles/history.css'
-import '../styles/history-responsive.css'
+import '../styles/history-details.css'
 import { useLocale } from '../i18n/use-locale'
 
 function dateBoundary(value: string, nextDay = false) {

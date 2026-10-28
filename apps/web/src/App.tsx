@@ -12,6 +12,7 @@ import { useLocale } from './i18n/use-locale'
 import { clearExplicitLocale } from './i18n'
 import './styles/app-shell.css'
 import './styles/correction.css'
+import './styles/results.css'
 
 function App() {
   const { locale, setLocale, resetLocale, t, message } = useLocale()
