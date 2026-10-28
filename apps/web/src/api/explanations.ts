@@ -8,6 +8,8 @@ import {
   type ExpressionExplanationInput,
 } from '@gramota/contracts'
 
+export class ExplanationApiError extends Error {}
+
 export async function fetchExplanation(
   selection: ExplanationInput,
   isGenerate: boolean,
@@ -23,7 +25,7 @@ export async function fetchExplanation(
   const payload: unknown = await response.json()
   if (!response.ok) {
     const failure = ExplanationFailure.safeParse(payload)
-    throw Error(
+    throw new ExplanationApiError(
       failure.success
         ? failure.data.error.message
         : 'Could not load the explanation. Please try again.',
@@ -47,7 +49,8 @@ export async function generateExpressionExplanation(selection: ExpressionExplana
   const payload: unknown = await response.json()
   if (!response.ok) {
     const failure = ExplanationFailure.safeParse(payload)
-    throw Error(failure.success ? failure.data.error.message : 'Could not explain the selection.')
+    if (failure.success) throw new ExplanationApiError(failure.data.error.message)
+    throw Error('Could not explain the selection.')
   }
   const result = ExplanationSuccess.parse(payload)
   if (JSON.stringify(result.selection) !== body) throw Error('Mismatched explanation.')

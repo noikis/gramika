@@ -56,6 +56,11 @@ export function ResultChanges({
   const parts = useMemo(() => displayParts(diff), [diff])
   const current = corrections[selected]
 
+  function select(index: number, element?: HTMLSpanElement) {
+    selectedElement.current = element ?? null
+    onSelect(index, element)
+  }
+
   function setManualRange(start: number, end: number) {
     if (start === end || start < 0 || end > result.correctedText.length) {
       onManualSelection(null)
@@ -177,11 +182,11 @@ export function ResultChanges({
               aria-controls={panelId}
               aria-label={`Correction ${unitIndex + 1} of ${corrections.length}. ${label}. Original context: ${passage(before, 'No original text')}. Corrected context: ${passage(after, 'Removed text')}`}
               title={spacing ? 'Spacing only — select to compare' : undefined}
-              onClick={(event) => onSelect(unitIndex, event.currentTarget)}
+              onClick={(event) => select(unitIndex, event.currentTarget)}
               onKeyDown={(event) => {
                 if (event.key === 'Enter' || event.key === ' ') {
                   event.preventDefault()
-                  onSelect(unitIndex, event.currentTarget)
+                  select(unitIndex, event.currentTarget)
                 }
               }}
             >

@@ -41,4 +41,27 @@ describe('useHistory', () => {
     result.current.retry()
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
   })
+
+  it('hides unexpected response parsing errors behind the friendly fallback', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('{', { status: 200 })))
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const query = {
+      search: 'broken',
+      model: '',
+      result: 'all' as const,
+      from: null,
+      to: null,
+      sort: 'newest' as const,
+      page: 1,
+    }
+    const { result } = renderHook(() => useHistory(query), {
+      wrapper: ({ children }) => (
+        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+      ),
+    })
+
+    await waitFor(() =>
+      expect(result.current.error).toBe('Could not load history. Please try again.'),
+    )
+  })
 })

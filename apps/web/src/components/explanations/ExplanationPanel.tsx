@@ -3,7 +3,11 @@ import type { ExplanationInput, ExpressionExplanationInput } from '@gramota/cont
 import { Button } from '../ui/button'
 import { Icon } from '../ui/icon'
 import { useLocale } from '../../i18n/use-locale'
-import { fetchExplanation, generateExpressionExplanation } from '../../api/explanations'
+import {
+  ExplanationApiError,
+  fetchExplanation,
+  generateExpressionExplanation,
+} from '../../api/explanations'
 
 type Outcome = { explanation: string | null; error: string | null }
 
@@ -28,7 +32,7 @@ export function ExplanationPanel({ selection }: { selection: ExplanationInput })
           setOutcome({
             explanation: null,
             error:
-              cause instanceof Error
+              cause instanceof ExplanationApiError
                 ? cause.message
                 : 'Could not load the explanation. Please try again.',
           })
@@ -97,7 +101,9 @@ export function ExpressionExplanationPanel({
       setExplanation(await generateExpressionExplanation(selection))
       setState('done')
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Could not explain the selection.')
+      setError(
+        cause instanceof ExplanationApiError ? cause.message : 'Could not explain the selection.',
+      )
       setState('error')
     }
   }

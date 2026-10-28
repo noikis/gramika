@@ -31,7 +31,7 @@ export function HistoryEntry({
     enabled: isOpen,
     staleTime: Infinity,
     retry: false,
-    refetchOnMount: false,
+    refetchOnMount: 'always',
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
   })

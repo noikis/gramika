@@ -5,6 +5,8 @@ import {
   type HistorySearchQuery,
 } from '@gramota/contracts'
 
+export class HistoryApiError extends Error {}
+
 export async function searchHistory(query: HistorySearchQuery, signal: AbortSignal) {
   const response = await fetch('/api/history/search', {
     method: 'POST',
@@ -15,7 +17,7 @@ export async function searchHistory(query: HistorySearchQuery, signal: AbortSign
   const value: unknown = await response.json()
   if (!response.ok) {
     const failure = HistoryFailure.safeParse(value)
-    throw Error(
+    throw new HistoryApiError(
       failure.success && failure.data.error.code === 'INVALID_HISTORY_QUERY'
         ? 'Check your date range and search criteria.'
         : 'Could not load history. Please try again.',
