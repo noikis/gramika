@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { notify } from '../lib/notifications'
-import { useLocale } from './use-locale'
+import { useLocale } from '../i18n/use-locale'
 
 export function useDraft(initialText = '') {
   const { message } = useLocale()

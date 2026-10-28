@@ -4,7 +4,7 @@ import { clearWorkspace, loadWorkspace, saveWorkspace, type Theme } from '../lib
 import { notify } from '../lib/notifications'
 import { useDraft } from './use-draft'
 import { useWritingSession } from './use-writing-session'
-import { useLocale } from './use-locale'
+import { useLocale } from '../i18n/use-locale'
 
 export function useWorkspacePersistence() {
   const { message } = useLocale()

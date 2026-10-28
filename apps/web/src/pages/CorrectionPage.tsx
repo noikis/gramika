@@ -5,7 +5,7 @@ import { OriginalEditor } from '../components/correction/OriginalEditor'
 import { ResultHeading } from '../components/correction/ResultHeading'
 import { ResultView } from '../components/results/ResultView'
 import type { Correction, WorkspaceProps } from '../components/correction/types'
-import { useLocale } from '../hooks/use-locale'
+import { useLocale } from '../i18n/use-locale'
 
 function OpinionAction({ correction }: { correction: Correction }) {
   const { t } = useLocale()

@@ -3,7 +3,7 @@ import { Button } from '../ui/button'
 import { Icon } from '../ui/icon'
 import { notify } from '../../lib/notifications'
 import '../install-app.css'
-import { useLocale } from '../../hooks/use-locale'
+import { useLocale } from '../../i18n/use-locale'
 
 const INSTALL_DISMISSED_KEY = 'gramika.install-dismissed'
 

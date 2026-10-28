@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
-import { LocaleProvider, useLocale } from '../../src/hooks/use-locale'
+import { LocaleProvider, useLocale } from '../../src/i18n/use-locale'
 import { LOCALE_STORAGE_KEY, Locale } from '../../src/i18n'
 
 function LocaleProbe() {

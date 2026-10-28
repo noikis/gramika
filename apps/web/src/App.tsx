@@ -8,7 +8,7 @@ import { Icon } from './components/ui/icon'
 import { AppSettings } from './components/settings/AppSettings'
 import { notify } from './lib/notifications'
 import { InstallApp } from './components/settings/InstallApp'
-import { useLocale } from './hooks/use-locale'
+import { useLocale } from './i18n/use-locale'
 import { clearExplicitLocale } from './i18n'
 import './App.css'
 

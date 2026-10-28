@@ -10,7 +10,7 @@ import { requestCorrection } from '../api/corrections'
 import { modelName } from '../lib/history-format'
 import { notify } from '../lib/notifications'
 import type { CorrectionWorkspaceState } from '../lib/workspace-storage'
-import { useLocale } from './use-locale'
+import { useLocale } from '../i18n/use-locale'
 
 type Feedback = { revision: number; mode: CorrectionMode; modelId: ModelId; message: string }
 

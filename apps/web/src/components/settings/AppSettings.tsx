@@ -3,7 +3,7 @@ import { THEMES, type Theme } from '../../lib/workspace-storage'
 import { Button } from '../ui/button'
 import { Icon } from '../ui/icon'
 import { LOCALES, type Locale } from '../../i18n'
-import { useLocale } from '../../hooks/use-locale'
+import { useLocale } from '../../i18n/use-locale'
 
 export function ThemeControl({
   theme,

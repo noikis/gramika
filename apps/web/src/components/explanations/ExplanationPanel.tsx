@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import type { ExplanationInput, ExpressionExplanationInput } from '@gramota/contracts'
 import { Button } from '../ui/button'
 import { Icon } from '../ui/icon'
-import { useLocale } from '../../hooks/use-locale'
+import { useLocale } from '../../i18n/use-locale'
 import { fetchExplanation, generateExpressionExplanation } from '../../api/explanations'
 
 type Outcome = { explanation: string | null; error: string | null }

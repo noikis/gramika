@@ -8,7 +8,7 @@ import { Textarea } from '../ui/textarea'
 import { Button } from '../ui/button'
 import { Icon } from '../ui/icon'
 import { ComparisonExcerpt } from './ComparisonExcerpt'
-import { useLocale } from '../../hooks/use-locale'
+import { useLocale } from '../../i18n/use-locale'
 import type { ResultViewMode } from './types'
 
 type Props = {

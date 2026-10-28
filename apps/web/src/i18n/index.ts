@@ -67,9 +67,13 @@ export function clearExplicitLocale() {
   }
 }
 
-export function formatDate(value: string | null, locale: Locale) {
+export function formatDate(
+  value: string | null,
+  locale: Locale,
+  unavailable = catalogs[locale].unavailable,
+) {
   return value === null
-    ? catalogs[locale].unavailable
+    ? unavailable
     : new Date(value).toLocaleString(locale, {
         year: 'numeric',
         month: 'short',
@@ -80,6 +84,10 @@ export function formatDate(value: string | null, locale: Locale) {
       })
 }
 
-export function formatCount(value: number | null, locale: Locale) {
-  return value === null ? catalogs[locale].unavailable : value.toLocaleString(locale)
+export function formatCount(
+  value: number | null,
+  locale: Locale,
+  unavailable = catalogs[locale].unavailable,
+) {
+  return value === null ? unavailable : value.toLocaleString(locale)
 }

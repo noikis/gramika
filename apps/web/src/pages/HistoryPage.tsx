@@ -12,7 +12,7 @@ import { useHistory } from '../hooks/use-history'
 import { useExchangeRate } from '../hooks/use-exchange-rate'
 import { Icon } from '../components/ui/icon'
 import '../components/history.css'
-import { useLocale } from '../hooks/use-locale'
+import { useLocale } from '../i18n/use-locale'
 
 const initialFilters = {
   search: '',

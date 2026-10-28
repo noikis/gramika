@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { Button } from '../ui/button'
 import { notify } from '../../lib/notifications'
 import { Icon } from '../ui/icon'
-import { useLocale } from '../../hooks/use-locale'
+import { useLocale } from '../../i18n/use-locale'
 import { deleteHistoryEntry } from '../../api/history'
 
 export function HistoryDelete({ id, onDeleted }: { id: string; onDeleted: (id: string) => void }) {

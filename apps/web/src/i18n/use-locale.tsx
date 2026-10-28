@@ -9,7 +9,7 @@ import {
   type Locale,
   type Messages,
   type MessageCatalog,
-} from '../i18n'
+} from './index'
 import { LocaleContext } from './locale-context'
 
 export function LocaleProvider({ children }: { children: ReactNode }) {
@@ -30,7 +30,8 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
       setLocale,
       resetLocale,
       t: <K extends keyof Messages>(key: K) => catalogs[locale][key],
-      message: <K extends keyof MessageCatalog>(key: K, values?: Record<string, string | number>) => interpolateMessage(messageCatalogs[locale][key], values),
+      message: <K extends keyof MessageCatalog>(key: K, values?: Record<string, string | number>) =>
+        interpolateMessage(messageCatalogs[locale][key], values),
     }),
     [locale],
   )

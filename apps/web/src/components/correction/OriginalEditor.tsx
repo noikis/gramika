@@ -5,7 +5,7 @@ import { Button } from '../ui/button'
 import { Textarea } from '../ui/textarea'
 import { ExpressionExplanationPanel } from '../explanations/ExplanationPanel'
 import { Icon } from '../ui/icon'
-import { useLocale } from '../../hooks/use-locale'
+import { useLocale } from '../../i18n/use-locale'
 import type { Correction, WorkspaceProps } from './types'
 
 function ModeControl({ correction }: { correction: Correction }) {

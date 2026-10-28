@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import type { CorrectionResult } from '@gramota/contracts'
 import { writeClipboardText } from '../lib/clipboard'
 import { notify } from '../lib/notifications'
-import { useLocale } from './use-locale'
+import { useLocale } from '../i18n/use-locale'
 
 export function useClipboardCopy(
   result: CorrectionResult | null,

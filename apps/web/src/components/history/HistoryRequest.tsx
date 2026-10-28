@@ -10,7 +10,7 @@ import type { ResultViewMode } from '../results/types'
 import { ExplanationRequestMetrics } from '../explanations/ExplanationRequestMetrics'
 import { Button } from '../ui/button'
 import { Icon } from '../ui/icon'
-import { useLocale } from '../../hooks/use-locale'
+import { useLocale } from '../../i18n/use-locale'
 
 function isOutsideDialog(event: PointerEvent<HTMLDialogElement>) {
   const bounds = event.currentTarget.getBoundingClientRect()

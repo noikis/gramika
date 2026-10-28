@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import type { PointerEvent } from 'react'
 import { DEFAULT_MODEL_ID } from '@gramota/contracts'
 import { Button } from '../ui/button'
-import { useLocale } from '../../hooks/use-locale'
+import { useLocale } from '../../i18n/use-locale'
 import type { Correction } from './types'
 
 const MIN_SWIPE_DISTANCE_PX = 48

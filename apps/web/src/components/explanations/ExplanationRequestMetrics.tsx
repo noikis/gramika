@@ -9,7 +9,7 @@ import {
 import { formatCost, formatDate, formatTime } from '../../lib/history-format'
 import { MetricFacts } from './RequestMetricFacts'
 import { Button } from '../ui/button'
-import { useLocale } from '../../hooks/use-locale'
+import { useLocale } from '../../i18n/use-locale'
 import { fetchExplanationMetrics } from '../../api/explanations'
 
 function SelectionFragments({

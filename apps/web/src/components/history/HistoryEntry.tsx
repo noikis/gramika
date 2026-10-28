@@ -7,7 +7,7 @@ import { HistoryDelete } from './HistoryDelete'
 import { HistoryRequest } from './HistoryRequest'
 import { Button } from '../ui/button'
 import { Icon } from '../ui/icon'
-import { useLocale } from '../../hooks/use-locale'
+import { useLocale } from '../../i18n/use-locale'
 
 export function HistoryEntry({
   item,
