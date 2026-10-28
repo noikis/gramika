@@ -6,9 +6,9 @@ import {
   type ExplanationInput,
   type ExpressionExplanationInput,
 } from '@gramota/contracts'
-import { Button } from './ui/button'
-import { Icon } from './ui/icon'
-import { useLocale } from '../hooks/use-locale'
+import { Button } from '../ui/button'
+import { Icon } from '../ui/icon'
+import { useLocale } from '../../hooks/use-locale'
 
 type Outcome = { explanation: string | null; error: string | null }
 

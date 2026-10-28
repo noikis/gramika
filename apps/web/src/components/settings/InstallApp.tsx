@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
-import { Button } from './ui/button'
-import { Icon } from './ui/icon'
-import { notify } from '../lib/notifications'
-import './install-app.css'
-import { useLocale } from '../hooks/use-locale'
+import { Button } from '../ui/button'
+import { Icon } from '../ui/icon'
+import { notify } from '../../lib/notifications'
+import '../install-app.css'
+import { useLocale } from '../../hooks/use-locale'
 
 const INSTALL_DISMISSED_KEY = 'gramika.install-dismissed'
 

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { CorrectionMode, type CorrectionResult } from '@gramota/contracts'
-import type { ResultViewMode } from '../components/result-view'
+import type { ResultViewMode } from '../components/results/types'
 import type { CorrectionWorkspaceState, SavedResult } from '../lib/workspace-storage'
 
 type ResultHistory = { revision: number; results: SavedResult[] }

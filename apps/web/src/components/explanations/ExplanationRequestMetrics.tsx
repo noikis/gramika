@@ -1,4 +1,4 @@
-import { Icon } from './ui/icon'
+import { Icon } from '../ui/icon'
 import { useEffect, useState } from 'react'
 import {
   ExplanationMetrics,
@@ -6,10 +6,10 @@ import {
   type RecordedExplanationSelection,
   type HistoryRequest,
 } from '@gramota/contracts'
-import { formatCost, formatDate, formatTime } from '../lib/history-format'
-import { MetricFacts } from './request-metric-facts'
-import { Button } from './ui/button'
-import { useLocale } from '../hooks/use-locale'
+import { formatCost, formatDate, formatTime } from '../../lib/history-format'
+import { MetricFacts } from './RequestMetricFacts'
+import { Button } from '../ui/button'
+import { useLocale } from '../../hooks/use-locale'
 
 function SelectionFragments({
   selection,

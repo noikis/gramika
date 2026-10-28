@@ -1,7 +1,7 @@
-import { Icon } from './ui/icon'
+import { Icon } from '../ui/icon'
 import type { RequestMetrics as SavedMetrics } from '@gramota/contracts'
-import { formatCost, formatCount, formatDate, formatTime } from '../lib/history-format'
-import { useLocale } from '../hooks/use-locale'
+import { formatCost, formatCount, formatDate, formatTime } from '../../lib/history-format'
+import { useLocale } from '../../hooks/use-locale'
 
 export function MetricFacts({
   request,

@@ -1,5 +1,5 @@
 import { CorrectionMode, CorrectionSuccess, type CorrectionResult } from '@gramota/contracts'
-import type { ResultViewMode } from '../components/result-view'
+import type { ResultViewMode } from '../components/results/types'
 import type { MessageCatalog } from '../i18n/messages/types'
 
 export const WORKSPACE_STORAGE_KEY = 'gramota.workspace'

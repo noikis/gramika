@@ -1,16 +1,15 @@
-import { ExplanationPanel, ExpressionExplanationPanel } from './explanation-panel'
+import { ExplanationPanel, ExpressionExplanationPanel } from '../explanations/ExplanationPanel'
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import type { CorrectionResult, ExpressionExplanationInput } from '@gramota/contracts'
-import { diffText, explanationSelection, type TextDiff } from '../lib/text-diff'
-import { correctionDescription } from '../lib/whitespace-display'
-import { Textarea } from './ui/textarea'
-import { Button } from './ui/button'
-import { Icon } from './ui/icon'
-import { ComparisonExcerpt } from './comparison-excerpt'
-import { useLocale } from '../hooks/use-locale'
-
-export type ResultViewMode = 'text' | 'changes'
+import { diffText, explanationSelection, type TextDiff } from '../../lib/text-diff'
+import { correctionDescription } from '../../lib/whitespace-display'
+import { Textarea } from '../ui/textarea'
+import { Button } from '../ui/button'
+import { Icon } from '../ui/icon'
+import { ComparisonExcerpt } from './ComparisonExcerpt'
+import { useLocale } from '../../hooks/use-locale'
+import type { ResultViewMode } from './types'
 
 type Props = {
   result: Pick<CorrectionResult, 'originalText' | 'correctedText' | 'requestId' | 'mode'>

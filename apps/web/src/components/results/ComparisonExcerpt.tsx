@@ -1,5 +1,5 @@
 import { Fragment } from 'react'
-import type { ChangeGroup } from '../lib/text-diff'
+import type { ChangeGroup } from '../../lib/text-diff'
 
 type WhitespaceMarker = {
   symbol: string

@@ -1,8 +1,8 @@
 import { useRef, useState } from 'react'
-import { Button } from './ui/button'
-import { notify } from '../lib/notifications'
-import { Icon } from './ui/icon'
-import { useLocale } from '../hooks/use-locale'
+import { Button } from '../ui/button'
+import { notify } from '../../lib/notifications'
+import { Icon } from '../ui/icon'
+import { useLocale } from '../../hooks/use-locale'
 
 export function HistoryDelete({ id, onDeleted }: { id: string; onDeleted: (id: string) => void }) {
   const { t, message } = useLocale()

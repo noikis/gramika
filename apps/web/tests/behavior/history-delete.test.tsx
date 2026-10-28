@@ -2,7 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { LocaleProvider } from '../../src/hooks/use-locale'
-import { HistoryDelete } from '../../src/components/history-delete'
+import { HistoryDelete } from '../../src/components/history/HistoryDelete'
 
 function renderDelete(onDeleted = vi.fn()) {
   return {
