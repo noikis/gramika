@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import type { HistorySearchQuery } from '@gramota/contracts'
-import { searchHistory } from '../api/history'
+import { HistoryApiError, searchHistory } from '../api/history'
 
 export function useHistory(query: HistorySearchQuery) {
   const result = useQuery({
@@ -15,7 +15,7 @@ export function useHistory(query: HistorySearchQuery) {
     data: result.data ?? null,
     loading: result.isPending,
     error:
-      result.error instanceof Error
+      result.error instanceof HistoryApiError
         ? result.error.message
         : result.error
           ? 'Could not load history. Please try again.'

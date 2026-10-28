@@ -1,5 +1,5 @@
-import { useId, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useId, useRef, useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import type { HistorySummary, HistorySearchQuery } from '@gramota/contracts'
 import { fetchHistoryDetail } from '../../api/history'
 import { formatDate, shortModelName } from '../../lib/history-format'
@@ -24,7 +24,9 @@ export function HistoryEntry({
 }) {
   const { t, locale } = useLocale()
   const [isOpen, setIsOpen] = useState(false)
+  const hasOpened = useRef(false)
   const originalId = useId()
+  const queryClient = useQueryClient()
   const detailQuery = useQuery({
     queryKey: ['history-detail', item.id],
     queryFn: ({ signal }) => fetchHistoryDetail(item.id, signal),
@@ -56,6 +58,13 @@ export function HistoryEntry({
     <details
       className="history-entry"
       onToggle={(event) => {
+        if (event.currentTarget.open && !hasOpened.current) {
+          hasOpened.current = true
+          void queryClient.invalidateQueries({
+            queryKey: ['history-detail', item.id],
+            refetchType: 'none',
+          })
+        }
         setIsOpen(event.currentTarget.open)
         if (!event.currentTarget.open)
           event.currentTarget
