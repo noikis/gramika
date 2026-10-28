@@ -24,7 +24,7 @@ Implement one numbered step at a time on `feature/frontend-refactor`, run its re
 
 ## Build steps
 
-- [ ] **1. Preflight and baseline inventory.** Inspect branch/worktree, scripts, tests, entrypoints, CSS order, network triggers, storage and high-risk selection/focus behavior; run documented web build/lint/format checks. **Done when:** the untouched baseline and drift are recorded without product-file changes.
+- [x] **1. Preflight and baseline inventory.** Inspect branch/worktree, scripts, tests, entrypoints, CSS order, network triggers, storage and high-risk selection/focus behavior; run documented web build/lint/format checks. **Done when:** the untouched baseline and drift are recorded without product-file changes.
 - [ ] **2. Add focused regression protection.** Add opt-in web test tooling and characterization tests for request trigger guards, failure preservation, storage restore/clear, result selection, history operations and locale persistence. **Done when:** tests pass against the unchanged implementation and baseline checks are known.
 - [ ] **3. Separate pages from components.** Move the history page and meaningful history entry/correction page composition while preserving navigation, focus, scroll, unmount and filter behavior. **Done when:** screens are behaviorally and visually equivalent and checks pass.
 - [ ] **4. Organize components selectively.** Group current components by responsibility, extract only meaningful responsibilities, move shared result types out of component modules and avoid cycles or broad state rewrites. **Done when:** ownership is clear and props, accessibility and diff/selection semantics remain equivalent.
@@ -48,3 +48,13 @@ Use the opt-in web unit/behavior suite added in Step 2, plus `npm run build -w a
 ## Notes for the AI
 
 Reinspect the latest branch before each step. Preserve unrelated user work. Stop after every step for review. Follow the full handoff in `docs/gramika_frontend_refactor_spec.md`.
+
+### Preflight baseline
+
+- Branch: `feature/frontend-refactor`.
+- Web build: passed (`npm run build -w apps/web`).
+- Web lint: passed (`npm run lint -w apps/web`).
+- Web format check: failed on 44 existing files (`npm run format:check -w apps/web`); no formatting changes were made.
+- Frontend tests: no test runner or test directory is configured yet.
+- CSS entry order: `main.tsx` imports `index.css` before `App.tsx`; `App.tsx` imports `App.css`; `history-page.tsx` imports `components/history.css`; `install-app.tsx` imports `components/install-app.css`.
+- High-risk behavior inventory: imperative correction and explanation requests, workspace persistence (`gramota.workspace`), locale persistence (`gramika.interface-locale`), result/diff selection and focus restoration, history filters/pagination/deletion, and theme synchronization.
