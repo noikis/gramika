@@ -8,6 +8,7 @@ import { Textarea } from './ui/textarea'
 import { Button } from './ui/button'
 import { Icon } from './ui/icon'
 import { ComparisonExcerpt } from './comparison-excerpt'
+import { useLocale } from '../hooks/use-locale'
 
 export type ResultViewMode = 'text' | 'changes'
 
@@ -60,6 +61,7 @@ function ResultContent({
   compact = false,
   actions,
 }: Props) {
+  const { t } = useLocale()
   const groupName = useId()
   const panelId = useId()
   const isHistory = !compact && Boolean(actions)
@@ -168,7 +170,9 @@ function ResultContent({
   const viewToggle = (
     <fieldset className="result-toggle">
       <legend className="sr-only">
-        {title === 'Result' ? 'Result view' : `${title} result view`}
+        {title === t('result')
+          ? `${t('result')} view`
+          : `${title} ${t('result').toLowerCase()} view`}
       </legend>
       {(['text', 'changes'] as const).map((mode) => (
         <label key={mode}>
@@ -179,7 +183,7 @@ function ResultContent({
             checked={view === mode}
             onChange={() => onViewChange(mode)}
           />
-          {mode === 'text' ? 'Text' : 'Changes'}
+          {mode === 'text' ? t('text') : t('changes')}
         </label>
       ))}
     </fieldset>
@@ -200,7 +204,7 @@ function ResultContent({
           disabled={selected === 0}
         >
           {isHistory && <Icon name="chevronLeft" />}
-          <span className="navigation-label">Previous</span>
+          <span className="navigation-label">{t('previous')}</span>
         </Button>
       )}
       <span className="correction-counter">
@@ -218,7 +222,7 @@ function ResultContent({
           aria-label="Next correction"
           disabled={selected === corrections.length - 1}
         >
-          <span className="navigation-label">Next</span>
+          <span className="navigation-label">{t('next')}</span>
           {isHistory && <Icon name="chevronRight" />}
         </Button>
       )}
@@ -343,7 +347,7 @@ function ResultContent({
           {actions}
         </div>
       )}
-      {compact && !corrections.length && <p className="clipboard-feedback">No changes.</p>}
+      {compact && !corrections.length && <p className="clipboard-feedback">{t('noChanges')}</p>}
       {view === 'changes' && current && comparison && (
         <div className={`correction-details${compact ? ' compact-inspector' : ''}`}>
           {compact ? (
@@ -356,29 +360,29 @@ function ResultContent({
           )}
           <div id={panelId} className="correction-comparison" role="status" aria-atomic="true">
             <span className="sr-only">
-              Correction {selected + 1} of {corrections.length}.
+              {t('correction')} {selected + 1} / {corrections.length}.
             </span>
             {!isHistory && <p className="correction-kind">{description}</p>}
             <dl>
               <div>
-                <dt>Original</dt>
+                <dt>{t('original')}</dt>
                 <dd>
                   <ComparisonExcerpt
                     text={result.originalText}
                     range={current.originalRange}
                     spans={current.originalSpans}
-                    empty="No original text"
+                    empty={t('noOriginalText')}
                   />
                 </dd>
               </div>
               <div>
-                <dt>Corrected</dt>
+                <dt>{t('corrected')}</dt>
                 <dd>
                   <ComparisonExcerpt
                     text={result.correctedText}
                     range={current.correctedRange}
                     spans={current.correctedSpans}
-                    empty="Removed text"
+                    empty={t('removedText')}
                   />
                 </dd>
               </div>

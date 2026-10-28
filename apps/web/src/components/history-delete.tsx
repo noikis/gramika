@@ -2,8 +2,10 @@ import { useRef, useState } from 'react'
 import { Button } from './ui/button'
 import { notify } from '../lib/notifications'
 import { Icon } from './ui/icon'
+import { useLocale } from '../hooks/use-locale'
 
 export function HistoryDelete({ id, onDeleted }: { id: string; onDeleted: (id: string) => void }) {
+  const { t, message } = useLocale()
   const [isConfirming, setIsConfirming] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [error, setError] = useState('')
@@ -18,7 +20,7 @@ export function HistoryDelete({ id, onDeleted }: { id: string; onDeleted: (id: s
     try {
       const response = await fetch('/api/history/' + encodeURIComponent(id), { method: 'DELETE' })
       if (!response.ok && response.status !== 404) throw Error('Deletion unavailable')
-      notify('Entry removed from history.', true)
+      notify(message('historyEntryRemoved'), true)
       onDeleted(id)
     } catch {
       setError('Could not delete this entry. Please try again.')
@@ -32,12 +34,9 @@ export function HistoryDelete({ id, onDeleted }: { id: string; onDeleted: (id: s
     <div className="history-delete" aria-busy={isDeleting}>
       {isConfirming ? (
         <div className="delete-confirmation">
-          <p>
-            Remove this original and all its attempts from history? Stored data will be retained.
-            There is no restore screen.
-          </p>
+          <p>{t('deleteConfirmation')}</p>
           <Button type="button" variant="secondary" disabled={isDeleting} onClick={remove}>
-            {isDeleting ? 'Deleting...' : 'Delete'}
+            {isDeleting ? t('deleting') : t('delete')}
           </Button>{' '}
           <Button
             type="button"
@@ -49,7 +48,7 @@ export function HistoryDelete({ id, onDeleted }: { id: string; onDeleted: (id: s
               requestAnimationFrame(() => trigger.current?.focus())
             }}
           >
-            Cancel
+            {t('cancel')}
           </Button>
         </div>
       ) : (
@@ -60,7 +59,7 @@ export function HistoryDelete({ id, onDeleted }: { id: string; onDeleted: (id: s
           onClick={() => setIsConfirming(true)}
         >
           <Icon name="trash" />
-          Delete
+          {t('delete')}
         </Button>
       )}
       {error && (

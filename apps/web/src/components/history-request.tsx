@@ -2,13 +2,14 @@ import { MetricFacts } from './request-metric-facts'
 import { useEffect, useId, useRef, useState } from 'react'
 import type { PointerEvent, ReactNode } from 'react'
 import type { ExplanationMetrics, HistoryRequest as SavedRequest } from '@gramota/contracts'
-import { formatDate, shortModelName, modeLabels } from '../lib/history-format'
+import { formatDate, shortModelName } from '../lib/history-format'
 import { writeClipboardText } from '../lib/clipboard'
 import { notify } from '../lib/notifications'
 import { ResultView, type ResultViewMode } from './result-view'
 import { ExplanationRequestMetrics } from './explanation-request-metrics'
 import { Button } from './ui/button'
 import { Icon } from './ui/icon'
+import { useLocale } from '../hooks/use-locale'
 
 function isOutsideDialog(event: PointerEvent<HTMLDialogElement>) {
   const bounds = event.currentTarget.getBoundingClientRect()
@@ -34,6 +35,7 @@ export function RequestMetrics({
   actions?: ReactNode
   entryAction?: ReactNode
 }) {
+  const { t, locale, message } = useLocale()
   const [isOpen, setIsOpen] = useState(false)
   const [explanationMetrics, setExplanationMetrics] = useState<ExplanationMetrics | null>(null)
   const [metricsError, setMetricsError] = useState(false)
@@ -79,7 +81,7 @@ export function RequestMetrics({
             setIsOpen(true)
           }}
         >
-          <Icon name="info" /> Details
+          <Icon name="info" /> {t('details')}
         </Button>
         {entryAction}
       </div>
@@ -105,18 +107,21 @@ export function RequestMetrics({
         <header className="sheet-heading">
           <div>
             <h2 id={titleId}>{shortModelName(request.requestedModel)}</h2>
-            <p>Request details · {modeLabels[request.mode]}</p>
+            <p>
+              {message('requestDetails')} ·{' '}
+              {request.mode === 'strict' ? t('strictMode') : t('rewriteMode')}
+            </p>
           </div>
           <Button type="button" variant="secondary" onClick={() => dialog.current?.close()}>
-            <Icon name="close" /> Close
+            <Icon name="close" /> {t('close')}
           </Button>
         </header>
-        <section className="request-summary" aria-label="Correction request metrics">
-          <h3>{modeLabels[request.mode]} request</h3>
+        <section className="request-summary" aria-label={message('correctionMetrics')}>
+          <h3>{message('correctionMetrics')}</h3>
           <p className="metric-caption">
-            {formatDate(request.startedAt)} ·{' '}
+            {formatDate(request.startedAt, locale)} ·{' '}
             {request.status === 'succeeded'
-              ? 'Completed'
+              ? message('completed')
               : request.status === 'failed'
                 ? 'Failed'
                 : 'Pending'}
@@ -126,19 +131,18 @@ export function RequestMetrics({
           )}
           {hasExplanations && (
             <p className="metric-caption">
-              Totals include this correction and all explanation attempts. Response time is for the
-              correction only.
+              {message('totalsNote')}
               {Object.values(totals!).some((value) => value === null) &&
-                ' Some totals are unavailable because usage was not recorded.'}
+                ` ${message('totalsUnavailable')}`}
             </p>
           )}
           {!isOpen && <MetricFacts request={request} rate={rate} totals={totals} />}
           {isOpen && !explanationMetrics && !metricsError && (
-            <p role="status">Loading correction and explanation details...</p>
+            <p role="status">{message('loadingDetails')}</p>
           )}
           {isOpen && metricsError && (
             <p role="alert" className="history-error">
-              Could not load explanation metrics. Use Retry metrics below.
+              {message('metricsLoadFailed')}
             </p>
           )}
           {isOpen && explanationMetrics && (
@@ -174,6 +178,7 @@ export function HistoryRequest({
   entryAction?: ReactNode
   multipleResults?: boolean
 }) {
+  const { t, locale, message } = useLocale()
   const labelId = useId()
   const [view, setView] = useState<ResultViewMode>('changes')
   const [copying, setCopying] = useState(false)
@@ -188,7 +193,7 @@ export function HistoryRequest({
     try {
       const outcome = await writeClipboardText(request.correctedText!)
       if (!outcome.success) setView('text')
-      notify(outcome.message, outcome.success)
+      notify(message(outcome.messageKey), outcome.success)
     } finally {
       writing.current = false
       onCopyingChange(false)
@@ -205,7 +210,7 @@ export function HistoryRequest({
       actions={
         success && (
           <Button type="button" disabled={copying} onClick={copy}>
-            <Icon name="copy" /> {copying ? 'Copying...' : 'Copy'}
+            <Icon name="copy" /> {copying ? t('copying') : t('copy')}
           </Button>
         )
       }
@@ -218,8 +223,9 @@ export function HistoryRequest({
       aria-labelledby={labelId}
     >
       <p className="history-request-caption">
-        {modeLabels[request.mode]} · {shortModelName(request.requestedModel)} ·{' '}
-        <time dateTime={request.startedAt}>{formatDate(request.startedAt)}</time>
+        {request.mode === 'strict' ? t('strictMode') : t('rewriteMode')} ·{' '}
+        {shortModelName(request.requestedModel)} ·{' '}
+        <time dateTime={request.startedAt}>{formatDate(request.startedAt, locale)}</time>
       </p>
       {success ? (
         <ResultView
@@ -241,22 +247,27 @@ export function HistoryRequest({
             <div className="editor-heading request-outcome-heading">
               {request.status === 'failed' && (
                 <span className="request-outcome-badge">
-                  <Icon name="error" /> Failed
+                  <Icon name="error" /> {t('failed')}
                 </span>
               )}
               <h2 id={labelId}>
                 {shortModelName(request.requestedModel)}
-                <span className="request-mode"> · {modeLabels[request.mode]}</span>
+                <span className="request-mode">
+                  {' '}
+                  · {request.mode === 'strict' ? t('strictMode') : t('rewriteMode')}
+                </span>
               </h2>
             </div>
             {requestActions}
           </div>
-          <p className="history-status">{request.status === 'pending' ? 'Pending' : 'Failed'}</p>
+          <p className="history-status">
+            {request.status === 'pending' ? t('pending') : t('failed')}
+          </p>
           {request.errorMessage && <p className="history-error">{request.errorMessage}</p>}
         </>
       )}
       {success && original === request.correctedText && (
-        <p className="clipboard-feedback">No changes.</p>
+        <p className="clipboard-feedback">{t('noChanges')}</p>
       )}
     </section>
   )

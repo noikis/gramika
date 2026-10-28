@@ -1,6 +1,7 @@
 import { Icon } from './ui/icon'
 import type { RequestMetrics as SavedMetrics } from '@gramota/contracts'
 import { formatCost, formatCount, formatDate, formatTime } from '../lib/history-format'
+import { useLocale } from '../hooks/use-locale'
 
 export function MetricFacts({
   request,
@@ -11,46 +12,48 @@ export function MetricFacts({
   rate: number | null
   totals?: Pick<SavedMetrics, 'costUsd' | 'inputTokens' | 'outputTokens'>
 }) {
+  const { locale, messages } = useLocale()
+  const m = messages.metrics
   const summary = totals ?? request
   const primary = [
-    [totals ? 'Total cost' : 'Cost', formatCost(summary.costUsd, rate)],
-    [totals ? 'Correction response time' : 'Response time', formatTime(request.appRequestTimeMs)],
-    [totals ? 'Total input tokens' : 'Input tokens', formatCount(summary.inputTokens)],
-    [totals ? 'Total output tokens' : 'Output tokens', formatCount(summary.outputTokens)],
+    [totals ? m.totalCost : m.cost, formatCost(summary.costUsd, rate)],
+    [totals ? m.correctionResponseTime : m.responseTime, formatTime(request.appRequestTimeMs)],
+    [totals ? m.totalInputTokens : m.inputTokens, formatCount(summary.inputTokens, locale)],
+    [totals ? m.totalOutputTokens : m.outputTokens, formatCount(summary.outputTokens, locale)],
   ]
   const routing = [
-    ['Requested model', request.requestedModel],
-    ['Returned model', request.returnedModel],
-    ['Provider', request.provider],
-    ['Routing strategy', request.routingStrategy],
-    ['Routing region', request.routingRegion],
-    ['Routing attempt', formatCount(request.routingAttempt)],
-    ['Bring your own key', request.isByok === null ? null : request.isByok ? 'Yes' : 'No'],
+    [m.requestedModel, request.requestedModel],
+    [m.returnedModel, request.returnedModel],
+    [m.provider, request.provider],
+    [m.routingStrategy, request.routingStrategy],
+    [m.routingRegion, request.routingRegion],
+    [m.routingAttempt, formatCount(request.routingAttempt, locale)],
+    [m.bringYourOwnKey, request.isByok === null ? null : request.isByok ? m.yes : m.no],
   ]
   const usage = [
     ...(totals
       ? [
-          ['Correction cost', formatCost(request.costUsd, rate)],
-          ['Correction input tokens', formatCount(request.inputTokens)],
-          ['Correction output tokens', formatCount(request.outputTokens)],
+          [m.correctionCost, formatCost(request.costUsd, rate)],
+          [m.correctionInputTokens, formatCount(request.inputTokens, locale)],
+          [m.correctionOutputTokens, formatCount(request.outputTokens, locale)],
         ]
       : []),
-    ['Total tokens', formatCount(request.totalTokens)],
-    ['Reasoning tokens', formatCount(request.reasoningTokens)],
-    ['Cache-read tokens', formatCount(request.cachedInputTokens)],
-    ['Cache-write tokens', formatCount(request.cacheWriteTokens)],
+    [m.totalTokens, formatCount(request.totalTokens, locale)],
+    [m.reasoningTokens, formatCount(request.reasoningTokens, locale)],
+    [m.cacheReadTokens, formatCount(request.cachedInputTokens, locale)],
+    [m.cacheWriteTokens, formatCount(request.cacheWriteTokens, locale)],
     ['Upstream cost', formatCost(request.upstreamInferenceCostUsd, rate)],
     ['Upstream input cost', formatCost(request.upstreamPromptCostUsd, rate)],
     ['Upstream output cost', formatCost(request.upstreamCompletionCostUsd, rate)],
   ]
   const diagnostics = [
-    ['Started', formatDate(request.startedAt)],
-    ['Ended', formatDate(request.endedAt)],
-    ['Generation time', formatTime(request.generationTimeMs)],
-    ['OpenRouter generation ID', request.openrouterGenerationId],
-    ['Finish reason', request.finishReason],
-    ['Prompt version', request.promptVersion],
-    ...(request.errorCode ? [['Error code', request.errorCode]] : []),
+    [m.started, formatDate(request.startedAt, locale)],
+    [m.ended, formatDate(request.endedAt, locale)],
+    [m.generationTime, formatTime(request.generationTimeMs)],
+    [m.generationId, request.openrouterGenerationId],
+    [m.finishReason, request.finishReason],
+    [m.promptVersion, request.promptVersion],
+    ...(request.errorCode ? [[m.errorCode, request.errorCode]] : []),
   ]
   return (
     <>
@@ -64,9 +67,9 @@ export function MetricFacts({
       </dl>
       <div className="detail-groups">
         {[
-          { title: 'Usage breakdown', facts: usage },
-          { title: 'Model & routing', facts: routing },
-          { title: 'Timing & diagnostics', facts: diagnostics },
+          { title: m.usageBreakdown, facts: usage },
+          { title: m.modelRouting, facts: routing },
+          { title: m.timingDiagnostics, facts: diagnostics },
         ].map(({ title, facts }) => (
           <details className="metric-group" key={title}>
             <summary>
@@ -78,7 +81,7 @@ export function MetricFacts({
               {facts.map(([label, value]) => (
                 <div key={label}>
                   <dt>{label}</dt>
-                  <dd>{value ?? 'Unavailable'}</dd>
+                  <dd>{value ?? m.unavailable}</dd>
                 </div>
               ))}
             </dl>
@@ -88,7 +91,7 @@ export function MetricFacts({
           <summary>
             <Icon name="plus" className="disclosure-plus" />
             <Icon name="minus" className="disclosure-minus" />
-            Sent parameters
+            {m.sentParameters}
           </summary>
           <pre className="request-parameters">{JSON.stringify(request.parameters, null, 2)}</pre>
         </details>

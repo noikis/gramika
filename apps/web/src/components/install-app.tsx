@@ -3,6 +3,7 @@ import { Button } from './ui/button'
 import { Icon } from './ui/icon'
 import { notify } from '../lib/notifications'
 import './install-app.css'
+import { useLocale } from '../hooks/use-locale'
 
 const INSTALL_DISMISSED_KEY = 'gramika.install-dismissed'
 
@@ -40,6 +41,7 @@ export function InstallApp({
   hasCompletedCorrection: boolean
   isBusy: boolean
 }) {
+  const { t, message } = useLocale()
   const dialogRef = useRef<HTMLDialogElement>(null)
   const [isInstalled, setIsInstalled] = useState(isStandalone)
   const [isHidden, setIsHidden] = useState(isDismissed)
@@ -97,9 +99,7 @@ export function InstallApp({
       await promptEvent.prompt()
       dismiss()
     } catch {
-      notify(
-        'Could not open installation. Use your browser menu to add Грамика to your home screen.',
-      )
+      notify(message('installError'))
     } finally {
       setPromptEvent(null)
       setIsInstalling(false)
@@ -114,13 +114,14 @@ export function InstallApp({
         className="install-trigger"
         type="button"
         variant="secondary"
-        aria-label="Install Грамика"
-          title="Install Грамика"
+        aria-label={`${t('install')} Грамика`}
+        title={`${t('install')} Грамика`}
         onClick={() => setIsOpen(true)}
       >
         <Icon name="install" />
         <span>
-          Install<span className="install-name"> Грамика</span>
+          {t('install')}
+          <span className="install-name"> Грамика</span>
         </span>
       </Button>
       <dialog
@@ -138,31 +139,31 @@ export function InstallApp({
           <Button
             type="button"
             variant="ghost"
-            aria-label="Close installation"
+            aria-label={t('close')}
             onClick={dismiss}
             disabled={isInstalling}
           >
             <Icon name="close" />
           </Button>
         </div>
-        <h2 id="install-title">Install Грамика</h2>
+        <h2 id="install-title">{t('install')} Грамика</h2>
         <p id="install-description">
           {isIOS
-            ? 'Tap Share → Add to Home Screen in Safari.'
+            ? t('installIos')
             : promptEvent
-              ? 'Open it directly from your home screen.'
+              ? t('installHome')
               : isAndroid
-                ? 'In your browser menu, tap Install app or Add to Home screen.'
-                : 'Choose Install app in your browser menu, if available.'}
+                ? t('installAndroid')
+                : t('installBrowser')}
         </p>
         <div className="install-actions">
           <Button type="button" variant="ghost" onClick={dismiss} disabled={isInstalling}>
-            Not now
+            {t('notNow')}
           </Button>
           {!isIOS && promptEvent && (
             <Button type="button" onClick={install} disabled={isInstalling}>
               <Icon name="install" />
-              {isInstalling ? 'Opening installation...' : 'Install'}
+              {isInstalling ? t('loading') : t('install')}
             </Button>
           )}
         </div>

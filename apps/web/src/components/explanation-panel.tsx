@@ -8,10 +8,12 @@ import {
 } from '@gramota/contracts'
 import { Button } from './ui/button'
 import { Icon } from './ui/icon'
+import { useLocale } from '../hooks/use-locale'
 
 type Outcome = { explanation: string | null; error: string | null }
 
 export function ExplanationPanel({ selection }: { selection: ExplanationInput }) {
+  const { t } = useLocale()
   const [attempt, setAttempt] = useState({ number: 0, isGenerate: false })
   const [outcome, setOutcome] = useState<Outcome | null>(null)
   const body = JSON.stringify(selection)
@@ -69,7 +71,7 @@ export function ExplanationPanel({ selection }: { selection: ExplanationInput })
     <div className="explanation-panel" aria-busy={outcome === null}>
       {outcome?.explanation ? (
         <>
-          <p className="explanation-label">Explanation</p>
+          <p className="explanation-label">{t('explanation')}</p>
           <p className="explanation-text" lang="ru" role="status">
             {outcome.explanation}
           </p>
@@ -86,11 +88,11 @@ export function ExplanationPanel({ selection }: { selection: ExplanationInput })
             <Icon name="info" />
             {outcome === null
               ? attempt.isGenerate
-                ? 'Explaining...'
-                : 'Loading explanation...'
+                ? t('loading')
+                : t('loading')
               : outcome.error
-                ? 'Retry explanation'
-                : 'Explain'}
+                ? t('retry')
+                : t('explain')}
           </Button>
           {outcome?.error && (
             <p role="alert" className="history-error">
@@ -108,6 +110,7 @@ export function ExpressionExplanationPanel({
 }: {
   selection: ExpressionExplanationInput
 }) {
+  const { t } = useLocale()
   const [state, setState] = useState<'idle' | 'loading' | 'done' | 'error'>('idle')
   const [explanation, setExplanation] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -143,7 +146,7 @@ export function ExpressionExplanationPanel({
     <div className="explanation-panel" aria-busy={state === 'loading'}>
       {state === 'done' && explanation ? (
         <>
-          <p className="explanation-label">Explanation of selection</p>
+          <p className="explanation-label">{t('explanation')}</p>
           <p className="explanation-text" lang="ru" role="status">
             {explanation}
           </p>
@@ -158,11 +161,7 @@ export function ExpressionExplanationPanel({
             onClick={() => void explain()}
           >
             <Icon name="info" />
-            {state === 'loading'
-              ? 'Explaining selection...'
-              : state === 'error'
-                ? 'Retry selection explanation'
-                : 'Explain selection'}
+            {state === 'loading' ? t('loading') : state === 'error' ? t('retry') : t('explain')}
           </Button>
           {error && (
             <p role="alert" className="history-error">

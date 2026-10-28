@@ -4,8 +4,10 @@ import { clearWorkspace, loadWorkspace, saveWorkspace, type Theme } from '../lib
 import { notify } from '../lib/notifications'
 import { useDraft } from './use-draft'
 import { useWritingSession } from './use-writing-session'
+import { useLocale } from './use-locale'
 
 export function useWorkspacePersistence() {
+  const { message } = useLocale()
   const [restored] = useState(loadWorkspace)
   const draft = useDraft(restored.workspace?.text)
   const correction = useWritingSession(draft.text, draft.revision, restored.workspace)
@@ -23,27 +25,24 @@ export function useWorkspacePersistence() {
   useLayoutEffect(() => {
     if (lastSaved.current === serialized) return
     lastSaved.current = serialized
-    if (!saveWorkspace(serialized))
-      notify(
-        'Could not save this workspace on your device. Keep this tab open to retain your text.',
-      )
-  }, [serialized])
+    if (!saveWorkspace(serialized)) notify(message('workspaceSaveFailed'))
+  }, [message, serialized])
 
   useEffect(() => {
     if (announcedRestore.current) return
     announcedRestore.current = true
-    if (restored.message) notify(restored.message)
+    if (restored.messageKey) notify(message(restored.messageKey))
     else if (
       restored.workspace?.text ||
       restored.workspace?.results.length ||
       restored.workspace?.isRequestPending
     )
-      notify('Workspace restored', true)
-  }, [restored])
+      notify(message('workspaceRestored'), true)
+  }, [message, restored])
 
   function clearStoredWorkspace() {
     if (clearWorkspace()) return true
-    notify('Could not clear local data. Your current workspace was kept.')
+    notify(message('workspaceClearFailed'))
     return false
   }
 

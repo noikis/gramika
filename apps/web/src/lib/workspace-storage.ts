@@ -1,9 +1,6 @@
-import {
-  CorrectionMode,
-  CorrectionSuccess,
-  type CorrectionResult,
-} from '@gramota/contracts'
+import { CorrectionMode, CorrectionSuccess, type CorrectionResult } from '@gramota/contracts'
 import type { ResultViewMode } from '../components/result-view'
+import type { MessageCatalog } from '../i18n/messages/types'
 
 export const WORKSPACE_STORAGE_KEY = 'gramota.workspace'
 const WORKSPACE_VERSION = 2
@@ -35,17 +32,20 @@ function readResult(value: unknown): SavedResult {
   return { result, view: value.view }
 }
 
-export function loadWorkspace(): { workspace: LocalWorkspace | null; message: string } {
+export function loadWorkspace(): {
+  workspace: LocalWorkspace | null
+  messageKey: keyof MessageCatalog | null
+} {
   let raw: string | null
   try {
     raw = localStorage.getItem(WORKSPACE_STORAGE_KEY)
   } catch {
     return {
       workspace: null,
-      message: 'Local saving is unavailable. Keep this tab open to retain your text.',
+      messageKey: 'storageUnavailable',
     }
   }
-  if (raw === null) return { workspace: null, message: '' }
+  if (raw === null) return { workspace: null, messageKey: null }
   try {
     const value: unknown = JSON.parse(raw)
     if (
@@ -82,7 +82,7 @@ export function loadWorkspace(): { workspace: LocalWorkspace | null; message: st
         activeRequestId: value.activeRequestId,
         isRequestPending: value.isRequestPending,
       },
-      message: '',
+      messageKey: null,
     }
   } catch {
     try {
@@ -92,7 +92,7 @@ export function loadWorkspace(): { workspace: LocalWorkspace | null; message: st
     }
     return {
       workspace: null,
-      message: 'The saved workspace could not be restored. You can start a new correction.',
+      messageKey: 'workspaceRestoreFailed',
     }
   }
 }

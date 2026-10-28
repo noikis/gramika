@@ -2,11 +2,13 @@ import { useRef, useState } from 'react'
 import type { CorrectionResult } from '@gramota/contracts'
 import { writeClipboardText } from '../lib/clipboard'
 import { notify } from '../lib/notifications'
+import { useLocale } from './use-locale'
 
 export function useClipboardCopy(
   result: CorrectionResult | null,
   onCopyFailure: (result: CorrectionResult) => void,
 ) {
+  const { message } = useLocale()
   const [copying, setCopying] = useState(false)
   const writing = useRef(false)
 
@@ -17,7 +19,7 @@ export function useClipboardCopy(
     try {
       const outcome = await writeClipboardText(result.correctedText)
       if (!outcome.success) onCopyFailure(result)
-      notify(outcome.message, outcome.success)
+      notify(message(outcome.messageKey), outcome.success)
     } finally {
       writing.current = false
       setCopying(false)

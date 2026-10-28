@@ -1,12 +1,12 @@
 export async function writeClipboardText(text: string) {
-  const fallback = 'Select the result and copy it manually.'
+  type ClipboardMessageKey = 'clipboardWriteUnavailable' | 'clipboardWriteFailed' | 'copied'
   try {
     if (!window.isSecureContext || !navigator.clipboard?.writeText) {
-      return { success: false, message: `Clipboard unavailable here. ${fallback}` }
+      return { success: false, messageKey: 'clipboardWriteUnavailable' as ClipboardMessageKey }
     }
     await navigator.clipboard.writeText(text)
-    return { success: true, message: 'Copied' }
+    return { success: true, messageKey: 'copied' as ClipboardMessageKey }
   } catch {
-    return { success: false, message: `Could not access the clipboard. ${fallback}` }
+    return { success: false, messageKey: 'clipboardWriteFailed' as ClipboardMessageKey }
   }
 }

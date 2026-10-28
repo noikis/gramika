@@ -8,9 +8,12 @@ import { Icon } from './components/ui/icon'
 import { AppSettings } from './components/app-settings'
 import { notify } from './lib/notifications'
 import { InstallApp } from './components/install-app'
+import { useLocale } from './hooks/use-locale'
+import { clearExplicitLocale } from './i18n'
 import './App.css'
 
 function App() {
+  const { locale, setLocale, resetLocale, t, message } = useLocale()
   const { draft, correction, theme, setTheme, clearStoredWorkspace } = useWorkspacePersistence()
   const [view, setView] = useState<'correction' | 'history'>('correction')
   const [historyWrites, setHistoryWrites] = useState(0)
@@ -46,7 +49,9 @@ function App() {
     newCorrection()
     correction.resetMode()
     setTheme('system')
-    notify('Local workspace and preferences cleared. Server history was kept.', true)
+    clearExplicitLocale()
+    resetLocale()
+    notify(message('workspaceCleared'), true)
   }
 
   return (
@@ -58,14 +63,14 @@ function App() {
             рамика
           </span>
         </span>
-        <nav aria-label="Main navigation">
+        <nav aria-label={t('correction') + ' / ' + t('history')}>
           <Button
             type="button"
             variant="ghost"
             aria-current={view === 'correction' ? 'page' : undefined}
             onClick={() => setView('correction')}
           >
-            <Icon name="correction" /> Correction
+            <Icon name="correction" /> {t('correction')}
           </Button>
           <Button
             type="button"
@@ -73,7 +78,7 @@ function App() {
             aria-current={view === 'history' ? 'page' : undefined}
             onClick={() => setView('history')}
           >
-            <Icon name="history" /> History
+            <Icon name="history" /> {t('history')}
           </Button>
         </nav>
         <div className="header-actions">
@@ -84,13 +89,15 @@ function App() {
               onThemeChange={setTheme}
               onClear={clearLocalData}
               isBusy={isBusy}
+              locale={locale}
+              onLocaleChange={setLocale}
             />
           </div>
         </div>
       </header>
       <main>
         {correction.interrupted && (
-          <aside className="local-data-controls" aria-label="Interrupted request">
+          <aside className="local-data-controls" aria-label={t('correction')}>
             <p>A request was running when this workspace was closed. It may have finished.</p>
             <Button
               type="button"
@@ -100,7 +107,7 @@ function App() {
                 setView('history')
               }}
             >
-              Check history
+              {t('history')}
             </Button>
           </aside>
         )}

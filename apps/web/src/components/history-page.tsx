@@ -15,6 +15,7 @@ import { useHistory } from '../hooks/use-history'
 import { useExchangeRate } from '../hooks/use-exchange-rate'
 import { Icon } from './ui/icon'
 import './history.css'
+import { useLocale } from '../hooks/use-locale'
 
 function HistoryEntry({
   item,
@@ -29,6 +30,7 @@ function HistoryEntry({
   onCopyingChange: (isCopying: boolean) => void
   filters: Pick<HistorySearchQuery, 'model' | 'result'>
 }) {
+  const { t, locale } = useLocale()
   const [detail, setDetail] = useState<HistoryDetail | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -97,7 +99,7 @@ function HistoryEntry({
             {item.preview}
           </span>
           <span className="history-meta">
-            Last used <time dateTime={item.lastUsedAt}>{formatDate(item.lastUsedAt)}</time>
+            Last used <time dateTime={item.lastUsedAt}>{formatDate(item.lastUsedAt, locale)}</time>
             {' · '}
             {item.models.map(shortModelName).join(', ') || 'Unavailable'}
           </span>
@@ -108,7 +110,7 @@ function HistoryEntry({
         {(!detail || requests.length === 0) && <HistoryDelete id={item.id} onDeleted={onDeleted} />}
         {loading && (
           <p className="clipboard-feedback" role="status">
-            Loading correction...
+            {t('loading')}
           </p>
         )}
         {error && (
@@ -117,14 +119,14 @@ function HistoryEntry({
               {error}
             </p>
             <Button type="button" variant="secondary" onClick={load}>
-              Retry
+              {t('retry')}
             </Button>
           </div>
         )}
         {detail && (
           <>
             <div className="editor-heading">
-              <h2 id={originalId}>Original</h2>
+              <h2 id={originalId}>{t('original')}</h2>
             </div>
             <div
               className="history-original"
@@ -184,6 +186,7 @@ export function HistoryPage({
   onDeleted: (id: string) => void
   onCopyingChange: (isCopying: boolean) => void
 }) {
+  const { t, message } = useLocale()
   const rate = useExchangeRate()
   const [search, setSearch] = useState('')
   const [filters, setFilters] = useState(initialFilters)
@@ -233,7 +236,7 @@ export function HistoryPage({
   return (
     <section className="history-page" aria-labelledby="history-title" aria-busy={loading}>
       <h1 id="history-title">
-        <Icon name="history" /> History
+        <Icon name="history" /> {t('history')}
       </h1>
       <form
         className="history-tools"
@@ -245,14 +248,14 @@ export function HistoryPage({
         }}
       >
         <label className="history-field search-field">
-          <span className="sr-only">Search history</span>
+          <span className="sr-only">{t('searchHistory')}</span>
           <Icon name="search" />
           <input
             type="search"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             maxLength={MAX_INPUT_CHARACTERS}
-            placeholder="Search history"
+            placeholder={t('searchHistory')}
           />
         </label>
         <div className="history-toolbar-actions">
@@ -265,12 +268,12 @@ export function HistoryPage({
             aria-controls={filterPanelId}
             onClick={() => setIsFiltersOpen((value) => !value)}
           >
-            <Icon name="filters" /> Filters
+            <Icon name="filters" /> {t('filters')}
             {activeFilterCount > 0 && <span className="filter-count">{activeFilterCount}</span>}
           </Button>
           {(activeFilters || search.trim()) && (
             <Button type="reset" variant="secondary" aria-label="Reset filters" className="reset">
-              <Icon name="reset" /> Reset
+              <Icon name="reset" /> {t('reset')}
             </Button>
           )}
           <label className="history-field sort-field">
@@ -281,19 +284,19 @@ export function HistoryPage({
                 updateFilters({ sort: event.target.value as HistorySearchQuery['sort'] })
               }
             >
-              <option value="newest">Newest first</option>
-              <option value="oldest">Oldest first</option>
+              <option value="newest">{t('newestFirst')}</option>
+              <option value="oldest">{t('oldestFirst')}</option>
             </select>
           </label>
         </div>
         <div className="filter-fields" id={filterPanelId} hidden={!isFiltersOpen}>
           <label className="history-field">
-            Model
+            {t('model')}
             <select
               value={filters.model}
               onChange={(event) => updateFilters({ model: event.target.value })}
             >
-              <option value="">All models</option>
+              <option value="">{t('allModels')}</option>
               {MODELS.map(({ id }) => (
                 <option key={id} value={id}>
                   {shortModelName(id)}
@@ -302,22 +305,22 @@ export function HistoryPage({
             </select>
           </label>
           <label className="history-field">
-            Result
+            {t('resultFilter')}
             <select
               value={filters.result}
               onChange={(event) =>
                 updateFilters({ result: event.target.value as HistorySearchQuery['result'] })
               }
             >
-              <option value="all">All results</option>
-              <option value="corrected">Corrected</option>
-              <option value="unchanged">No changes</option>
-              <option value="failed">Failed</option>
-              <option value="pending">Pending</option>
+              <option value="all">{t('allResults')}</option>
+              <option value="corrected">{t('corrected')}</option>
+              <option value="unchanged">{t('unchanged')}</option>
+              <option value="failed">{t('failed')}</option>
+              <option value="pending">{t('pending')}</option>
             </select>
           </label>
           <label className="history-field">
-            From
+            {t('from')}
             <input
               type="date"
               value={filters.from}
@@ -326,7 +329,7 @@ export function HistoryPage({
             />
           </label>
           <label className="history-field">
-            To
+            {t('to')}
             <input
               type="date"
               value={filters.to}
@@ -338,7 +341,7 @@ export function HistoryPage({
       </form>
       {loading && (
         <p className="clipboard-feedback" role="status">
-          Loading history...
+          {t('loadingHistory')}
         </p>
       )}
       {error && (
@@ -347,7 +350,7 @@ export function HistoryPage({
             {error}
           </p>
           <Button type="button" variant="secondary" onClick={history.retry}>
-            Retry
+            {t('retry')}
           </Button>
         </div>
       )}
@@ -356,18 +359,14 @@ export function HistoryPage({
           <div className="list-heading">
             <small role="status" aria-atomic="true">
               {total
-                ? `${start + 1}-${Math.min(start + HISTORY_PAGE_SIZE, total)} of ${total} corrections`
-                : '0 corrections'}
+                ? message('historyRange', { start: start + 1, end: Math.min(start + HISTORY_PAGE_SIZE, total), total })
+                : `0 ${message('correctionsFooter')}`}
             </small>
           </div>
           {data.items.length === 0 ? (
             <section className="history-empty">
               <h2>{activeFilters ? 'No matching corrections' : 'No corrections yet'}</h2>
-              <p>
-                {activeFilters
-                  ? 'Try another phrase or clear your search and filters.'
-                  : 'Your corrections will appear here after you correct some text.'}
-              </p>
+              <p>{activeFilters ? t('noMatchingHint') : t('correctionsWillAppear')}</p>
               {activeFilters && (
                 <Button type="button" variant="secondary" onClick={resetFilters}>
                   Clear search and filters
@@ -392,7 +391,7 @@ export function HistoryPage({
                 ))}
               </div>
               <nav className="history-pagination" aria-label="History pagination">
-                <small>{HISTORY_PAGE_SIZE} per page</small>
+                <small>{message('perPage', { count: HISTORY_PAGE_SIZE })}</small>
                 <div className="page-buttons">
                   <Button
                     type="button"
@@ -402,7 +401,7 @@ export function HistoryPage({
                   >
                     Previous
                   </Button>
-                  <span aria-current="page" aria-label={`Page ${page} of ${pageCount}`}>
+                  <span aria-current="page" aria-label={message('pageCounter', { current: page, total: pageCount })}>
                     {page} / {pageCount}
                   </span>
                   <Button
@@ -420,7 +419,7 @@ export function HistoryPage({
         </>
       )}
       <small className="history-cost-note">
-        Approximate costs. <a href="https://www.exchangerate-api.com">Rates By Exchange Rate API</a>
+        {message('approximateCosts')} <a href="https://www.exchangerate-api.com">Rates By Exchange Rate API</a>
       </small>
     </section>
   )

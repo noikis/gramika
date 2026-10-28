@@ -1,0 +1,46 @@
+import type { MessageCatalog } from './types'
+
+export const enMessages = {
+  workspaceCleared: 'Local workspace and preferences cleared. Server history was kept.',
+  clipboardUnavailable: 'Clipboard unavailable here. Paste manually into Original.',
+  textChanged: 'Your text changed. Press Paste again to replace it.',
+  clipboardEmpty: 'Clipboard is empty. Your text was kept.',
+  pasted: 'Pasted',
+  clipboardDenied: 'Clipboard access was denied. Paste manually into Original.',
+  clipboardReadFailed: 'Could not read the clipboard. Paste manually into Original.',
+  copied: 'Copied',
+  clipboardWriteUnavailable: 'Clipboard unavailable here. Select the result and copy it manually.',
+  clipboardWriteFailed: 'Could not access the clipboard. Select the result and copy it manually.',
+  workspaceSaveFailed:
+    'Could not save this workspace on your device. Keep this tab open to retain your text.',
+  workspaceRestored: 'Workspace restored',
+  workspaceClearFailed: 'Could not clear local data. Your current workspace was kept.',
+  correctionSaved: 'Saved result · no new model request',
+  correctionNoChanges: 'No changes.',
+  correctionReady: 'Correction ready.',
+  opinionFailed: 'Could not get another opinion. You can try again.',
+  correctionFailed:
+    'Could not complete correction. Your text and previous results were kept. You can try again.',
+  historyEntryRemoved: 'Entry removed from history.',
+  storageUnavailable: 'Local saving is unavailable. Keep this tab open to retain your text.',
+  workspaceRestoreFailed:
+    'The saved workspace could not be restored. You can start a new correction.',
+  installError:
+    'Could not open installation. Use your browser menu to add Грамика to your home screen.',
+  explanationUsageNote:
+    'Each generated explanation has its own usage. Opening a saved explanation makes no new model call.',
+  totalsNote:
+    'Totals include this correction and all explanation attempts. Response time is for the correction only.',
+  totalsUnavailable: 'Some totals are unavailable because usage was not recorded.',
+  loadingDetails: 'Loading correction and explanation details...',
+  metricsLoadFailed: 'Could not load explanation metrics. Use Retry metrics below.',
+  requestDetails: 'Request details',
+  correctionMetrics: 'Correction request metrics',
+  completed: 'Completed',
+  interrupted: 'Interrupted',
+  selectedExpression: 'Selected expression',
+  selectedChange: 'Selected change',
+  moved: 'Moved',
+  nothing: '(nothing)',
+  resultCounter: 'Result {current} of {total}', historyRange: '{start}-{end} of {total} corrections', perPage: '{count} per page', pageCounter: 'Page {current} of {total}', approximateCosts: 'Approximate costs.', correctionsFooter: 'corrections',
+} satisfies MessageCatalog

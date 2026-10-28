@@ -10,6 +10,7 @@ import { requestCorrection } from '../lib/correction-api'
 import { modelName } from '../lib/history-format'
 import { notify } from '../lib/notifications'
 import type { CorrectionWorkspaceState } from '../lib/workspace-storage'
+import { useLocale } from './use-locale'
 
 type Feedback = { revision: number; mode: CorrectionMode; modelId: ModelId; message: string }
 
@@ -18,6 +19,7 @@ export function useSubmission(
   initial: CorrectionWorkspaceState | null | undefined,
   onSuccess: (result: CorrectionResult, revision: number) => void,
 ) {
+  const { message } = useLocale()
   const [pendingModel, setPendingModel] = useState<ModelId | null>(null)
   const [interrupted, setInterrupted] = useState(initial?.isRequestPending ?? false)
   const [error, setError] = useState<Feedback | null>(null)
@@ -66,8 +68,8 @@ export function useSubmission(
       setHasCompletedCorrection(true)
       notify(
         result.isCached
-          ? 'Saved result · no new model request'
-          : `${modelName(result.modelId)}: ${result.originalText === result.correctedText ? 'No changes.' : 'Correction ready.'}`,
+          ? message('correctionSaved')
+          : `${modelName(result.modelId)}: ${result.originalText === result.correctedText ? message('correctionNoChanges') : message('correctionReady')}`,
         true,
       )
     } catch {
@@ -76,8 +78,8 @@ export function useSubmission(
           ...feedback,
           message:
             input.modelId !== DEFAULT_MODEL_ID
-              ? 'Could not get another opinion. You can try again.'
-              : 'Could not complete correction. Your text and previous results were kept. You can try again.',
+              ? message('opinionFailed')
+              : message('correctionFailed'),
         })
     } finally {
       sending.current = false

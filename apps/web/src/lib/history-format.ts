@@ -1,4 +1,5 @@
 import { MODELS, type CorrectionMode } from '@gramota/contracts'
+import { Locale, type Locale as LocaleCode } from '../i18n'
 export { formatCost } from './cost-format'
 
 export function modelName(id: string) {
@@ -9,10 +10,10 @@ export function shortModelName(id: string) {
   return id === MODELS[0].id ? 'Gemma 4' : modelName(id)
 }
 
-export function formatDate(value: string | null) {
+export function formatDate(value: string | null, locale: LocaleCode = Locale.English) {
   return value === null
     ? 'Unavailable'
-    : new Date(value).toLocaleString('en-GB', {
+    : new Date(value).toLocaleString(locale, {
         year: 'numeric',
         month: 'short',
         day: 'numeric',
@@ -22,8 +23,8 @@ export function formatDate(value: string | null) {
       })
 }
 
-export function formatCount(value: number | null) {
-  return value === null ? 'Unavailable' : value.toLocaleString('en-US')
+export function formatCount(value: number | null, locale: LocaleCode = Locale.English) {
+  return value === null ? 'Unavailable' : value.toLocaleString(locale)
 }
 
 export function formatTime(value: number | null) {

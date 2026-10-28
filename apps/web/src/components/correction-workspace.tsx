@@ -8,8 +8,8 @@ import { Button } from './ui/button'
 import { Textarea } from './ui/textarea'
 import { ExpressionExplanationPanel } from './explanation-panel'
 import { ResultView } from './result-view'
-import { modeLabels } from '../lib/history-format'
 import { Icon } from './ui/icon'
+import { useLocale } from '../hooks/use-locale'
 
 type Draft = ReturnType<typeof useDraft>
 type Correction = ReturnType<typeof useWritingSession>
@@ -23,10 +23,11 @@ const MIN_SWIPE_DISTANCE_PX = 48
 const MOBILE_LAYOUT_QUERY = '(max-width: 720px)'
 
 function ModeControl({ correction }: { correction: Correction }) {
+  const { t } = useLocale()
   return (
     <div className="model-control">
       <fieldset className="mode-switch">
-        <legend className="sr-only">Correction mode</legend>
+        <legend className="sr-only">{t('correctionMode')}</legend>
         {CorrectionMode.options.map((mode) => (
           <label key={mode}>
             <input
@@ -37,13 +38,13 @@ function ModeControl({ correction }: { correction: Correction }) {
               disabled={correction.pending}
               onChange={() => correction.selectMode(mode)}
             />
-            {modeLabels[mode]}
+            {mode === 'strict' ? t('strictMode') : t('rewriteMode')}
           </label>
         ))}
       </fieldset>
       {correction.configFailed && (
         <Button type="button" variant="secondary" onClick={correction.reloadConfig}>
-          Retry connection
+          {t('retryConnection')}
         </Button>
       )}
     </div>
@@ -51,6 +52,7 @@ function ModeControl({ correction }: { correction: Correction }) {
 }
 
 function OriginalEditor({ draft, correction, onNew, isBusy }: WorkspaceProps) {
+  const { t } = useLocale()
   const { text, edit, paste, pending, inputRef } = draft
   const [manualSelection, setManualSelection] = useState<ExpressionExplanationInput | null>(null)
   const result =
@@ -117,13 +119,13 @@ function OriginalEditor({ draft, correction, onNew, isBusy }: WorkspaceProps) {
           variant="ghost"
           onClick={onNew}
           disabled={isBusy}
-          aria-label="New correction"
+          aria-label={t('newCorrection')}
         >
-          <Icon name="plus" /> New
+          <Icon name="plus" /> {t('newCorrection')}
         </Button>
         <Button type="button" variant="secondary" onClick={paste} disabled={pending}>
           <Icon name="paste" />
-          {pending ? 'Pasting...' : 'Paste'}
+          {pending ? t('pasting') : t('paste')}
         </Button>
       </div>
       <Textarea
@@ -135,7 +137,7 @@ function OriginalEditor({ draft, correction, onNew, isBusy }: WorkspaceProps) {
           edit(event.target.value)
         }}
         ref={inputRef}
-        placeholder="Type or paste your text"
+        placeholder={t('typeOrPaste')}
         aria-describedby="input-feedback character-count"
         aria-invalid={Boolean(correction.validationMessage)}
         lang="ru"
@@ -175,7 +177,7 @@ function OriginalEditor({ draft, correction, onNew, isBusy }: WorkspaceProps) {
           onClick={correction.correct}
           aria-describedby="correction-status"
         >
-          {correction.pending && !correction.isOpinionPending ? 'Correcting...' : 'Correct'}
+          {correction.pending && !correction.isOpinionPending ? t('correcting') : t('correct')}
         </Button>
       </div>
     </section>
@@ -183,6 +185,7 @@ function OriginalEditor({ draft, correction, onNew, isBusy }: WorkspaceProps) {
 }
 
 function ResultHeading({ correction }: { correction: Correction }) {
+  const { t, message } = useLocale()
   const headingRef = useRef<HTMLHeadingElement>(null)
   const swipeStart = useRef<{ x: number; y: number } | null>(null)
   const activeIndex = correction.results.findIndex(
@@ -206,7 +209,9 @@ function ResultHeading({ correction }: { correction: Correction }) {
     if (bounds.top >= 0 && bounds.bottom <= window.innerHeight) return
     headingRef.current.scrollIntoView({
       block: 'start',
-      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+        ? 'instant'
+        : 'smooth',
     })
   }, [visibleRequestId])
 
@@ -245,7 +250,7 @@ function ResultHeading({ correction }: { correction: Correction }) {
         <Button
           className="previous-model"
           variant="secondary"
-          aria-label="Show previous result"
+          aria-label={t('previous')}
           onClick={() => switchResult(false)}
         >
           <svg
@@ -260,14 +265,14 @@ function ResultHeading({ correction }: { correction: Correction }) {
         </Button>
       )}
       <h2 id="result-title" tabIndex={-1} ref={headingRef} aria-live="polite">
-        Result {activeIndex >= 0 ? `${activeIndex + 1} of ${correction.results.length}` : ''}
+        {activeIndex >= 0 ? message('resultCounter', { current: activeIndex + 1, total: correction.results.length }) : t('result')}
         <span className="result-model">{activeLabel}</span>
       </h2>
       {hasNext && (
         <Button
           className="next-model"
           variant="secondary"
-          aria-label="Show next result"
+          aria-label={t('next')}
           onClick={() => switchResult(true)}
         >
           <svg
@@ -286,6 +291,7 @@ function ResultHeading({ correction }: { correction: Correction }) {
 }
 
 function OpinionAction({ correction }: { correction: Correction }) {
+  const { t } = useLocale()
   if (
     !correction.results.length ||
     correction.results.some(({ result }) => result.modelId !== DEFAULT_MODEL_ID)
@@ -302,24 +308,23 @@ function OpinionAction({ correction }: { correction: Correction }) {
       >
         <span>
           {correction.isOpinionPending
-            ? 'Requesting second opinion...'
+            ? t('requestingOpinion')
             : correction.opinionError
-              ? 'Retry second opinion'
-              : 'Second opinion'}
+              ? t('retryOpinion')
+              : t('secondOpinion')}
         </span>
         <span id="opinion-cost" className="opinion-button-cost" aria-hidden="true">
-          Higher cost if generated
+          {t('higherCost')}
         </span>
       </Button>
       {correction.isModeChanged ? (
         <p className="clipboard-feedback">
-          Correct in {modeLabels[correction.mode]} before requesting another opinion.
+          Correct in {correction.mode === 'strict' ? t('strictMode') : t('rewriteMode')} before
+          requesting another opinion.
         </p>
       ) : (
         <>
-          {correction.isOpinionPending && (
-            <p role="status">Getting another opinion. Your Gemma result is still available.</p>
-          )}
+          {correction.isOpinionPending && <p role="status">{t('gettingOpinion')}</p>}
           {correction.opinionError && (
             <p role="alert">{correction.opinionError} Your Gemma result is still available.</p>
           )}
@@ -330,6 +335,7 @@ function OpinionAction({ correction }: { correction: Correction }) {
 }
 
 function MobileRegenerateAction({ correction }: { correction: Correction }) {
+  const { t } = useLocale()
   const result = correction.visibleResult
   if (!result || !correction.canRegenerate(result.modelId)) return null
   return (
@@ -342,17 +348,18 @@ function MobileRegenerateAction({ correction }: { correction: Correction }) {
       aria-label={`Generate ${result.modelId === DEFAULT_MODEL_ID ? 'Gemma' : 'Gemini'} again. New paid request`}
     >
       <Icon name="sparkles" />
-      {correction.pendingModel === result.modelId ? 'Generating...' : 'Generate again'}
+      {correction.pendingModel === result.modelId ? t('loading') : t('generateAgain')}
     </Button>
   )
 }
 
 export function CorrectionWorkspace({ draft, correction, onNew, isBusy }: WorkspaceProps) {
+  const { t } = useLocale()
   return (
     <>
       <div className="workspace-intro">
-        <h1 className="sr-only">Correction</h1>
-        <p>Write with confidence.</p>
+        <h1 className="sr-only">{t('correction')}</h1>
+        <p>{t('writeWithConfidence')}</p>
       </div>
       <div className="editors correction-workspace">
         <OriginalEditor draft={draft} correction={correction} onNew={onNew} isBusy={isBusy} />
@@ -366,17 +373,15 @@ export function CorrectionWorkspace({ draft, correction, onNew, isBusy }: Worksp
             >
               {result.isCached && (
                 <p className="clipboard-feedback" role="status">
-                  Saved result · no new model request
+                  {t('savedResult')}
                 </p>
               )}
               <ResultView
                 result={result}
                 view={view}
-                  onViewChange={(next) =>
-                  correction.setResultView(result.requestId, next)
-                }
+                onViewChange={(next) => correction.setResultView(result.requestId, next)}
                 labelId={`result-${result.requestId}`}
-                title={`${result.modelId === DEFAULT_MODEL_ID ? 'Gemma 4' : correction.opinionModelName} · ${modeLabels[result.mode]}`}
+                title={`${result.modelId === DEFAULT_MODEL_ID ? 'Gemma 4' : correction.opinionModelName} · ${result.mode === 'strict' ? t('strictMode') : t('rewriteMode')}`}
                 compact
                 actions={
                   <>
@@ -389,7 +394,7 @@ export function CorrectionWorkspace({ draft, correction, onNew, isBusy }: Worksp
                       aria-label={`Copy ${result.modelId === DEFAULT_MODEL_ID ? 'Gemma' : 'Gemini'} result`}
                     >
                       <Icon name="copy" />
-                      {correction.copying ? 'Copying...' : 'Copy'}
+                      {correction.copying ? t('copying') : t('copy')}
                     </Button>
                     {correction.canRegenerate(result.modelId) && (
                       <Button
@@ -403,8 +408,8 @@ export function CorrectionWorkspace({ draft, correction, onNew, isBusy }: Worksp
                       >
                         <Icon name="sparkles" />
                         {correction.pendingModel === result.modelId
-                          ? 'Generating...'
-                          : 'Generate again'}
+                          ? t('loading')
+                          : t('generateAgain')}
                       </Button>
                     )}
                   </>
@@ -416,18 +421,16 @@ export function CorrectionWorkspace({ draft, correction, onNew, isBusy }: Worksp
             <div className="result-box">
               <p>
                 {correction.pending
-                  ? 'Correcting...'
+                  ? t('correcting')
                   : correction.draftChanged
-                    ? 'Your original has changed. Correct it to get a new result.'
-                    : 'No result yet.'}
+                    ? t('originalChanged')
+                    : t('noResultYet')}
               </p>
             </div>
           )}
           <p id="correction-status" className="clipboard-feedback" role="status" aria-atomic="true">
             {correction.availability ||
-              (correction.pending && !correction.isOpinionPending
-                ? 'Correcting with Gemma...'
-                : '')}
+              (correction.pending && !correction.isOpinionPending ? t('correcting') : '')}
           </p>
           {correction.error && (
             <p className="clipboard-feedback" role="alert">
@@ -449,7 +452,7 @@ export function CorrectionWorkspace({ draft, correction, onNew, isBusy }: Worksp
           )}
           <div className="mobile-copy-bar">
             <Button type="button" disabled={correction.copying} onClick={correction.copy}>
-              <Icon name="copy" /> {correction.copying ? 'Copying...' : 'Copy result'}
+              <Icon name="copy" /> {correction.copying ? t('copying') : t('copyResult')}
             </Button>
           </div>
         </>

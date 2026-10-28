@@ -1,14 +1,9 @@
 import { useRef, useState } from 'react'
 import { notify } from '../lib/notifications'
-
-function clipboardErrorMessage(error: unknown) {
-  if (error instanceof DOMException && ['NotAllowedError', 'SecurityError'].includes(error.name)) {
-    return 'Clipboard access was denied. Paste manually into Original.'
-  }
-  return 'Could not read the clipboard. Paste manually into Original.'
-}
+import { useLocale } from './use-locale'
 
 export function useDraft(initialText = '') {
+  const { message } = useLocale()
   const [text, setText] = useState(initialText)
   const [pending, setPending] = useState(false)
   const [draftRevision, setDraftRevision] = useState(0)
@@ -25,7 +20,7 @@ export function useDraft(initialText = '') {
   async function paste() {
     if (reading.current) return
     if (!window.isSecureContext || !navigator.clipboard?.readText) {
-      notify('Clipboard unavailable here. Paste manually into Original.')
+      notify(message('clipboardUnavailable'))
       return
     }
     const startedAtRevision = revision.current
@@ -34,16 +29,22 @@ export function useDraft(initialText = '') {
     try {
       const value = await navigator.clipboard.readText()
       if (revision.current !== startedAtRevision) {
-        notify('Your text changed. Press Paste again to replace it.')
+        notify(message('textChanged'))
       } else if (value === '') {
-        notify('Clipboard is empty. Your text was kept.')
+        notify(message('clipboardEmpty'))
       } else {
         edit(value)
-        notify('Pasted', true)
+        notify(message('pasted'), true)
         inputRef.current?.focus()
       }
     } catch (error) {
-      notify(clipboardErrorMessage(error))
+      notify(
+        message(
+          error instanceof DOMException && ['NotAllowedError', 'SecurityError'].includes(error.name)
+            ? 'clipboardDenied'
+            : 'clipboardReadFailed',
+        ),
+      )
     } finally {
       reading.current = false
       setPending(false)
