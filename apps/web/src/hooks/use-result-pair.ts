@@ -24,9 +24,11 @@ export function useResultPair(draftRevision: number, initial?: CorrectionWorkspa
   function receive(result: CorrectionResult, revision: number) {
     const saved: SavedResult = { result, view: 'changes' }
     setHistory((current) =>
-      current?.revision === revision
-        ? { ...current, results: [...current.results, saved] }
-        : { revision, results: [saved] },
+      current?.revision !== revision
+        ? { revision, results: [saved] }
+        : current.results.some((entry) => entry.result.requestId === result.requestId)
+          ? current
+          : { ...current, results: [...current.results, saved] },
     )
     setActiveRequestId(result.requestId)
   }
