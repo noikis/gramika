@@ -1,76 +1,50 @@
-# Feature: Multilingual interface
+# Feature: Frontend refactor
 
-**From build-plan:** feature V4.6
+**From build-plan:** feature V4.2R
 **Build attempt:** 1
-**Branch:** feature/multilingual-interface
+**Branch:** feature/frontend-refactor
 
 ## Goal
 
-Give the existing Gramika interface complete French, Russian and English catalogs. On first launch, choose the first supported browser or device language, silently fall back to English when none is supported, and let the user explicitly choose and remember a language later. Keep this interface preference separate from the correction language, which remains Russian in the existing correction and history data contracts.
+Reorganize the existing `apps/web` React/Vite frontend into a lightweight layered structure before V4.3-V4.10. Improve ownership, testability, API boundaries and plain-CSS organization while preserving all existing UI, accessibility, storage, localization, request and workflow behavior.
 
 ## In scope
 
-- A typed locale set for `en`, `fr` and `ru`, with complete catalogs for all current user-visible interface text, including headings, controls, status messages, errors, empty states, settings, history, install guidance, accessibility labels and notifications.
-- First-launch detection from `navigator.languages` (including base-language matching such as `fr-CA` to French), with English as the deterministic fallback and no fallback message.
-- An explicit language selector in the existing settings surface, showing the language names in their own languages and applying the new catalog immediately.
-- Remembering an explicit interface choice in browser storage. Invalid or unavailable stored values recover through detection and English fallback.
-- Updating the document language and locale-sensitive UI formatting when the interface locale changes, while preserving Russian `lang` attributes for user-authored and corrected text.
-- Localized accessible names, live-region messages and toast text without changing correction requests, history records, model prompts, or server APIs.
+- Eight sequential steps from `docs/gramika_frontend_refactor_spec.md`: read-only preflight, regression protection, page/component separation, selective component organization, focused API modules, TanStack Query for read-only server data, localization ownership cleanup, CSS organization, and final verification.
+- Frontend files and necessary npm workspace lockfile updates only.
+- Stable Vitest/Testing Library tooling for this refactor's opt-in web tests, and stable `@tanstack/react-query` only for explicitly approved read-only queries.
 
 ## Out of scope
 
-- Translating user-authored text, correction results, explanations, model prompts, dictionary or translation content from later roadmap items.
-- Changing the correction language, the persisted `corrections.language = 'ru'` constraint, server history behavior, authentication, or workspace ownership.
-- Adding a translation service, runtime remote catalog loading, new UI framework, or browser-test runner.
-- Redesigning layouts, changing branding, or adding languages beyond English, French and Russian.
+No product behavior changes, future V4 features, server/routes/contracts/prompts/deployment changes, paid or automatic requests, auth/workspaces, routers, global state libraries, styling migrations, CI, coverage policy, benchmarks, SSH, deployment, push or merge.
 
 ## Build loop
 
-Implement on `feature/multilingual-interface` in small steps. The configured workflow reviews the feature as one packet (`stepReview: feature`) and has checkpoint commits disabled. Run the affected web checks during implementation, then stop for manual review; `/complete` owns final bookkeeping and commit creation.
+Implement one numbered step at a time on `feature/frontend-refactor`, run its relevant checks, present observed evidence and risks, and stop for user review before the next step. No checkpoint commits are required; `/complete` handles final bookkeeping.
 
 ## Build steps
 
-- [ ] **1. Define the supported interface behavior and catalogs.** Add the English, French and Russian interface copy and the browser detection, English fallback and explicit-choice behavior. The code organization and state-sharing mechanism remain an implementation decision for the implementation phase. **Done when:** the supported locale behavior is defined without changing correction or server contracts.
-- [ ] **2. Wire preference persistence and document locale.** Integrate the locale state at the app root, load it before the first meaningful render, persist changes independently of `gramota.workspace`, update `document.documentElement.lang`, and preserve existing workspace/theme restore and clear-local-data behavior. **Done when:** a reload remembers an explicit choice, first launch follows supported browser language order, clearing local data removes the language preference, and user text remains marked as Russian.
-- [ ] **3. Localize the correction workspace and shared feedback.** Replace embedded interface strings in `App`, correction workspace, result view, settings and shared UI with catalog lookups, including loading, invalid, unavailable, failed, retry, copy, model, navigation and accessibility text. Keep model names and corrected/original text as data, not translated labels. **Done when:** switching locale updates the correction screen without losing draft/results or changing a request payload, and all correction happy, loading, empty, error and disabled states have localized visible and accessible text.
-- [ ] **4. Localize history, install guidance and formatting.** Apply the same catalog and locale-aware formatting to history search, filters, pagination, request details, deletion states, cost/date/count labels, PWA install guidance and notifications. **Done when:** every reachable history and install state renders in the selected locale, dates/counts use that locale, and server history responses and deletion/copy behavior remain unchanged.
-- [ ] **5. Verify fallback, persistence and regression behavior.** Exercise fresh supported and unsupported browser locales, stored locales, malformed storage, switching while on correction/history, reload, clear-local-data, and existing correction flows. Run `npm run build -w apps/web`, `npm run lint -w apps/web`, and `npm run format:check -w apps/web`; record only observed results. **Done when:** the checks pass and the manual matrix shows no English leakage in reachable interface copy except intentional product/model names, no locale preference affects correction language, and existing functionality remains usable on mobile and desktop layouts.
+- [ ] **1. Preflight and baseline inventory.** Inspect branch/worktree, scripts, tests, entrypoints, CSS order, network triggers, storage and high-risk selection/focus behavior; run documented web build/lint/format checks. **Done when:** the untouched baseline and drift are recorded without product-file changes.
+- [ ] **2. Add focused regression protection.** Add opt-in web test tooling and characterization tests for request trigger guards, failure preservation, storage restore/clear, result selection, history operations and locale persistence. **Done when:** tests pass against the unchanged implementation and baseline checks are known.
+- [ ] **3. Separate pages from components.** Move the history page and meaningful history entry/correction page composition while preserving navigation, focus, scroll, unmount and filter behavior. **Done when:** screens are behaviorally and visually equivalent and checks pass.
+- [ ] **4. Organize components selectively.** Group current components by responsibility, extract only meaningful responsibilities, move shared result types out of component modules and avoid cycles or broad state rewrites. **Done when:** ownership is clear and props, accessibility and diff/selection semantics remain equivalent.
+- [ ] **5. Establish focused API modules.** Move endpoint construction, status handling and Zod parsing into named API functions without changing payloads, cancellation, errors, retries or paid request paths. **Done when:** targeted UI modules no longer own avoidable HTTP parsing and call behavior is equivalent.
+- [ ] **6. Add TanStack Query for read-only data only.** Migrate history search/detail and correction config incrementally with explicit keys, cancellation and retry/refetch policy; keep correction, explanation generation, second opinion and regeneration imperative. **Done when:** no unexpected calls occur and paid paths remain unchanged.
+- [ ] **7. Clean up localization ownership and formatting.** Colocate locale provider/context/hook, preserve both typed catalogs and APIs, and consolidate only equivalent formatting while preserving locale, storage and language attributes. **Done when:** locale behavior and catalog content are unchanged with no unsafe duplication.
+- [ ] **8. Reorganize CSS and verify.** Split plain CSS by ownership without changing selectors, cascade, media queries, fonts or responsive behavior; run web checks and manual representative UI review. **Done when:** desktop/mobile, themes, settings, install, history, dialogs, diff and copy controls remain equivalent and all checks pass.
 
 ## Files / areas
 
-- `apps/web/src/` components, hooks and utilities that currently own interface copy, settings, notifications and formatting.
-- `apps/web/index.html` or the React entry point for the document language.
-- The final file/module layout is intentionally undecided until the implementation architecture is discussed.
+`apps/web/src/App.tsx`, `apps/web/src/pages/`, `apps/web/src/components/`, `apps/web/src/hooks/`, `apps/web/src/api/`, `apps/web/src/i18n/`, `apps/web/src/lib/`, `apps/web/src/styles/`, `apps/web/tests/`, `apps/web/package.json`, root lockfile.
 
 ## Data / contracts
 
-- Supported interface locale is the finite client value `en | fr | ru`; English is the fallback.
-- Persist an explicit interface preference separately from the existing workspace. The existing `gramota.workspace` version and correction workspace shape remain compatible.
-- `navigator.languages` is the first-launch input. Match case-insensitively by primary language subtag in listed order; if unavailable or unsupported, use `en`.
-- Interface locale is presentation state only. Correction requests continue to use the existing Russian language behavior and no locale field is added to public Zod contracts or server routes.
-- `document.documentElement.lang` follows the interface locale, while original/corrected/history text `lang="ru"` attributes remain unchanged.
+No server, route, SQLite, Zod, prompt or deployment changes. Preserve `gramota.workspace`, `gramika.interface-locale`, locale catalogs, correction payloads, request timing and all browser persistence semantics.
 
 ## Testing
 
-- Add focused pure-module tests only if a web test command becomes configured; do not install a runner for this feature.
-- Use the documented web build, lint and format checks above as automated evidence.
-- Manually verify the locale matrix in a normal browser or dev build. Playwright MCP is not authorized by this plan and requires separate user permission before use.
+Use the opt-in web unit/behavior suite added in Step 2, plus `npm run build -w apps/web`, `npm run lint -w apps/web`, and `npm run format:check -w apps/web`. Use manual UI review for CSS and responsive equivalence. Do not add browser automation or run benchmarks.
 
 ## Notes for the AI
 
-- Preserve current English copy meaning while translating into natural, concise French and Russian UI language. Keep product name Грамика, model names, user text and server-provided correction/explanation content intact unless a label explicitly belongs to the catalog.
-- Ensure language changes do not reset navigation, draft text, results, filters, pending state, theme or correction mode.
-- Do not run benchmarks, paid model calls, SSH, deployment, push, merge or destructive data operations.
-
-## Implementation architecture
-
-- Add `apps/web/src/i18n/types.ts`, `en.ts`, `fr.ts`, `ru.ts` and `index.ts` for the typed locale set, catalogs, browser detection, preference validation, translation lookup and `Intl` formatting helpers.
-- Add `apps/web/src/hooks/use-locale.ts` for the active locale state and explicit Settings changes.
-- Keep locale state in the existing app-level React flow. Do not add React Query, Redux, Zustand or another state-management library.
-- Keep the explicit interface preference separate from `gramota.workspace`, with locale storage owned by the i18n layer.
-- Use the English catalog as the message-key source of truth. Missing runtime keys fall back to English; development warnings are allowed without blocking production rendering.
-- Update existing components to consume translated strings, but do not split or substantially refactor large components such as `result-view.tsx` as part of V4.6. If a clean extraction becomes useful, plan it as a separate future feature.
-
-## Open questions
-
-- Which exact existing formatting and notification helpers should accept the selected locale can be resolved during implementation by following their current call sites; it does not change the product contract.
+Reinspect the latest branch before each step. Preserve unrelated user work. Stop after every step for review. Follow the full handoff in `docs/gramika_frontend_refactor_spec.md`.

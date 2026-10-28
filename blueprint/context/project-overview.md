@@ -1,6 +1,6 @@
 # Gramika - Project Overview
 
-<!-- blueprint:source-hash d9eec2f5fac3d544b44b7d721a9c0240bd9c0c7d1a45b0b0c3a6e38e2522074f -->
+<!-- blueprint:source-hash 9a52feddd0b96ff800c148105faccbb275c9572d7ccf78ded8a6eb86e1d12ed0 -->
 
 Derived from [project-plan.md](../project-plan.md) and
 [build-plan.md](../build-plan.md). The Build Plan is the concise status index;
@@ -30,21 +30,20 @@ feature specifications before implementation.
 - V3.0, V3.1, V3.3 and V3.4 are complete.
 - V3.2 Export and V3.5 contextual comparison were rejected or deferred and are
   not implemented.
-- V4 is the current active roadmap in build-plan.md. The chosen order starts
-  with diff-grouping research, translation, dictionary definitions, read aloud
-  and multilingual infrastructure. The planning-heavy separate-user work comes
-  next, followed by installation UX, History UX and general UX improvement.
+- V4 is the current active roadmap in build-plan.md. Diff-grouping research and
+  improvements, plus the multilingual interface documentation, are complete.
+  The frontend refactor is now a prerequisite work item before translation,
+  dictionary definitions, read aloud, separate-user workspaces and histories,
+  installation UX, History UX and general UX improvement.
 
 ## Active V4 scope
 
-V4.1 research-only meaningful text-diff grouping; V4.2 self-hosted
-LibreTranslate translation; V4.3 Russian dictionary definitions; V4.4 read
-aloud; V4.5 French/Russian/English interface internationalization with
-browser-language detection and explicit override; V4.6 separate user
-workspaces and histories; V4.7 installation UX; V4.8 History UX redesign; and
-V4.9 general UX improvement. The last three items are deliberately kept at the
-end because they are UX-focused. See build-plan.md for the full contracts and
-boundaries.
+V4.1 meaningful text-diff grouping research; V4.2 text-diff improvements; V4.2R
+frontend refactor; V4.3 translation; V4.4 Russian dictionary definitions; V4.5
+multilingual interface; V4.7 separate user workspaces and histories; V4.8
+installation UX; V4.9 History UX redesign; and V4.10 general UX improvement.
+The last three items are deliberately kept at the end because they are
+UX-focused. See build-plan.md for the full contracts and boundaries.
 
 Authentication, invitations, account creation, session handling and migration
 are intentionally unresolved. APK and React Native are out of scope. Diff
@@ -80,8 +79,10 @@ must be designed before V4 user sharing is implemented.
 
 The current UI uses the approved Грамика branding, light/dark/system themes,
 desktop and mobile layouts, result diff views, Copy, Explain and History.
-Current interface copy is English; V4 adds locale detection and French/Russian/
-English catalogs. The app is served from one container with persistent SQLite,
+The interface supports English, French and Russian catalogs with browser-language
+detection, explicit preference persistence and locale-aware formatting. The
+frontend refactor will preserve these behaviors while reorganizing ownership,
+tests, API modules, read-only query data and plain CSS. The app is served from one container with persistent SQLite,
 health checks and Nginx Proxy Manager in production. Mobile PWA installation
 requires a suitable HTTPS deployment; no service worker or offline behavior is
 currently promised.
