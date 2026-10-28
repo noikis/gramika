@@ -4,11 +4,11 @@ import { CorrectionMode, DEFAULT_MODEL_ID, MAX_INPUT_CHARACTERS } from '@gramota
 import type { ExpressionExplanationInput } from '@gramota/contracts'
 import type { useDraft } from '../hooks/use-draft'
 import type { useWritingSession } from '../hooks/use-writing-session'
-import { Button } from './ui/button'
-import { Textarea } from './ui/textarea'
-import { ExpressionExplanationPanel } from './explanation-panel'
-import { ResultView } from './result-view'
-import { Icon } from './ui/icon'
+import { Button } from '../components/ui/button'
+import { Textarea } from '../components/ui/textarea'
+import { ExpressionExplanationPanel } from '../components/explanation-panel'
+import { ResultView } from '../components/result-view'
+import { Icon } from '../components/ui/icon'
 import { useLocale } from '../hooks/use-locale'
 
 type Draft = ReturnType<typeof useDraft>
@@ -265,7 +265,9 @@ function ResultHeading({ correction }: { correction: Correction }) {
         </Button>
       )}
       <h2 id="result-title" tabIndex={-1} ref={headingRef} aria-live="polite">
-        {activeIndex >= 0 ? message('resultCounter', { current: activeIndex + 1, total: correction.results.length }) : t('result')}
+        {activeIndex >= 0
+          ? message('resultCounter', { current: activeIndex + 1, total: correction.results.length })
+          : t('result')}
         <span className="result-model">{activeLabel}</span>
       </h2>
       {hasNext && (
@@ -353,7 +355,7 @@ function MobileRegenerateAction({ correction }: { correction: Correction }) {
   )
 }
 
-export function CorrectionWorkspace({ draft, correction, onNew, isBusy }: WorkspaceProps) {
+export function CorrectionPage({ draft, correction, onNew, isBusy }: WorkspaceProps) {
   const { t } = useLocale()
   return (
     <>

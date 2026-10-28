@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Toaster } from 'sonner'
 import { Button } from './components/ui/button'
-import { CorrectionWorkspace } from './components/correction-workspace'
+import { CorrectionPage } from './pages/CorrectionPage'
 import { useWorkspacePersistence } from './hooks/use-workspace-persistence'
-import { HistoryPage } from './components/history-page'
+import { HistoryPage } from './pages/HistoryPage'
 import { Icon } from './components/ui/icon'
 import { AppSettings } from './components/app-settings'
 import { notify } from './lib/notifications'
@@ -112,7 +112,7 @@ function App() {
           </aside>
         )}
         {view === 'correction' ? (
-          <CorrectionWorkspace
+          <CorrectionPage
             draft={draft}
             correction={correction}
             onNew={newCorrection}
