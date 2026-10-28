@@ -10,7 +10,8 @@ import { notify } from './lib/notifications'
 import { InstallApp } from './components/settings/InstallApp'
 import { useLocale } from './i18n/use-locale'
 import { clearExplicitLocale } from './i18n'
-import './App.css'
+import './styles/app-shell.css'
+import './styles/correction.css'
 
 function App() {
   const { locale, setLocale, resetLocale, t, message } = useLocale()
