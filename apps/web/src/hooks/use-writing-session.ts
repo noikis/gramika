@@ -42,10 +42,14 @@ export function useWritingSession(
 
   async function submit(modelId: ModelId, forceRefresh = false) {
     const isOpinion = modelId === SECOND_OPINION_MODEL_ID
-    const prior = result.results
-      .filter((entry) => entry.result.modelId === modelId)
-      .at(-1)?.result
-    if (forceRefresh ? !canRegenerate(modelId) || !prior : isOpinion ? !canRequestOpinion : !canCorrect)
+    const prior = result.results.filter((entry) => entry.result.modelId === modelId).at(-1)?.result
+    if (
+      forceRefresh
+        ? !canRegenerate(modelId) || !prior
+        : isOpinion
+          ? !canRequestOpinion
+          : !canCorrect
+    )
       return
     return request.submit({
       text: text.trim(),

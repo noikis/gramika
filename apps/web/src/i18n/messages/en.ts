@@ -42,5 +42,10 @@ export const enMessages = {
   selectedChange: 'Selected change',
   moved: 'Moved',
   nothing: '(nothing)',
-  resultCounter: 'Result {current} of {total}', historyRange: '{start}-{end} of {total} corrections', perPage: '{count} per page', pageCounter: 'Page {current} of {total}', approximateCosts: 'Approximate costs.', correctionsFooter: 'corrections',
+  resultCounter: 'Result {current} of {total}',
+  historyRange: '{start}-{end} of {total} corrections',
+  perPage: '{count} per page',
+  pageCounter: 'Page {current} of {total}',
+  approximateCosts: 'Approximate costs.',
+  correctionsFooter: 'corrections',
 } satisfies MessageCatalog

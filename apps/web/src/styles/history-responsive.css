@@ -1,4 +1,3 @@
-
 @media (max-width: 720px) {
   .history-tools {
     grid-template-columns: minmax(0, 1fr);

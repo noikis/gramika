@@ -141,9 +141,7 @@ for (const mode of ['strict', 'gentle-rewrite'] as const) {
     )
     assert.equal(
       outcome.run.prompt.text,
-      mode === 'strict'
-        ? STRICT_CHANGE_EXPLANATION_PROMPT
-        : REWRITE_CHANGE_EXPLANATION_PROMPT,
+      mode === 'strict' ? STRICT_CHANGE_EXPLANATION_PROMPT : REWRITE_CHANGE_EXPLANATION_PROMPT,
     )
     assert.equal(
       outcome.run.prompt.version,

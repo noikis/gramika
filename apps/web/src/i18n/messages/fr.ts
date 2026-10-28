@@ -47,5 +47,10 @@ export const frMessages = {
   selectedChange: 'Modification sélectionnée',
   moved: 'Déplacé',
   nothing: '(rien)',
-  resultCounter: 'Résultat {current} sur {total}', historyRange: '{start}-{end} sur {total} corrections', perPage: '{count} par page', pageCounter: 'Page {current} sur {total}', approximateCosts: 'Coûts approximatifs.', correctionsFooter: 'corrections',
+  resultCounter: 'Résultat {current} sur {total}',
+  historyRange: '{start}-{end} sur {total} corrections',
+  perPage: '{count} par page',
+  pageCounter: 'Page {current} sur {total}',
+  approximateCosts: 'Coûts approximatifs.',
+  correctionsFooter: 'corrections',
 } satisfies MessageCatalog

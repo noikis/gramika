@@ -69,7 +69,9 @@ export function useResultPair(draftRevision: number, initial?: CorrectionWorkspa
 
   function resetMode() {
     setMode(CorrectionMode.enum.strict)
-    const latest = allResults.filter((entry) => entry.result.mode === CorrectionMode.enum.strict).at(-1)
+    const latest = allResults
+      .filter((entry) => entry.result.mode === CorrectionMode.enum.strict)
+      .at(-1)
     setActiveRequestId(latest?.result.requestId ?? null)
   }
 

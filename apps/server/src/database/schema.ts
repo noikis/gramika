@@ -118,7 +118,7 @@ export const explanations = sqliteTable(
     explanation: text('explanation').notNull(),
     deletedAt: text('deleted_at'),
     selectionKey: text('selection_key').notNull().default('legacy'),
-      selection: text('selection_json', { mode: 'json' }).$type<ExplanationRequest>(),
+    selection: text('selection_json', { mode: 'json' }).$type<ExplanationRequest>(),
   },
   (table) => [
     primaryKey({

@@ -62,36 +62,43 @@ export function createExplanationService(deps: Dependencies) {
     const selection = parsed.data
     const source = readStorage(() => deps.repository!.getSource(selection.requestId))
     const expression = 'kind' in selection && selection.kind === 'expression'
-    const sourceText = expression && selection.source === 'original'
-      ? source?.originalText
-      : source?.correctedText
+    const sourceText =
+      expression && selection.source === 'original' ? source?.originalText : source?.correctedText
     const validSource =
       source &&
       CorrectionMode.safeParse(source.mode).success &&
       (expression
         ? sourceText !== undefined &&
-          isValidRange(sourceText, 'correctedRange' in selection ? selection.correctedRange : selection.originalRange) &&
+          isValidRange(
+            sourceText,
+            'correctedRange' in selection ? selection.correctedRange : selection.originalRange,
+          ) &&
           selection.mode === source.mode &&
           selection.value.length > 0
         : isValidRange(source.correctedText, selection.correctedRange) &&
           isValidRange(source.originalText, selection.originalRange))
-    if (!validSource)
-      throw new CorrectionError(ErrorCode.enum.INVALID_INPUT)
-    const original = 'originalRange' in selection
-      ? source.originalText.slice(selection.originalRange.start, selection.originalRange.end)
-      : ''
-    const corrected = 'correctedRange' in selection
-      ? source.correctedText.slice(selection.correctedRange.start, selection.correctedRange.end)
-      : ''
+    if (!validSource) throw new CorrectionError(ErrorCode.enum.INVALID_INPUT)
+    const original =
+      'originalRange' in selection
+        ? source.originalText.slice(selection.originalRange.start, selection.originalRange.end)
+        : ''
+    const corrected =
+      'correctedRange' in selection
+        ? source.correctedText.slice(selection.correctedRange.start, selection.correctedRange.end)
+        : ''
     if (expression) {
       const selected = selection.source === 'original' ? original : corrected
       if (selection.mode !== source.mode || selection.value !== selected)
         throw new CorrectionError(ErrorCode.enum.INVALID_INPUT)
     } else {
       const key = explanationSelectionKey(selection)
-      if (!diffText(source.originalText, source.correctedText).groups.some(
-        (group) => explanationSelectionKey(explanationSelection(selection.requestId, group)) === key,
-      )) throw new CorrectionError(ErrorCode.enum.INVALID_INPUT)
+      if (
+        !diffText(source.originalText, source.correctedText).groups.some(
+          (group) =>
+            explanationSelectionKey(explanationSelection(selection.requestId, group)) === key,
+        )
+      )
+        throw new CorrectionError(ErrorCode.enum.INVALID_INPUT)
     }
     return { selection, source, original, corrected }
   }
@@ -194,16 +201,16 @@ export function createExplanationService(deps: Dependencies) {
                           positionEncoding: 'UTF-16, zero-based, end-exclusive',
                         }
                       : {
-                        mode: source.mode,
-                        editedText: source.correctedText,
-                        selectedExpression: {
-                          source: selection.source,
-                          range: selection.correctedRange,
-                          value: selection.value,
+                          mode: source.mode,
+                          editedText: source.correctedText,
+                          selectedExpression: {
+                            source: selection.source,
+                            range: selection.correctedRange,
+                            value: selection.value,
+                            positionEncoding: 'UTF-16, zero-based, end-exclusive',
+                          },
                           positionEncoding: 'UTF-16, zero-based, end-exclusive',
-                        },
-                        positionEncoding: 'UTF-16, zero-based, end-exclusive',
-                      }
+                        }
                     : {
                         mode: source.mode,
                         originalText: source.originalText,
