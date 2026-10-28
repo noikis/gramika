@@ -1,4 +1,5 @@
 import { renderHook, waitFor } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { describe, expect, it, vi } from 'vitest'
 import { useHistory } from '../../src/hooks/use-history'
 
@@ -20,7 +21,16 @@ describe('useHistory', () => {
       page: 2,
     }
 
-    const { result } = renderHook(() => useHistory(query))
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false, refetchOnWindowFocus: false, refetchOnReconnect: false },
+      },
+    })
+    const { result } = renderHook(() => useHistory(query), {
+      wrapper: ({ children }) => (
+        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+      ),
+    })
     await waitFor(() => expect(result.current.data).toEqual(historyResponse))
     expect(fetchMock).toHaveBeenCalledTimes(1)
     expect(fetchMock.mock.calls[0]?.[1]).toMatchObject({

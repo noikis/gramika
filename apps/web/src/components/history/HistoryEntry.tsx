@@ -1,5 +1,6 @@
-import { useEffect, useId, useRef, useState } from 'react'
-import type { HistoryDetail, HistorySummary, HistorySearchQuery } from '@gramota/contracts'
+import { useId, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import type { HistorySummary, HistorySearchQuery } from '@gramota/contracts'
 import { fetchHistoryDetail } from '../../api/history'
 import { formatDate, shortModelName } from '../../lib/history-format'
 import { HistoryDelete } from './HistoryDelete'
@@ -22,11 +23,21 @@ export function HistoryEntry({
   filters: Pick<HistorySearchQuery, 'model' | 'result'>
 }) {
   const { t, locale } = useLocale()
-  const [detail, setDetail] = useState<HistoryDetail | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const controller = useRef<AbortController | null>(null)
+  const [isOpen, setIsOpen] = useState(false)
   const originalId = useId()
+  const detailQuery = useQuery({
+    queryKey: ['history-detail', item.id],
+    queryFn: ({ signal }) => fetchHistoryDetail(item.id, signal),
+    enabled: isOpen,
+    staleTime: Infinity,
+    retry: false,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+  })
+  const detail = detailQuery.data ?? null
+  const loading = detailQuery.isLoading
+  const error = detailQuery.isError ? 'Could not load this correction. Please try again.' : ''
   const requests =
     detail?.requests.filter((request) => {
       if (filters.model && request.requestedModel !== filters.model) return false
@@ -41,37 +52,11 @@ export function HistoryEntry({
       }
       return request.status === filters.result
     }) ?? []
-  useEffect(
-    () => () => {
-      controller.current?.abort()
-    },
-    [],
-  )
-
-  async function load() {
-    if (controller.current) return
-    const current = new AbortController()
-    controller.current = current
-    setLoading(true)
-    setError('')
-    try {
-      const value = await fetchHistoryDetail(item.id, current.signal)
-      if (!current.signal.aborted) setDetail(value)
-    } catch {
-      if (!current.signal.aborted) setError('Could not load this correction. Please try again.')
-    } finally {
-      if (!current.signal.aborted) {
-        setLoading(false)
-        controller.current = null
-      }
-    }
-  }
-
   return (
     <details
       className="history-entry"
       onToggle={(event) => {
-        if (event.currentTarget.open && !detail && !error) void load()
+        setIsOpen(event.currentTarget.open)
         if (!event.currentTarget.open)
           event.currentTarget
             .querySelectorAll('dialog[open]')
@@ -104,7 +89,7 @@ export function HistoryEntry({
             <p className="history-error" role="alert">
               {error}
             </p>
-            <Button type="button" variant="secondary" onClick={load}>
+            <Button type="button" variant="secondary" onClick={() => void detailQuery.refetch()}>
               {t('retry')}
             </Button>
           </div>

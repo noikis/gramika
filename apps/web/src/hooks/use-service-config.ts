@@ -1,27 +1,22 @@
-import { useEffect, useState } from 'react'
-import type { PublicConfig } from '@gramota/contracts'
+import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { fetchCorrectionConfig } from '../api/config'
 
 export function useServiceConfig() {
-  const [config, setConfig] = useState<PublicConfig | null>(null)
-  const [configFailed, setConfigFailed] = useState(false)
-  const [attempt, setAttempt] = useState(0)
-
-  useEffect(() => {
-    const controller = new AbortController()
-    fetchCorrectionConfig(controller.signal)
-      .then((value) => {
-        if (!controller.signal.aborted) setConfig(value)
-      })
-      .catch(() => {
-        if (!controller.signal.aborted) setConfigFailed(true)
-      })
-    return () => controller.abort()
-  }, [attempt])
+  const [isReloading, setIsReloading] = useState(false)
+  const query = useQuery({
+    queryKey: ['correction-config'],
+    queryFn: ({ signal }) => fetchCorrectionConfig(signal),
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+  })
+  const config = query.data ?? null
+  const configFailed = query.isError && !isReloading
 
   function reloadConfig() {
-    setConfigFailed(false)
-    setAttempt((current) => current + 1)
+    setIsReloading(true)
+    void query.refetch().finally(() => setIsReloading(false))
   }
 
   const availability = configFailed

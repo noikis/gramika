@@ -16,6 +16,7 @@
     "@gramota/contracts": "^1.0.0",
     "@gramota/text-diff": "^1.0.0",
     "@radix-ui/react-slot": "^1.5.0",
+    "@tanstack/react-query": "^5.105.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "diff": "^4.0.4",
