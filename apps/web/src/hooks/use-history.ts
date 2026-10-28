@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { HistoryFailure, HistoryList, type HistorySearchQuery } from '@gramota/contracts'
+import { HistoryList, type HistorySearchQuery } from '@gramota/contracts'
+import { searchHistory } from '../api/history'
 
 type HistoryResponse = {
   key: string
@@ -22,26 +23,10 @@ export function useHistory(query: HistorySearchQuery) {
     }
     async function load() {
       try {
-        const result = await fetch('/api/history/search', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body,
-          signal: controller.signal,
-        })
-        const value: unknown = await result.json()
-        if (!result.ok) {
-          const failure = HistoryFailure.safeParse(value)
-          fail(
-            failure.success && failure.data.error.code === 'INVALID_HISTORY_QUERY'
-              ? 'Check your date range and search criteria.'
-              : 'Could not load history. Please try again.',
-          )
-          return
-        }
-        const data = HistoryList.parse(value)
+        const data = await searchHistory(JSON.parse(body) as HistorySearchQuery, controller.signal)
         if (!controller.signal.aborted) setResponse({ key, data, error: '' })
-      } catch {
-        fail('Could not load history. Please try again.')
+      } catch (cause) {
+        fail(cause instanceof Error ? cause.message : 'Could not load history. Please try again.')
       }
     }
     void load()

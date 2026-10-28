@@ -6,7 +6,7 @@ import {
   type CorrectionResult,
   type ModelId,
 } from '@gramota/contracts'
-import { requestCorrection } from '../lib/correction-api'
+import { requestCorrection } from '../api/corrections'
 import { modelName } from '../lib/history-format'
 import { notify } from '../lib/notifications'
 import type { CorrectionWorkspaceState } from '../lib/workspace-storage'

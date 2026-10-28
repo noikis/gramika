@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react'
-import { HistoryDetail, type HistorySummary, type HistorySearchQuery } from '@gramota/contracts'
+import type { HistoryDetail, HistorySummary, HistorySearchQuery } from '@gramota/contracts'
+import { fetchHistoryDetail } from '../../api/history'
 import { formatDate, shortModelName } from '../../lib/history-format'
 import { HistoryDelete } from './HistoryDelete'
 import { HistoryRequest } from './HistoryRequest'
@@ -54,12 +55,7 @@ export function HistoryEntry({
     setLoading(true)
     setError('')
     try {
-      const response = await fetch('/api/history/' + encodeURIComponent(item.id), {
-        signal: current.signal,
-      })
-      if (!response.ok) throw Error('History detail unavailable')
-      const value = HistoryDetail.parse(await response.json())
-      if (value.id !== item.id) throw Error('Mismatched history entry')
+      const value = await fetchHistoryDetail(item.id, current.signal)
       if (!current.signal.aborted) setDetail(value)
     } catch {
       if (!current.signal.aborted) setError('Could not load this correction. Please try again.')

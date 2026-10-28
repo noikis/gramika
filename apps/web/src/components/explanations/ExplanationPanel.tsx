@@ -1,14 +1,9 @@
 import { useEffect, useState } from 'react'
-import {
-  ExplanationFailure,
-  ExplanationLookup,
-  ExplanationSuccess,
-  type ExplanationInput,
-  type ExpressionExplanationInput,
-} from '@gramota/contracts'
+import type { ExplanationInput, ExpressionExplanationInput } from '@gramota/contracts'
 import { Button } from '../ui/button'
 import { Icon } from '../ui/icon'
 import { useLocale } from '../../hooks/use-locale'
+import { fetchExplanation, generateExpressionExplanation } from '../../api/explanations'
 
 type Outcome = { explanation: string | null; error: string | null }
 
@@ -22,39 +17,20 @@ export function ExplanationPanel({ selection }: { selection: ExplanationInput })
     const controller = new AbortController()
     async function load() {
       try {
-        const response = await fetch(
-          attempt.isGenerate ? '/api/explanations' : '/api/explanations/lookup',
-          {
-            method: 'POST',
-            headers: { 'content-type': 'application/json' },
-            body,
-            signal: controller.signal,
-          },
+        const explanation = await fetchExplanation(
+          JSON.parse(body) as ExplanationInput,
+          attempt.isGenerate,
+          controller.signal,
         )
-        const payload: unknown = await response.json()
-        if (!response.ok) {
-          const failure = ExplanationFailure.safeParse(payload)
-          if (!controller.signal.aborted)
-            setOutcome({
-              explanation: null,
-              error: failure.success
-                ? failure.data.error.message
-                : 'Could not load the explanation. Please try again.',
-            })
-          return
-        }
-        const result = attempt.isGenerate
-          ? ExplanationSuccess.parse(payload)
-          : ExplanationLookup.parse(payload).result
-        if (result && JSON.stringify(result.selection) !== body)
-          throw new Error('The explanation did not match this correction.')
-        if (!controller.signal.aborted)
-          setOutcome({ explanation: result?.explanation ?? null, error: null })
-      } catch {
+        if (!controller.signal.aborted) setOutcome({ explanation, error: null })
+      } catch (cause) {
         if (!controller.signal.aborted)
           setOutcome({
             explanation: null,
-            error: 'Could not load the explanation. Please try again.',
+            error:
+              cause instanceof Error
+                ? cause.message
+                : 'Could not load the explanation. Please try again.',
           })
       }
     }
@@ -114,27 +90,11 @@ export function ExpressionExplanationPanel({
   const [state, setState] = useState<'idle' | 'loading' | 'done' | 'error'>('idle')
   const [explanation, setExplanation] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const body = JSON.stringify(selection)
-
   async function explain() {
     setState('loading')
     setError(null)
     try {
-      const response = await fetch('/api/explanations', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body,
-      })
-      const payload: unknown = await response.json()
-      if (!response.ok) {
-        const failure = ExplanationFailure.safeParse(payload)
-        throw new Error(
-          failure.success ? failure.data.error.message : 'Could not explain the selection.',
-        )
-      }
-      const result = ExplanationSuccess.parse(payload)
-      if (JSON.stringify(result.selection) !== body) throw new Error('Mismatched explanation.')
-      setExplanation(result.explanation)
+      setExplanation(await generateExpressionExplanation(selection))
       setState('done')
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Could not explain the selection.')

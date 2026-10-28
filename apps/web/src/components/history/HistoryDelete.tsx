@@ -3,6 +3,7 @@ import { Button } from '../ui/button'
 import { notify } from '../../lib/notifications'
 import { Icon } from '../ui/icon'
 import { useLocale } from '../../hooks/use-locale'
+import { deleteHistoryEntry } from '../../api/history'
 
 export function HistoryDelete({ id, onDeleted }: { id: string; onDeleted: (id: string) => void }) {
   const { t, message } = useLocale()
@@ -18,8 +19,7 @@ export function HistoryDelete({ id, onDeleted }: { id: string; onDeleted: (id: s
     setIsDeleting(true)
     setError('')
     try {
-      const response = await fetch('/api/history/' + encodeURIComponent(id), { method: 'DELETE' })
-      if (!response.ok && response.status !== 404) throw Error('Deletion unavailable')
+      await deleteHistoryEntry(id)
       notify(message('historyEntryRemoved'), true)
       onDeleted(id)
     } catch {

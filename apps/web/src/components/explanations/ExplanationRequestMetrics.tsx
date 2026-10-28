@@ -10,6 +10,7 @@ import { formatCost, formatDate, formatTime } from '../../lib/history-format'
 import { MetricFacts } from './RequestMetricFacts'
 import { Button } from '../ui/button'
 import { useLocale } from '../../hooks/use-locale'
+import { fetchExplanationMetrics } from '../../api/explanations'
 
 function SelectionFragments({
   selection,
@@ -85,19 +86,7 @@ export function ExplanationRequestMetrics({
     const controller = new AbortController()
     async function load() {
       try {
-        const response = await fetch('/api/explanations/metrics', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ requestId: request.id }),
-          signal: controller.signal,
-        })
-        if (!response.ok) throw Error('Metrics unavailable')
-        const value = ExplanationMetrics.parse(await response.json())
-        if (
-          value.attempts.some((attempt) => attempt.selection.requestId !== request.id) ||
-          value.legacySelections.some((selection) => selection.requestId !== request.id)
-        )
-          throw Error('Mismatched request metrics')
+        const value = await fetchExplanationMetrics(request.id, controller.signal)
         if (!controller.signal.aborted) {
           setData(value)
           onError(false)

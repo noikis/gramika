@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { CorrectionConfig, type PublicConfig } from '@gramota/contracts'
+import type { PublicConfig } from '@gramota/contracts'
+import { fetchCorrectionConfig } from '../api/config'
 
 export function useServiceConfig() {
   const [config, setConfig] = useState<PublicConfig | null>(null)
@@ -8,10 +9,8 @@ export function useServiceConfig() {
 
   useEffect(() => {
     const controller = new AbortController()
-    fetch('/api/correction-config', { signal: controller.signal })
-      .then(async (response) => {
-        if (!response.ok) throw Error('Configuration unavailable')
-        const value = CorrectionConfig.parse(await response.json())
+    fetchCorrectionConfig(controller.signal)
+      .then((value) => {
         if (!controller.signal.aborted) setConfig(value)
       })
       .catch(() => {

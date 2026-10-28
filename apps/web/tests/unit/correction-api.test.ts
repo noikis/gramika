@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { DEFAULT_MODEL_ID } from '@gramota/contracts'
-import { requestCorrection } from '../../src/lib/correction-api'
+import { requestCorrection } from '../../src/api/corrections'
 import { CORRECTION_ID, correctionResult } from './fixtures'
 
 describe('correction API', () => {
