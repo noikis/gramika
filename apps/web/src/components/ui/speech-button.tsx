@@ -8,15 +8,23 @@ import { notify } from '../../lib/notifications'
 type SpeechButtonProps = {
   sourceId: string
   getText: () => string
+  getSelection?: () => string | null
   lang: string
   className?: string
 }
 
-export function SpeechButton({ sourceId, getText, lang, className }: SpeechButtonProps) {
+export function SpeechButton({
+  sourceId,
+  getText,
+  getSelection,
+  lang,
+  className,
+}: SpeechButtonProps) {
   const { message } = useLocale()
   const tts = useMemo(
     () => ({
       readAloud: message('ttsReadAloud'),
+      readSelection: message('ttsReadSelection'),
       pause: message('ttsPause'),
       resume: message('ttsResume'),
       unavailable: message('ttsUnavailable'),
@@ -37,7 +45,14 @@ export function SpeechButton({ sourceId, getText, lang, className }: SpeechButto
   const isOwner = speech.sourceId === sourceId
   const status = isOwner ? speech.status : 'idle'
   const disabled = !getText().trim() || status === 'starting'
-  const label = status === 'speaking' ? tts.pause : status === 'paused' ? tts.resume : tts.readAloud
+  const label =
+    status === 'speaking'
+      ? tts.pause
+      : status === 'paused'
+        ? tts.resume
+        : getSelection?.()?.trim()
+          ? tts.readSelection
+          : tts.readAloud
   useEffect(() => {
     if (speech.error && speech.sourceId === sourceId) {
       notify(

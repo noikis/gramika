@@ -1,6 +1,5 @@
 .result-box {
   padding: 28px;
-  border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--surface);
   color: var(--muted);
@@ -14,6 +13,26 @@
   color: var(--text);
   border-color: var(--line);
   white-space: pre-wrap;
+}
+.result-content {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.result-content .result-text {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  line-height: 1.85;
+  font-size: 26px;
+}
+.result-content .result-changes {
+  padding: 24px;
+}
+.result-content .speech-row {
+  margin-top: 0;
+  padding: 0 14px 14px;
 }
 .result-changes {
   max-height: 34rem;
@@ -336,6 +355,10 @@
     border-radius: 17px;
   }
   .result-changes {
+    font-size: 22px;
+    line-height: 1.8;
+  }
+  .result-content .result-text {
     font-size: 22px;
     line-height: 1.8;
   }

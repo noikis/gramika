@@ -2,6 +2,7 @@ import type { MessageCatalog } from './types'
 
 export const frMessages = {
   ttsReadAloud: 'Lire à voix haute',
+  ttsReadSelection: 'Lire le texte sélectionné',
   ttsPause: 'Pause',
   ttsResume: 'Reprendre',
   ttsUnavailable: "La synthèse vocale n'est pas prise en charge par ce navigateur",

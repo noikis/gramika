@@ -12,6 +12,16 @@ import {
 
 type Outcome = { explanation: string | null; error: string | null }
 
+function selectedTextWithin(element: HTMLElement | null) {
+  if (typeof window === 'undefined') return null
+  const selection = window.getSelection()
+  if (!element || !selection || selection.isCollapsed || selection.rangeCount === 0) return null
+  const range = selection.getRangeAt(0)
+  if (!element.contains(range.startContainer) || !element.contains(range.endContainer)) return null
+  const value = selection.toString()
+  return value.trim() ? value : null
+}
+
 export function ExplanationPanel({ selection }: { selection: ExplanationInput }) {
   const { t } = useLocale()
   const [attempt, setAttempt] = useState({ number: 0, isGenerate: false })
@@ -59,7 +69,13 @@ export function ExplanationPanel({ selection }: { selection: ExplanationInput })
             <SpeechButton
               sourceId={`explanation-${bodyId}`}
               lang="ru-RU"
-              getText={() => bodyRef.current?.textContent ?? outcome.explanation ?? ''}
+              getSelection={() => selectedTextWithin(bodyRef.current)}
+              getText={() =>
+                selectedTextWithin(bodyRef.current) ??
+                bodyRef.current?.textContent ??
+                outcome.explanation ??
+                ''
+              }
             />
           </div>
           <p ref={bodyRef} className="explanation-text" lang="ru" role="status">
@@ -129,7 +145,10 @@ export function ExpressionExplanationPanel({
             <SpeechButton
               sourceId={`expression-explanation-${bodyId}`}
               lang="ru-RU"
-              getText={() => bodyRef.current?.textContent ?? explanation}
+              getSelection={() => selectedTextWithin(bodyRef.current)}
+              getText={() =>
+                selectedTextWithin(bodyRef.current) ?? bodyRef.current?.textContent ?? explanation
+              }
             />
           </div>
           <p ref={bodyRef} className="explanation-text" lang="ru" role="status">

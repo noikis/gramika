@@ -42,6 +42,7 @@ export function OriginalEditor({ draft, correction, onNew, isBusy }: WorkspacePr
   const { t } = useLocale()
   const { text, edit, paste, pending, inputRef } = draft
   const [manualSelection, setManualSelection] = useState<ExpressionExplanationInput | null>(null)
+  const [speechSelection, setSpeechSelection] = useState('')
   const selectionRef = useRef<{ start: number; end: number } | null>(null)
   const result =
     !correction.draftChanged && correction.visibleResult?.originalText === text
@@ -122,6 +123,7 @@ export function OriginalEditor({ draft, correction, onNew, isBusy }: WorkspacePr
         value={text}
         onChange={(event) => {
           setManualSelection(null)
+          setSpeechSelection('')
           selectionRef.current = null
           edit(event.target.value)
         }}
@@ -132,10 +134,11 @@ export function OriginalEditor({ draft, correction, onNew, isBusy }: WorkspacePr
         lang="ru"
         spellCheck={false}
         onSelect={(event) => {
-          selectionRef.current = {
-            start: event.currentTarget.selectionStart,
-            end: event.currentTarget.selectionEnd,
-          }
+          const { selectionStart: start, selectionEnd: end } = event.currentTarget
+          selectionRef.current = { start, end }
+          setSpeechSelection(
+            start !== end ? text.slice(Math.min(start, end), Math.max(start, end)) : '',
+          )
           selectOriginal(event.currentTarget.selectionStart, event.currentTarget.selectionEnd)
         }}
         onKeyDown={(event) => {
@@ -162,6 +165,7 @@ export function OriginalEditor({ draft, correction, onNew, isBusy }: WorkspacePr
         <SpeechButton
           sourceId="original-editor"
           lang="ru-RU"
+          getSelection={() => speechSelection || null}
           getText={() => {
             const selection = selectionRef.current
             return selection && selection.start !== selection.end

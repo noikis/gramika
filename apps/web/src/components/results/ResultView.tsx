@@ -65,6 +65,16 @@ function ResultContent({
     <SpeechButton
       sourceId={`result-${result.requestId}`}
       lang="ru-RU"
+      getSelection={() => {
+        if (view === 'changes' && manualSelection?.source === 'edited') return manualSelection.value
+        const range = textSelection.current
+        return range && range.start !== range.end
+          ? result.correctedText.slice(
+              Math.min(range.start, range.end),
+              Math.max(range.start, range.end),
+            )
+          : null
+      }}
       getText={() => {
         if (view === 'changes' && manualSelection?.source === 'edited') return manualSelection.value
         const range = textSelection.current
@@ -98,51 +108,53 @@ function ResultContent({
           {viewToggle}
         </div>
       )}
-      {view === 'text' ? (
-        <Textarea
-          className="editor-input result-text"
-          readOnly
-          aria-labelledby={labelId}
-          value={result.correctedText}
-          lang="ru"
-          spellCheck={false}
-          onSelect={(event) => {
-            const start = event.currentTarget.selectionStart
-            const end = event.currentTarget.selectionEnd
-            textSelection.current = { start, end }
-            if (start === end || start < 0 || end > result.correctedText.length) {
-              setManualSelection(null)
-              return
-            }
-            const range = start < end ? { start, end } : { start: end, end: start }
-            const value = result.correctedText.slice(range.start, range.end)
-            setManualSelection(
-              value
-                ? {
-                    version: 3,
-                    requestId: result.requestId,
-                    kind: 'expression',
-                    mode: result.mode,
-                    source: 'edited',
-                    correctedRange: range,
-                    value,
-                  }
-                : null,
-            )
-          }}
-        />
-      ) : (
-        <ResultChanges
-          result={result}
-          diff={diff}
-          selected={selected}
-          panelId={panelId}
-          onSelect={(index) => select(index)}
-          onManualSelection={setManualSelection}
-          manualSelection={manualSelection}
-        />
-      )}
-      <div className="speech-row">{speechAction}</div>
+      <div className="result-content">
+        {view === 'text' ? (
+          <Textarea
+            className="editor-input result-text"
+            readOnly
+            aria-labelledby={labelId}
+            value={result.correctedText}
+            lang="ru"
+            spellCheck={false}
+            onSelect={(event) => {
+              const start = event.currentTarget.selectionStart
+              const end = event.currentTarget.selectionEnd
+              textSelection.current = { start, end }
+              if (start === end || start < 0 || end > result.correctedText.length) {
+                setManualSelection(null)
+                return
+              }
+              const range = start < end ? { start, end } : { start: end, end: start }
+              const value = result.correctedText.slice(range.start, range.end)
+              setManualSelection(
+                value
+                  ? {
+                      version: 3,
+                      requestId: result.requestId,
+                      kind: 'expression',
+                      mode: result.mode,
+                      source: 'edited',
+                      correctedRange: range,
+                      value,
+                    }
+                  : null,
+              )
+            }}
+          />
+        ) : (
+          <ResultChanges
+            result={result}
+            diff={diff}
+            selected={selected}
+            panelId={panelId}
+            onSelect={(index) => select(index)}
+            onManualSelection={setManualSelection}
+            manualSelection={manualSelection}
+          />
+        )}
+        <div className="speech-row">{speechAction}</div>
+      </div>
       {compact && <p className="result-model-caption">{title}</p>}
       {manualSelection && view === 'text' && (
         <ExpressionExplanationPanel

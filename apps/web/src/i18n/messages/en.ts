@@ -2,6 +2,7 @@ import type { MessageCatalog } from './types'
 
 export const enMessages = {
   ttsReadAloud: 'Read aloud',
+  ttsReadSelection: 'Read selected text',
   ttsPause: 'Pause',
   ttsResume: 'Resume',
   ttsUnavailable: 'Speech synthesis is not supported by this browser',

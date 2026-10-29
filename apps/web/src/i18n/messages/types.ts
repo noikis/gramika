@@ -1,5 +1,6 @@
 export type MessageCatalog = {
   ttsReadAloud: string
+  ttsReadSelection: string
   ttsPause: string
   ttsResume: string
   ttsUnavailable: string

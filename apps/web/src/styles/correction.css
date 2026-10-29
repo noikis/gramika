@@ -75,7 +75,7 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 12px;
-  padding-top: 18px;
+  padding-top: 12px;
 }
 .character-count {
   color: var(--muted);
@@ -94,6 +94,10 @@
 .result-actions > button {
   min-width: 44px;
   padding-inline: 10px;
+}
+.speech-row button svg {
+  width: 24px;
+  height: 24px;
 }
 .result-toolbar-actions {
   display: flex;

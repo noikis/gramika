@@ -2,6 +2,7 @@ import type { MessageCatalog } from './types'
 
 export const ruMessages = {
   ttsReadAloud: 'Читать вслух',
+  ttsReadSelection: 'Читать выделенный текст',
   ttsPause: 'Пауза',
   ttsResume: 'Продолжить',
   ttsUnavailable: 'Озвучивание не поддерживается этим браузером',
