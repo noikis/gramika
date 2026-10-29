@@ -277,6 +277,15 @@
   font-size: 13px;
   font-weight: 600;
 }
+.explanation-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.explanation-heading .explanation-label {
+  margin-bottom: 0;
+}
 .mobile-copy-bar {
   display: none;
 }

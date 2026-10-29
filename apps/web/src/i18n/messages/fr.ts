@@ -1,6 +1,13 @@
 import type { MessageCatalog } from './types'
 
 export const frMessages = {
+  ttsReadAloud: 'Lire à voix haute',
+  ttsPause: 'Pause',
+  ttsResume: 'Reprendre',
+  ttsUnavailable: "La synthèse vocale n'est pas prise en charge par ce navigateur",
+  ttsNoText: 'Aucun texte à lire',
+  ttsVoiceUnavailable: 'Aucune voix adaptée n’est disponible',
+  ttsFailed: 'Impossible de lire le texte à voix haute',
   workspaceCleared: 'Espace local et préférences effacés. L’historique du serveur est conservé.',
   clipboardUnavailable: 'Presse-papiers indisponible ici. Collez manuellement dans Original.',
   textChanged: 'Votre texte a changé. Appuyez à nouveau sur Coller pour le remplacer.',

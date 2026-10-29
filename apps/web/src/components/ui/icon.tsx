@@ -25,6 +25,9 @@ const paths = {
   light:
     'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8 M12 2v2 M12 20v2 M2 12h2 M20 12h2 M5 5l1.5 1.5 M17.5 17.5 19 19 M5 19l1.5-1.5 M17.5 6.5 19 5',
   dark: 'M20 14a8 8 0 0 1-10-10 9 9 0 1 0 10 10Z',
+  volume: 'M5 9v6h4l5 4V5L9 9H5 M18 9a4 4 0 0 1 0 6 M20 7a7 7 0 0 1 0 10',
+  pause: 'M8 5v14 M16 5v14',
+  play: 'M8 5v14l11-7z',
 } as const
 
 export function Icon({ name, ...props }: ComponentProps<'svg'> & { name: keyof typeof paths }) {

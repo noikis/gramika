@@ -1,6 +1,13 @@
 import type { MessageCatalog } from './types'
 
 export const ruMessages = {
+  ttsReadAloud: 'Читать вслух',
+  ttsPause: 'Пауза',
+  ttsResume: 'Продолжить',
+  ttsUnavailable: 'Озвучивание не поддерживается этим браузером',
+  ttsNoText: 'Нет текста для озвучивания',
+  ttsVoiceUnavailable: 'Подходящий голос недоступен',
+  ttsFailed: 'Не удалось озвучить текст',
   workspaceCleared: 'Локальные данные и настройки очищены. История на сервере сохранена.',
   clipboardUnavailable: 'Буфер обмена здесь недоступен. Вставьте текст вручную в исходный текст.',
   textChanged: 'Текст изменился. Нажмите «Вставить» ещё раз, чтобы заменить его.',

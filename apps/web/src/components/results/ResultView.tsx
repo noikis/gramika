@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import type { ExpressionExplanationInput } from '@gramota/contracts'
 import { ExpressionExplanationPanel } from '../explanations/ExplanationPanel'
 import { Textarea } from '../ui/textarea'
@@ -9,6 +9,7 @@ import { CorrectionComparison } from './CorrectionComparison'
 import { ResultChanges } from './ResultChanges'
 import { ResultViewToggle } from './ResultViewToggle'
 import type { ResultViewProps } from './types'
+import { SpeechButton } from '../ui/speech-button'
 
 export function ResultView(props: ResultViewProps) {
   return <ResultContent key={props.result.requestId} {...props} />
@@ -27,6 +28,7 @@ function ResultContent({
   const isHistory = !compact && Boolean(actions)
   const [selected, setSelected] = useState(0)
   const [manualSelection, setManualSelection] = useState<ExpressionExplanationInput | null>(null)
+  const textSelection = useRef<{ start: number; end: number } | null>(null)
   const panelId = `${labelId}-details`
   const diff = useMemo(
     () => diffText(result.originalText, result.correctedText),
@@ -59,6 +61,22 @@ function ResultContent({
   }
 
   const viewToggle = <ResultViewToggle title={title} view={view} onViewChange={onViewChange} />
+  const speechAction = (
+    <SpeechButton
+      sourceId={`result-${result.requestId}`}
+      lang="ru-RU"
+      getText={() => {
+        if (view === 'changes' && manualSelection?.source === 'edited') return manualSelection.value
+        const range = textSelection.current
+        return range && range.start !== range.end
+          ? result.correctedText.slice(
+              Math.min(range.start, range.end),
+              Math.max(range.start, range.end),
+            )
+          : result.correctedText
+      }}
+    />
+  )
 
   return (
     <>
@@ -72,7 +90,10 @@ function ResultContent({
             <h2 id={labelId}>{title}</h2>
             {viewToggle}
           </div>
-          {actions}
+          <div className="result-toolbar-actions">
+            {speechAction}
+            {actions}
+          </div>
         </div>
       ) : (
         <div className="editor-heading">
@@ -91,6 +112,7 @@ function ResultContent({
           onSelect={(event) => {
             const start = event.currentTarget.selectionStart
             const end = event.currentTarget.selectionEnd
+            textSelection.current = { start, end }
             if (start === end || start < 0 || end > result.correctedText.length) {
               setManualSelection(null)
               return
@@ -133,6 +155,7 @@ function ResultContent({
       {compact && (
         <div className="result-actions">
           {viewToggle}
+          {speechAction}
           {actions}
         </div>
       )}

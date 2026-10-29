@@ -1,6 +1,13 @@
 import type { MessageCatalog } from './types'
 
 export const enMessages = {
+  ttsReadAloud: 'Read aloud',
+  ttsPause: 'Pause',
+  ttsResume: 'Resume',
+  ttsUnavailable: 'Speech synthesis is not supported by this browser',
+  ttsNoText: 'No text to read',
+  ttsVoiceUnavailable: 'No suitable voice is available',
+  ttsFailed: 'Unable to read the text aloud',
   workspaceCleared: 'Local workspace and preferences cleared. Server history was kept.',
   clipboardUnavailable: 'Clipboard unavailable here. Paste manually into Original.',
   textChanged: 'Your text changed. Press Paste again to replace it.',

@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import type { ExplanationInput, ExpressionExplanationInput } from '@gramota/contracts'
 import { Button } from '../ui/button'
 import { Icon } from '../ui/icon'
 import { useLocale } from '../../i18n/use-locale'
+import { SpeechButton } from '../ui/speech-button'
 import {
   ExplanationApiError,
   fetchExplanation,
@@ -16,6 +17,8 @@ export function ExplanationPanel({ selection }: { selection: ExplanationInput })
   const [attempt, setAttempt] = useState({ number: 0, isGenerate: false })
   const [outcome, setOutcome] = useState<Outcome | null>(null)
   const body = JSON.stringify(selection)
+  const bodyId = useId()
+  const bodyRef = useRef<HTMLParagraphElement>(null)
 
   useEffect(() => {
     const controller = new AbortController()
@@ -51,8 +54,15 @@ export function ExplanationPanel({ selection }: { selection: ExplanationInput })
     <div className="explanation-panel" aria-busy={outcome === null}>
       {outcome?.explanation ? (
         <>
-          <p className="explanation-label">{t('explanation')}</p>
-          <p className="explanation-text" lang="ru" role="status">
+          <div className="explanation-heading">
+            <p className="explanation-label">{t('explanation')}</p>
+            <SpeechButton
+              sourceId={`explanation-${bodyId}`}
+              lang="ru-RU"
+              getText={() => bodyRef.current?.textContent ?? outcome.explanation ?? ''}
+            />
+          </div>
+          <p ref={bodyRef} className="explanation-text" lang="ru" role="status">
             {outcome.explanation}
           </p>
         </>
@@ -94,6 +104,8 @@ export function ExpressionExplanationPanel({
   const [state, setState] = useState<'idle' | 'loading' | 'done' | 'error'>('idle')
   const [explanation, setExplanation] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const bodyId = useId()
+  const bodyRef = useRef<HTMLParagraphElement>(null)
   async function explain() {
     setState('loading')
     setError(null)
@@ -112,8 +124,15 @@ export function ExpressionExplanationPanel({
     <div className="explanation-panel" aria-busy={state === 'loading'}>
       {state === 'done' && explanation ? (
         <>
-          <p className="explanation-label">{t('explanation')}</p>
-          <p className="explanation-text" lang="ru" role="status">
+          <div className="explanation-heading">
+            <p className="explanation-label">{t('explanation')}</p>
+            <SpeechButton
+              sourceId={`expression-explanation-${bodyId}`}
+              lang="ru-RU"
+              getText={() => bodyRef.current?.textContent ?? explanation}
+            />
+          </div>
+          <p ref={bodyRef} className="explanation-text" lang="ru" role="status">
             {explanation}
           </p>
         </>

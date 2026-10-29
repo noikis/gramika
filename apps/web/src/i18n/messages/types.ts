@@ -1,4 +1,11 @@
 export type MessageCatalog = {
+  ttsReadAloud: string
+  ttsPause: string
+  ttsResume: string
+  ttsUnavailable: string
+  ttsNoText: string
+  ttsVoiceUnavailable: string
+  ttsFailed: string
   workspaceCleared: string
   clipboardUnavailable: string
   textChanged: string

@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import './index.css'
 import App from './App.tsx'
 import { LocaleProvider } from './i18n/use-locale'
+import { SpeechProvider } from './hooks/use-speech-synthesis'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -19,7 +20,9 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <LocaleProvider>
-        <App />
+        <SpeechProvider>
+          <App />
+        </SpeechProvider>
       </LocaleProvider>
     </QueryClientProvider>
   </StrictMode>,

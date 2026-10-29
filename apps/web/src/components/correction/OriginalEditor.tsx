@@ -1,11 +1,12 @@
-import { useEffect, useLayoutEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { ExpressionExplanationInput } from '@gramota/contracts'
-import { MAX_INPUT_CHARACTERS, CorrectionMode } from '@gramota/contracts'
+import { CorrectionMode } from '@gramota/contracts'
 import { Button } from '../ui/button'
 import { Textarea } from '../ui/textarea'
 import { ExpressionExplanationPanel } from '../explanations/ExplanationPanel'
 import { Icon } from '../ui/icon'
 import { useLocale } from '../../i18n/use-locale'
+import { SpeechButton } from '../ui/speech-button'
 import type { Correction, WorkspaceProps } from './types'
 
 function ModeControl({ correction }: { correction: Correction }) {
@@ -41,6 +42,7 @@ export function OriginalEditor({ draft, correction, onNew, isBusy }: WorkspacePr
   const { t } = useLocale()
   const { text, edit, paste, pending, inputRef } = draft
   const [manualSelection, setManualSelection] = useState<ExpressionExplanationInput | null>(null)
+  const selectionRef = useRef<{ start: number; end: number } | null>(null)
   const result =
     !correction.draftChanged && correction.visibleResult?.originalText === text
       ? correction.visibleResult
@@ -120,17 +122,22 @@ export function OriginalEditor({ draft, correction, onNew, isBusy }: WorkspacePr
         value={text}
         onChange={(event) => {
           setManualSelection(null)
+          selectionRef.current = null
           edit(event.target.value)
         }}
         ref={inputRef}
         placeholder={t('typeOrPaste')}
-        aria-describedby="input-feedback character-count"
+        aria-describedby="input-feedback"
         aria-invalid={Boolean(correction.validationMessage)}
         lang="ru"
         spellCheck={false}
-        onSelect={(event) =>
+        onSelect={(event) => {
+          selectionRef.current = {
+            start: event.currentTarget.selectionStart,
+            end: event.currentTarget.selectionEnd,
+          }
           selectOriginal(event.currentTarget.selectionStart, event.currentTarget.selectionEnd)
-        }
+        }}
         onKeyDown={(event) => {
           if (
             (event.ctrlKey || event.metaKey) &&
@@ -151,12 +158,23 @@ export function OriginalEditor({ draft, correction, onNew, isBusy }: WorkspacePr
       <p id="input-feedback" className="clipboard-feedback" role="status">
         {correction.validationMessage}
       </p>
+      <div className="speech-row">
+        <SpeechButton
+          sourceId="original-editor"
+          lang="ru-RU"
+          getText={() => {
+            const selection = selectionRef.current
+            return selection && selection.start !== selection.end
+              ? text.slice(
+                  Math.min(selection.start, selection.end),
+                  Math.max(selection.start, selection.end),
+                )
+              : text
+          }}
+        />
+      </div>
       <div className="editor-actions">
         <ModeControl correction={correction} />
-        <span id="character-count" className="character-count">
-          {Array.from(text.trim()).length.toLocaleString('en-US')} /{' '}
-          {MAX_INPUT_CHARACTERS.toLocaleString('en-US')} characters
-        </span>
         <Button
           type="button"
           disabled={!correction.canCorrect}
