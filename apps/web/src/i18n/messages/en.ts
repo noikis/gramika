@@ -56,4 +56,10 @@ export const enMessages = {
   pageCounter: 'Page {current} of {total}',
   approximateCosts: 'Approximate costs.',
   correctionsFooter: 'corrections',
+  translationFailed: 'Could not translate this text. Please try again.',
+  translationInvalidInput: 'This text cannot be translated.',
+  translationNotConfigured: 'Translation is not configured.',
+  translationUnavailable: 'The translation service is unavailable. Please try again later.',
+  translationInvalidResponse: 'The translation service returned an incomplete response.',
+  translationTimeout: 'Translation timed out. You can try again.',
 } satisfies MessageCatalog

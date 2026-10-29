@@ -61,4 +61,11 @@ export const frMessages = {
   pageCounter: 'Page {current} sur {total}',
   approximateCosts: 'Coûts approximatifs.',
   correctionsFooter: 'corrections',
+  translationFailed: 'Impossible de traduire ce texte. Veuillez réessayer.',
+  translationInvalidInput: 'Ce texte ne peut pas être traduit.',
+  translationNotConfigured: 'La traduction n’est pas configurée.',
+  translationUnavailable:
+    'Le service de traduction est indisponible. Veuillez réessayer plus tard.',
+  translationInvalidResponse: 'Le service de traduction a renvoyé une réponse incomplète.',
+  translationTimeout: 'La traduction a pris trop de temps. Vous pouvez réessayer.',
 } satisfies MessageCatalog

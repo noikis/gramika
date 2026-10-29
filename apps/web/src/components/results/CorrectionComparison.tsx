@@ -3,6 +3,7 @@ import { ExplanationPanel } from '../explanations/ExplanationPanel'
 import { ComparisonExcerpt } from './ComparisonExcerpt'
 import { CorrectionNavigation } from './CorrectionNavigation'
 import type { ResultViewResult } from './types'
+import type { ResultViewProps } from './types'
 import { useLocale } from '../../i18n/use-locale'
 
 export function CorrectionComparison({
@@ -17,6 +18,7 @@ export function CorrectionComparison({
   description,
   panelId,
   onSelect,
+  translation,
 }: {
   result: ResultViewResult
   current: ChangeGroup
@@ -29,6 +31,7 @@ export function CorrectionComparison({
   description: string
   panelId: string
   onSelect: (index: number) => void
+  translation?: ResultViewProps['translation']
 }) {
   const { t } = useLocale()
   return (
@@ -86,7 +89,13 @@ export function CorrectionComparison({
           </div>
         </dl>
       </div>
-      {selection && <ExplanationPanel key={JSON.stringify(selection)} selection={selection} />}
+      {selection && (
+        <ExplanationPanel
+          key={JSON.stringify(selection)}
+          selection={selection}
+          translation={translation}
+        />
+      )}
     </div>
   )
 }

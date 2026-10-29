@@ -19,7 +19,12 @@ function App() {
   const { draft, correction, theme, setTheme, clearStoredWorkspace } = useWorkspacePersistence()
   const [view, setView] = useState<'correction' | 'history'>('correction')
   const [historyWrites, setHistoryWrites] = useState(0)
-  const isBusy = correction.pending || correction.copying || draft.pending || historyWrites > 0
+  const isBusy =
+    correction.pending ||
+    correction.copying ||
+    correction.translation.pending ||
+    draft.pending ||
+    historyWrites > 0
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme
@@ -37,6 +42,7 @@ function App() {
 
   function newCorrection() {
     if (isBusy || !correction.reset()) return
+    correction.translation.clear()
     draft.edit('')
     setView('correction')
     requestAnimationFrame(() => {
@@ -50,6 +56,7 @@ function App() {
     if (!clearStoredWorkspace()) return
     newCorrection()
     correction.resetMode()
+    correction.translation.resetTarget()
     setTheme('system')
     clearExplicitLocale()
     resetLocale()
@@ -93,6 +100,8 @@ function App() {
               isBusy={isBusy}
               locale={locale}
               onLocaleChange={setLocale}
+              translationTarget={correction.translation.target}
+              onTranslationTargetChange={correction.translation.setTarget}
             />
           </div>
         </div>

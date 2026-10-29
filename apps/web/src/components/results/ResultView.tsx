@@ -10,6 +10,7 @@ import { ResultChanges } from './ResultChanges'
 import { ResultViewToggle } from './ResultViewToggle'
 import type { ResultViewProps } from './types'
 import { SpeechButton } from '../ui/speech-button'
+import { TranslationAction } from '../translation/TranslationAction'
 
 export function ResultView(props: ResultViewProps) {
   return <ResultContent key={props.result.requestId} {...props} />
@@ -23,6 +24,7 @@ function ResultContent({
   title = 'Result',
   compact = false,
   actions,
+  translation,
 }: ResultViewProps) {
   const { t } = useLocale()
   const isHistory = !compact && Boolean(actions)
@@ -151,15 +153,35 @@ function ResultContent({
             onSelect={(index) => select(index)}
             onManualSelection={setManualSelection}
             manualSelection={manualSelection}
+            translation={translation}
           />
         )}
-        <div className="speech-row">{speechAction}</div>
+        <div className="speech-row">
+          {speechAction}
+          {translation && (
+            <TranslationAction
+              scope="result"
+              getText={() => result.correctedText}
+              getSelection={() => {
+                const range = textSelection.current
+                return range && range.start !== range.end
+                  ? result.correctedText.slice(
+                      Math.min(range.start, range.end),
+                      Math.max(range.start, range.end),
+                    )
+                  : null
+              }}
+              translation={translation}
+            />
+          )}
+        </div>
       </div>
       {compact && <p className="result-model-caption">{title}</p>}
       {manualSelection && view === 'text' && (
         <ExpressionExplanationPanel
           key={JSON.stringify(manualSelection)}
           selection={manualSelection}
+          translation={translation}
         />
       )}
       {compact && (
@@ -182,6 +204,7 @@ function ResultContent({
           description={description}
           panelId={panelId}
           onSelect={select}
+          translation={translation}
         />
       )}
     </>

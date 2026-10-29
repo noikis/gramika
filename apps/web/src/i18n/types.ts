@@ -53,6 +53,13 @@ export type InterfaceCatalog = {
   cancel: string
   explain: string
   explanation: string
+  translation: string
+  translating: string
+  noTranslation: string
+  english: string
+  french: string
+  translate: string
+  translationTarget: string
   install: string
   notNow: string
   themeSystem: string

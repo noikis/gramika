@@ -4,6 +4,8 @@ import { Button } from '../ui/button'
 import { Icon } from '../ui/icon'
 import { useLocale } from '../../i18n/use-locale'
 import { SpeechButton } from '../ui/speech-button'
+import { TranslationAction } from '../translation/TranslationAction'
+import type { TranslationScope } from '@gramota/contracts'
 import {
   ExplanationApiError,
   fetchExplanation,
@@ -11,6 +13,14 @@ import {
 } from '../../api/explanations'
 
 type Outcome = { explanation: string | null; error: string | null }
+type TranslationController = {
+  pending: boolean
+  translate: (scope: TranslationScope, text: string, selected?: string) => void
+  saved: { scope: string; target: string; translatedText: string } | null
+  isOpen: boolean
+  error: string
+  close: () => void
+}
 
 function selectedTextWithin(element: HTMLElement | null) {
   if (typeof window === 'undefined') return null
@@ -22,7 +32,13 @@ function selectedTextWithin(element: HTMLElement | null) {
   return value.trim() ? value : null
 }
 
-export function ExplanationPanel({ selection }: { selection: ExplanationInput }) {
+export function ExplanationPanel({
+  selection,
+  translation,
+}: {
+  selection: ExplanationInput
+  translation?: TranslationController
+}) {
   const { t } = useLocale()
   const [attempt, setAttempt] = useState({ number: 0, isGenerate: false })
   const [outcome, setOutcome] = useState<Outcome | null>(null)
@@ -66,17 +82,27 @@ export function ExplanationPanel({ selection }: { selection: ExplanationInput })
         <>
           <div className="explanation-heading">
             <p className="explanation-label">{t('explanation')}</p>
-            <SpeechButton
-              sourceId={`explanation-${bodyId}`}
-              lang="ru-RU"
-              getSelection={() => selectedTextWithin(bodyRef.current)}
-              getText={() =>
-                selectedTextWithin(bodyRef.current) ??
-                bodyRef.current?.textContent ??
-                outcome.explanation ??
-                ''
-              }
-            />
+            <div className="explanation-actions">
+              <SpeechButton
+                sourceId={`explanation-${bodyId}`}
+                lang="ru-RU"
+                getSelection={() => selectedTextWithin(bodyRef.current)}
+                getText={() =>
+                  selectedTextWithin(bodyRef.current) ??
+                  bodyRef.current?.textContent ??
+                  outcome.explanation ??
+                  ''
+                }
+              />
+              {translation && (
+                <TranslationAction
+                  scope="explanation"
+                  getSelection={() => selectedTextWithin(bodyRef.current)}
+                  getText={() => bodyRef.current?.textContent ?? outcome.explanation ?? ''}
+                  translation={translation}
+                />
+              )}
+            </div>
           </div>
           <p ref={bodyRef} className="explanation-text" lang="ru" role="status">
             {outcome.explanation}
@@ -113,8 +139,10 @@ export function ExplanationPanel({ selection }: { selection: ExplanationInput })
 
 export function ExpressionExplanationPanel({
   selection,
+  translation,
 }: {
   selection: ExpressionExplanationInput
+  translation?: TranslationController
 }) {
   const { t } = useLocale()
   const [state, setState] = useState<'idle' | 'loading' | 'done' | 'error'>('idle')
@@ -142,14 +170,24 @@ export function ExpressionExplanationPanel({
         <>
           <div className="explanation-heading">
             <p className="explanation-label">{t('explanation')}</p>
-            <SpeechButton
-              sourceId={`expression-explanation-${bodyId}`}
-              lang="ru-RU"
-              getSelection={() => selectedTextWithin(bodyRef.current)}
-              getText={() =>
-                selectedTextWithin(bodyRef.current) ?? bodyRef.current?.textContent ?? explanation
-              }
-            />
+            <div className="explanation-actions">
+              <SpeechButton
+                sourceId={`expression-explanation-${bodyId}`}
+                lang="ru-RU"
+                getSelection={() => selectedTextWithin(bodyRef.current)}
+                getText={() =>
+                  selectedTextWithin(bodyRef.current) ?? bodyRef.current?.textContent ?? explanation
+                }
+              />
+              {translation && (
+                <TranslationAction
+                  scope="explanation"
+                  getSelection={() => selectedTextWithin(bodyRef.current)}
+                  getText={() => bodyRef.current?.textContent ?? explanation}
+                  translation={translation}
+                />
+              )}
+            </div>
           </div>
           <p ref={bodyRef} className="explanation-text" lang="ru" role="status">
             {explanation}

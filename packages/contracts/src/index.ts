@@ -4,3 +4,4 @@ export * from "./history.js";
 export * from "./health.js";
 export * from "./explanation.js";
 export * from "./request-metrics.js";
+export * from "./translation.js";

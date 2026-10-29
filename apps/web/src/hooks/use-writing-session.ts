@@ -88,6 +88,7 @@ export function useWritingSession(
       activeRequestId: result.activeRequestId,
       results: result.history?.results ?? [],
       isRequestPending: pending || request.interrupted,
+      translation: null,
     } satisfies CorrectionWorkspaceState,
     forgetHistoryEntry,
     mode: result.mode,

@@ -1,18 +1,31 @@
-import { CorrectionMode, CorrectionSuccess, type CorrectionResult } from '@gramota/contracts'
+import {
+  CorrectionMode,
+  CorrectionSuccess,
+  TranslationScope,
+  TranslationTarget,
+  type CorrectionResult,
+} from '@gramota/contracts'
 import type { ResultViewMode } from '../components/results/types'
 import type { MessageCatalog } from '../i18n/messages/types'
 
 export const WORKSPACE_STORAGE_KEY = 'gramota.workspace'
-const WORKSPACE_VERSION = 2
+const WORKSPACE_VERSION = 3
 export const THEMES = ['system', 'light', 'dark'] as const
 export type Theme = (typeof THEMES)[number]
 export type SavedResult = { result: CorrectionResult; view: ResultViewMode }
+export type SavedTranslation = {
+  scope: TranslationScope
+  sourceText: string
+  target: TranslationTarget
+  translatedText: string
+}
 
 export type CorrectionWorkspaceState = {
   mode: CorrectionMode
   activeRequestId: string | null
   results: SavedResult[]
   isRequestPending: boolean
+  translation?: SavedTranslation | null
 }
 
 export type LocalWorkspace = CorrectionWorkspaceState & {
@@ -50,7 +63,7 @@ export function loadWorkspace(): {
     const value: unknown = JSON.parse(raw)
     if (
       !isRecord(value) ||
-      value.version !== WORKSPACE_VERSION ||
+      (value.version !== WORKSPACE_VERSION && value.version !== 2) ||
       typeof value.text !== 'string' ||
       !THEMES.some((theme) => theme === value.theme) ||
       typeof value.isRequestPending !== 'boolean' ||
@@ -59,6 +72,22 @@ export function loadWorkspace(): {
     )
       throw Error('Invalid workspace')
     CorrectionMode.parse(value.mode)
+    let translation: SavedTranslation | null = null
+    if (value.translation !== undefined && value.translation !== null) {
+      if (!isRecord(value.translation)) throw Error('Invalid translation')
+      translation = {
+        scope: TranslationScope.parse(value.translation.scope),
+        sourceText:
+          typeof value.translation.sourceText === 'string' ? value.translation.sourceText : '',
+        target: TranslationTarget.parse(value.translation.target),
+        translatedText:
+          typeof value.translation.translatedText === 'string'
+            ? value.translation.translatedText
+            : '',
+      }
+      if (!translation.sourceText.trim() || !translation.translatedText.trim())
+        throw Error('Invalid translation')
+    }
     const results = value.results.map(readResult)
     const first = results[0]?.result
     if (
@@ -81,6 +110,7 @@ export function loadWorkspace(): {
         results,
         activeRequestId: value.activeRequestId,
         isRequestPending: value.isRequestPending,
+        translation,
       },
       messageKey: null,
     }

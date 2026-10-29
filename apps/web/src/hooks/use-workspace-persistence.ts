@@ -5,18 +5,21 @@ import { notify } from '../lib/notifications'
 import { useDraft } from './use-draft'
 import { useWritingSession } from './use-writing-session'
 import { useLocale } from '../i18n/use-locale'
+import { useTranslation } from './use-translation'
 
 export function useWorkspacePersistence() {
-  const { message } = useLocale()
+  const { message, locale } = useLocale()
   const [restored] = useState(loadWorkspace)
   const draft = useDraft(restored.workspace?.text)
   const correction = useWritingSession(draft.text, draft.revision, restored.workspace)
+  const translation = useTranslation(restored.workspace?.translation ?? null, locale)
   const [theme, setTheme] = useState<Theme>(restored.workspace?.theme ?? 'system')
   const serialized = JSON.stringify({
-    version: 2,
+    version: 3,
     text: draft.text,
     theme,
     ...correction.workspace,
+    translation: translation.workspace,
     mode: CorrectionMode.enum.strict,
   })
   const lastSaved = useRef(serialized)
@@ -46,5 +49,11 @@ export function useWorkspacePersistence() {
     return false
   }
 
-  return { draft, correction, theme, setTheme, clearStoredWorkspace }
+  return {
+    draft,
+    correction: { ...correction, translation },
+    theme,
+    setTheme,
+    clearStoredWorkspace,
+  }
 }

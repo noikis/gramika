@@ -255,6 +255,16 @@ main {
     max-width: clamp(900px, calc(100vw - 540px), 1200px);
   }
 }
+@media (min-width: 721px) {
+  .shell:has(.translation-stage.has-translation) {
+    max-width: none;
+  }
+  .shell:has(.translation-stage.has-translation) main {
+    max-width: none;
+    width: 100%;
+    margin-inline: 0;
+  }
+}
 h1,
 h2 {
   font-family: var(--font-sans);

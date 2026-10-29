@@ -1,10 +1,5 @@
 import type { FastifyInstance } from 'fastify'
-import {
-  TranslationFailure,
-  TranslationInput,
-  TranslationSuccess,
-  TRANSLATION_ERROR_MESSAGES,
-} from '@gramota/contracts'
+import { TranslationFailure, TranslationInput, TranslationSuccess } from '@gramota/contracts'
 import { createTranslationService, TranslationError } from '../translation'
 
 export async function translationRoutes(
@@ -16,7 +11,7 @@ export async function translationRoutes(
     if (!parsed.success)
       return reply.code(400).send(
         TranslationFailure.parse({
-          error: { code: 'INVALID_INPUT', message: TRANSLATION_ERROR_MESSAGES.INVALID_INPUT },
+          error: { code: 'INVALID_INPUT' },
         }),
       )
     try {
@@ -29,7 +24,7 @@ export async function translationRoutes(
         error.code === 'INVALID_INPUT' ? 400 : error.code === 'NOT_CONFIGURED' ? 503 : 502
       return reply.code(status).send(
         TranslationFailure.parse({
-          error: { code: error.code, message: TRANSLATION_ERROR_MESSAGES[error.code] },
+          error: { code: error.code },
         }),
       )
     }

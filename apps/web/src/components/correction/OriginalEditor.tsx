@@ -7,6 +7,7 @@ import { ExpressionExplanationPanel } from '../explanations/ExplanationPanel'
 import { Icon } from '../ui/icon'
 import { useLocale } from '../../i18n/use-locale'
 import { SpeechButton } from '../ui/speech-button'
+import { TranslationAction } from '../translation/TranslationAction'
 import type { Correction, WorkspaceProps } from './types'
 
 function ModeControl({ correction }: { correction: Correction }) {
@@ -44,6 +45,7 @@ export function OriginalEditor({ draft, correction, onNew, isBusy }: WorkspacePr
   const [manualSelection, setManualSelection] = useState<ExpressionExplanationInput | null>(null)
   const [speechSelection, setSpeechSelection] = useState('')
   const selectionRef = useRef<{ start: number; end: number } | null>(null)
+  const translationInitialized = useRef(false)
   const result =
     !correction.draftChanged && correction.visibleResult?.originalText === text
       ? correction.visibleResult
@@ -53,6 +55,10 @@ export function OriginalEditor({ draft, correction, onNew, isBusy }: WorkspacePr
     // The selection belongs to the current correction mode and request.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setManualSelection(null)
+    if (translationInitialized.current) correction.translation.clear()
+    translationInitialized.current = true
+    // Translation is intentionally cleared only when the source result changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [correction.mode, result?.requestId])
 
   function selectOriginal(start: number, end: number) {
@@ -125,6 +131,7 @@ export function OriginalEditor({ draft, correction, onNew, isBusy }: WorkspacePr
           setManualSelection(null)
           setSpeechSelection('')
           selectionRef.current = null
+          correction.translation.clear()
           edit(event.target.value)
         }}
         ref={inputRef}
@@ -156,6 +163,7 @@ export function OriginalEditor({ draft, correction, onNew, isBusy }: WorkspacePr
         <ExpressionExplanationPanel
           key={JSON.stringify(manualSelection)}
           selection={manualSelection}
+          translation={correction.translation}
         />
       )}
       <p id="input-feedback" className="clipboard-feedback" role="status">
@@ -175,6 +183,12 @@ export function OriginalEditor({ draft, correction, onNew, isBusy }: WorkspacePr
                 )
               : text
           }}
+        />
+        <TranslationAction
+          scope="original"
+          getText={() => text}
+          getSelection={() => speechSelection || null}
+          translation={correction.translation}
         />
       </div>
       <div className="editor-actions">

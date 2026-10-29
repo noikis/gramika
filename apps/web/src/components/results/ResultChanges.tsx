@@ -4,6 +4,7 @@ import type { TextDiff } from '../../lib/text-diff'
 import { correctionDescription } from '../../lib/whitespace-display'
 import { ExpressionExplanationPanel } from '../explanations/ExplanationPanel'
 import type { ResultViewResult } from './types'
+import type { ResultViewProps } from './types'
 
 type ChangePart = { start: number; end: number; groupId: string | null; marker?: string }
 
@@ -41,6 +42,7 @@ export function ResultChanges({
   onSelect,
   onManualSelection,
   manualSelection,
+  translation,
 }: {
   result: ResultViewResult
   diff: TextDiff
@@ -49,6 +51,7 @@ export function ResultChanges({
   onSelect: (index: number, element?: HTMLSpanElement) => void
   onManualSelection: (selection: ExpressionExplanationInput | null) => void
   manualSelection: ExpressionExplanationInput | null
+  translation?: ResultViewProps['translation']
 }) {
   const container = useRef<HTMLDivElement>(null)
   const selectedElement = useRef<HTMLSpanElement>(null)
@@ -205,6 +208,7 @@ export function ResultChanges({
         <ExpressionExplanationPanel
           key={JSON.stringify(manualSelection)}
           selection={manualSelection}
+          translation={translation}
         />
       )}
     </>

@@ -61,4 +61,10 @@ export const ruMessages = {
   pageCounter: 'Страница {current} из {total}',
   approximateCosts: 'Примерная стоимость.',
   correctionsFooter: 'проверок',
+  translationFailed: 'Не удалось перевести этот текст. Попробуйте ещё раз.',
+  translationInvalidInput: 'Этот текст нельзя перевести.',
+  translationNotConfigured: 'Перевод не настроен.',
+  translationUnavailable: 'Сервис перевода недоступен. Попробуйте позже.',
+  translationInvalidResponse: 'Сервис перевода вернул неполный ответ.',
+  translationTimeout: 'Перевод занял слишком много времени. Попробуйте ещё раз.',
 } satisfies MessageCatalog

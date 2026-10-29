@@ -48,4 +48,10 @@ export type MessageCatalog = {
   pageCounter: string
   approximateCosts: string
   correctionsFooter: string
+  translationFailed: string
+  translationInvalidInput: string
+  translationNotConfigured: string
+  translationUnavailable: string
+  translationInvalidResponse: string
+  translationTimeout: string
 }

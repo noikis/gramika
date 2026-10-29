@@ -19,18 +19,20 @@ describe('workspace storage', () => {
         activeRequestId: result.requestId,
         results: [{ result, view: 'changes' }],
         isRequestPending: true,
+        translation: null,
       }),
     )
 
     expect(loadWorkspace()).toEqual({
       workspace: {
-        version: 2,
+        version: 3,
         text: result.originalText,
         theme: 'dark',
         mode: 'strict',
         activeRequestId: result.requestId,
         results: [{ result, view: 'changes' }],
         isRequestPending: true,
+        translation: null,
       },
       messageKey: null,
     })

@@ -32,8 +32,9 @@ feature specifications before implementation.
   not implemented.
 - V4 is the current active roadmap in build-plan.md. Diff-grouping research and
   improvements, plus the multilingual interface documentation, are complete.
-  The frontend refactor is now a prerequisite work item before translation,
-  dictionary definitions, read aloud, separate-user workspaces and histories,
+  The frontend refactor and translation are complete. Translation uses the
+  self-hosted LibreTranslate route with workspace-only results. Remaining work
+  includes dictionary definitions, read aloud, separate-user workspaces and histories,
   installation UX, History UX and general UX improvement.
 
 ## Active V4 scope

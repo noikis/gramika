@@ -4,6 +4,7 @@ import { Button } from '../ui/button'
 import { Icon } from '../ui/icon'
 import { LOCALES, type Locale } from '../../i18n'
 import { useLocale } from '../../i18n/use-locale'
+import { TranslationTarget } from '@gramota/contracts'
 
 export function ThemeControl({
   theme,
@@ -48,6 +49,8 @@ export function AppSettings({
   isBusy,
   locale,
   onLocaleChange,
+  translationTarget,
+  onTranslationTargetChange,
 }: {
   theme: Theme
   onThemeChange: (theme: Theme) => void
@@ -55,6 +58,8 @@ export function AppSettings({
   isBusy: boolean
   locale: Locale
   onLocaleChange: (locale: Locale) => void
+  translationTarget: TranslationTarget
+  onTranslationTargetChange: (target: TranslationTarget) => void
 }) {
   const detailsRef = useRef<HTMLDetailsElement>(null)
   const clearDescriptionId = useId()
@@ -101,6 +106,17 @@ export function AppSettings({
                 {value === 'en' ? 'English' : value === 'fr' ? 'Français' : 'Русский'}
               </option>
             ))}
+          </select>
+        </label>
+        <label>
+          {t('translationTarget')}
+          <select
+            value={translationTarget}
+            onChange={(event) => onTranslationTargetChange(event.target.value as TranslationTarget)}
+            disabled={isBusy}
+          >
+            <option value="en">{t('english')}</option>
+            <option value="fr">{t('french')}</option>
           </select>
         </label>
         <Button
