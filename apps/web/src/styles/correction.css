@@ -10,7 +10,6 @@
 }
 .editors {
   display: grid;
-  gap: 24px;
   align-items: start;
 }
 .editor {

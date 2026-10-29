@@ -35,7 +35,6 @@ export function CorrectionComparison({
     <div className={`correction-details${compact ? ' compact-inspector' : ''}`}>
       {compact ? (
         <div className="inspector-heading">
-          <h3>{title}</h3>
           <CorrectionNavigation
             title={title}
             selected={selected}

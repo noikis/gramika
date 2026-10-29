@@ -123,6 +123,7 @@ function ResultContent({
           manualSelection={manualSelection}
         />
       )}
+      {compact && <p className="result-model-caption">{title}</p>}
       {manualSelection && view === 'text' && (
         <ExpressionExplanationPanel
           key={JSON.stringify(manualSelection)}

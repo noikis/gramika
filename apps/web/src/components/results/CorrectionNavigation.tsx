@@ -33,10 +33,10 @@ export function CorrectionNavigation({
           type="button"
           variant="secondary"
           onClick={() => onSelect(selected - 1)}
-          aria-label="Previous correction"
+          aria-label={t('previous')}
           disabled={selected === 0}
         >
-          {isHistory && <Icon name="chevronLeft" />}
+          <Icon name="chevronLeft" />
           <span className="navigation-label">{t('previous')}</span>
         </Button>
       )}
@@ -52,11 +52,11 @@ export function CorrectionNavigation({
           type="button"
           variant="secondary"
           onClick={() => onSelect(selected + 1)}
-          aria-label="Next correction"
+          aria-label={t('next')}
           disabled={selected === total - 1}
         >
           <span className="navigation-label">{t('next')}</span>
-          {isHistory && <Icon name="chevronRight" />}
+          <Icon name="chevronRight" />
         </Button>
       )}
     </div>

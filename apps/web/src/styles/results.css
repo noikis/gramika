@@ -30,7 +30,7 @@
   grid-template-columns: var(--control) minmax(0, 1fr) var(--control);
   align-items: center;
   gap: 12px;
-  margin-bottom: 8px;
+  margin: 12px 0px;
   touch-action: pan-y;
   user-select: none;
 }
@@ -56,12 +56,10 @@
   width: 20px;
   height: 20px;
 }
-.result-model {
-  display: inline;
-  margin-left: 8px;
+.result-model-caption {
+  margin: 12px 0 0;
   color: var(--muted);
   font: 13px var(--font-sans);
-  letter-spacing: normal;
 }
 .workspace-result[hidden] {
   display: none;
@@ -140,6 +138,14 @@
   grid-column: 3;
   grid-row: 1;
   justify-self: end;
+}
+.correction-navigation .navigation-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 .correction-counter {
   grid-column: 2;
@@ -286,7 +292,7 @@
 }
 .correction-workspace {
   grid-template-columns: minmax(0, 1fr);
-  grid-template-areas: 'original' 'mode' 'result' 'opinion';
+  grid-template-areas: 'original' 'result' 'opinion';
 }
 .result-editor {
   grid-area: result;

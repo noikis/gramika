@@ -72,6 +72,12 @@ function MobileRegenerateAction({ correction }: { correction: Correction }) {
 
 export function CorrectionPage({ draft, correction, onNew, isBusy }: WorkspaceProps) {
   const { t } = useLocale()
+  const activeEntry = correction.visibleResult
+    ? correction.results.find(
+        ({ result }) => result.requestId === correction.visibleResult?.requestId,
+      )
+    : undefined
+  const activeResult = activeEntry?.result
   return (
     <>
       <div className="workspace-intro">
@@ -82,23 +88,19 @@ export function CorrectionPage({ draft, correction, onNew, isBusy }: WorkspacePr
         <OriginalEditor draft={draft} correction={correction} onNew={onNew} isBusy={isBusy} />
         <section className="editor result-editor" aria-labelledby="result-title">
           <ResultHeading correction={correction} />
-          {correction.results.map(({ result, view }) => (
-            <div
-              className="workspace-result"
-              key={result.requestId}
-              hidden={result.requestId !== correction.activeRequestId}
-            >
-              {result.isCached && (
+          {activeEntry && activeResult && (
+            <div className="workspace-result" key={activeResult.requestId}>
+              {activeResult.isCached && (
                 <p className="clipboard-feedback" role="status">
                   {t('savedResult')}
                 </p>
               )}
               <ResultView
-                result={result}
-                view={view}
-                onViewChange={(next) => correction.setResultView(result.requestId, next)}
-                labelId={`result-${result.requestId}`}
-                title={`${result.modelId === DEFAULT_MODEL_ID ? 'Gemma 4' : correction.opinionModelName} · ${result.mode === 'strict' ? t('strictMode') : t('rewriteMode')}`}
+                result={activeResult}
+                view={activeEntry.view}
+                onViewChange={(next) => correction.setResultView(activeResult.requestId, next)}
+                labelId={`result-${activeResult.requestId}`}
+                title={`${activeResult.modelId === DEFAULT_MODEL_ID ? 'Gemma 4' : correction.opinionModelName} · ${activeResult.mode === 'strict' ? t('strictMode') : t('rewriteMode')}`}
                 compact
                 actions={
                   <>
@@ -108,23 +110,23 @@ export function CorrectionPage({ draft, correction, onNew, isBusy }: WorkspacePr
                       variant="secondary"
                       disabled={correction.copying}
                       onClick={correction.copy}
-                      aria-label={`Copy ${result.modelId === DEFAULT_MODEL_ID ? 'Gemma' : 'Gemini'} result`}
+                      aria-label={`Copy ${activeResult.modelId === DEFAULT_MODEL_ID ? 'Gemma' : 'Gemini'} result`}
                     >
                       <Icon name="copy" />
                       {correction.copying ? t('copying') : t('copy')}
                     </Button>
-                    {correction.canRegenerate(result.modelId) && (
+                    {correction.canRegenerate(activeResult.modelId) && (
                       <Button
                         type="button"
                         className="regenerate-action desktop-regenerate-action"
                         title="New paid request"
                         variant="secondary"
-                        disabled={correction.pendingModel === result.modelId}
-                        onClick={() => correction.regenerate(result.modelId)}
-                        aria-label={`Generate ${result.modelId === DEFAULT_MODEL_ID ? 'Gemma' : 'Gemini'} again. New paid request`}
+                        disabled={correction.pendingModel === activeResult.modelId}
+                        onClick={() => correction.regenerate(activeResult.modelId)}
+                        aria-label={`Generate ${activeResult.modelId === DEFAULT_MODEL_ID ? 'Gemma' : 'Gemini'} again. New paid request`}
                       >
                         <Icon name="sparkles" />
-                        {correction.pendingModel === result.modelId
+                        {correction.pendingModel === activeResult.modelId
                           ? t('loading')
                           : t('generateAgain')}
                       </Button>
@@ -133,7 +135,7 @@ export function CorrectionPage({ draft, correction, onNew, isBusy }: WorkspacePr
                 }
               />
             </div>
-          ))}
+          )}
           {!correction.visibleResult && (
             <div className="result-box">
               <p>

@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react'
 import type { PointerEvent } from 'react'
-import { DEFAULT_MODEL_ID } from '@gramota/contracts'
 import { Button } from '../ui/button'
 import { useLocale } from '../../i18n/use-locale'
 import type { Correction } from './types'
@@ -17,11 +16,6 @@ export function ResultHeading({ correction }: { correction: Correction }) {
   )
   const hasPrevious = activeIndex > 0
   const hasNext = activeIndex >= 0 && activeIndex < correction.results.length - 1
-  const activeLabel = correction.visibleResult
-    ? correction.visibleResult.modelId === DEFAULT_MODEL_ID
-      ? 'Gemma 4'
-      : correction.opinionModelName
-    : 'Result'
   const visibleRequestId = correction.visibleResult?.requestId
   const previousRequestId = useRef<string | null>(null)
 
@@ -92,7 +86,6 @@ export function ResultHeading({ correction }: { correction: Correction }) {
         {activeIndex >= 0
           ? message('resultCounter', { current: activeIndex + 1, total: correction.results.length })
           : t('result')}
-        <span className="result-model">{activeLabel}</span>
       </h2>
       {hasNext && (
         <Button
