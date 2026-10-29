@@ -38,7 +38,6 @@ export function createAppResources(app: FastifyInstance, options: AppResourcesOp
   }
 
   const transport = options.transport ?? (config.available ? createTransport(config) : null)
-
   app.addHook('onClose', async () => {
     try {
       await transport?.close()

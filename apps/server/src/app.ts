@@ -11,6 +11,8 @@ import { healthRoutes } from './routes/health'
 import { LogOperation, loggingOptions } from './logging'
 import { HTTP_STATUS } from './http-status'
 import { ErrorCode } from '@gramota/contracts'
+import { createTranslationService } from './translation'
+import { translationRoutes } from './routes/translations'
 
 export interface AppOptions extends FastifyServerOptions, RootOptions {
   correction?: AppResourcesOptions
@@ -54,6 +56,13 @@ const app: FastifyPluginAsync<AppOptions> = async (fastify, opts): Promise<void>
   fastify.register(rootRoutes, { frontendRoot: opts.frontendRoot })
   await healthRoutes(fastify, database, config.available)
   await correctionRoutes(fastify, correct)
+  await translationRoutes(
+    fastify,
+    createTranslationService({
+      url: config.libreTranslateUrl,
+      timeoutMs: opts.correction?.timeoutMs,
+    }),
+  )
   await explanationRoutes(
     fastify,
     createExplanationService({

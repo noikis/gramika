@@ -11,6 +11,7 @@ export type ServerConfig = {
   apiKey: string
   proxyUrl?: string
   databasePath: string
+  libreTranslateUrl?: string
 }
 
 export function readEnvironment(): Environment {
@@ -29,12 +30,25 @@ export function parseConfig(env: Environment): ServerConfig {
   const isProduction = env.NODE_ENV === 'production'
   const proxyUrl = isProduction ? parseProxyUrl(env.OPENROUTER_PROXY_URL) : undefined
   const apiKey = env.OPENROUTER_API_KEY?.trim() ?? ''
+  const libreTranslateUrl = parseServiceUrl(env.LIBRETRANSLATE_URL)
 
   return {
     available: Boolean(apiKey) && (isDevelopment || (isProduction && Boolean(proxyUrl))),
     apiKey,
     proxyUrl,
     databasePath: resolve(SERVER_DIRECTORY, env.SQLITE_PATH || DEFAULT_SQLITE_PATH),
+    libreTranslateUrl,
+  }
+}
+
+function parseServiceUrl(value: string | undefined): string | undefined {
+  if (!value?.trim()) return undefined
+  try {
+    const url = new URL(value.trim())
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return undefined
+    return value.trim().replace(/\/$/u, '')
+  } catch {
+    return undefined
   }
 }
 
