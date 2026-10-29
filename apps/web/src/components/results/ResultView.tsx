@@ -90,10 +90,7 @@ function ResultContent({
             <h2 id={labelId}>{title}</h2>
             {viewToggle}
           </div>
-          <div className="result-toolbar-actions">
-            {speechAction}
-            {actions}
-          </div>
+          <div className="result-toolbar-actions">{actions}</div>
         </div>
       ) : (
         <div className="editor-heading">
@@ -145,6 +142,7 @@ function ResultContent({
           manualSelection={manualSelection}
         />
       )}
+      <div className="speech-row">{speechAction}</div>
       {compact && <p className="result-model-caption">{title}</p>}
       {manualSelection && view === 'text' && (
         <ExpressionExplanationPanel
@@ -155,7 +153,6 @@ function ResultContent({
       {compact && (
         <div className="result-actions">
           {viewToggle}
-          {speechAction}
           {actions}
         </div>
       )}
