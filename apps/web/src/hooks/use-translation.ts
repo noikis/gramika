@@ -1,11 +1,17 @@
 import { useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { TranslationScope, TranslationTarget, type TranslationErrorCode } from '@gramota/contracts'
+import {
+  TranslationScope,
+  TranslationSource,
+  TranslationTarget,
+  type TranslationErrorCode,
+} from '@gramota/contracts'
 import { requestTranslation, TranslationApiError } from '../api/translations'
 import type { SavedTranslation } from '../lib/workspace-storage'
 import { useLocale } from '../i18n/use-locale'
 
 export const TRANSLATION_TARGET_KEY = 'gramika.translation-target'
+const DEFAULT_TRANSLATION_SOURCE = TranslationSource.enum.ru
 
 function defaultTarget(locale: string): TranslationTarget {
   return locale === 'fr' ? TranslationTarget.enum.fr : TranslationTarget.enum.en
@@ -40,6 +46,9 @@ function errorMessageKey(
 export function useTranslation(initial: SavedTranslation | null, locale: string) {
   const { message } = useLocale()
   const [target, setTargetState] = useState<TranslationTarget>(() => loadTarget(locale))
+  const [source, setSourceState] = useState<TranslationSource>(
+    () => initial?.source ?? DEFAULT_TRANSLATION_SOURCE,
+  )
   const [saved, setSaved] = useState<SavedTranslation | null>(initial)
   const [isOpen, setOpen] = useState(Boolean(initial))
   const [isClosing, setIsClosing] = useState(false)
@@ -47,15 +56,21 @@ export function useTranslation(initial: SavedTranslation | null, locale: string)
   const [request, setRequest] = useState<{
     scope: TranslationScope
     text: string
+    source: TranslationSource
     target: TranslationTarget
   } | null>(null)
   const query = useQuery({
     queryKey: request
-      ? ['translation', request.scope, request.text, request.target]
+      ? ['translation', request.scope, request.text, request.source, request.target]
       : ['translation', 'idle'],
     queryFn: ({ signal }) =>
       requestTranslation(
-        { text: request!.text, target: request!.target, scope: request!.scope },
+        {
+          text: request!.text,
+          source: request!.source,
+          target: request!.target,
+          scope: request!.scope,
+        },
         signal,
       ),
     enabled: request !== null,
@@ -66,8 +81,35 @@ export function useTranslation(initial: SavedTranslation | null, locale: string)
     refetchOnReconnect: false,
   })
 
+  function swapLanguages(nextSource: TranslationSource, nextTarget: TranslationTarget) {
+    const hasResult = Boolean(saved?.translatedText.trim())
+    setSourceState(nextSource)
+    setTargetState(nextTarget)
+    setRequest(null)
+    if (saved) {
+      setSaved({
+        ...saved,
+        source: nextSource,
+        target: nextTarget,
+        sourceText: hasResult ? saved.translatedText : saved.sourceText,
+        translatedText: hasResult ? saved.sourceText : '',
+      })
+    }
+    try {
+      localStorage.setItem(TRANSLATION_TARGET_KEY, nextTarget)
+    } catch {
+      // Keep the preference in memory when storage is unavailable.
+    }
+  }
+
   function setTarget(value: TranslationTarget) {
+    if (value === source) {
+      swapLanguages(target, source)
+      return
+    }
     setTargetState(value)
+    setRequest(null)
+    if (saved) setSaved({ ...saved, target: value, translatedText: '' })
     try {
       localStorage.setItem(TRANSLATION_TARGET_KEY, value)
     } catch {
@@ -102,13 +144,28 @@ export function useTranslation(initial: SavedTranslation | null, locale: string)
     }, 300)
   }
 
+  function updateSourceText(text: string) {
+    setRequest(null)
+    if (saved) setSaved({ ...saved, sourceText: text, translatedText: '' })
+  }
+
+  function setSource(value: TranslationSource) {
+    if (value === target) {
+      swapLanguages(value, source)
+      return
+    }
+    setSourceState(value)
+    setRequest(null)
+    if (saved) setSaved({ ...saved, source: value, translatedText: '' })
+  }
+
   function translate(scope: TranslationScope, sourceText: string, selectedText?: string) {
     const text = selectedText?.trim() || sourceText.trim()
     if (!text || query.isFetching) return
     setOpen(true)
     setIsClosing(false)
-    setSaved({ scope, sourceText: text, target, translatedText: '' })
-    setRequest({ scope, text, target })
+    setSaved({ scope, sourceText: text, source, target, translatedText: '' })
+    setRequest({ scope, text, source, target })
   }
 
   const activeSaved = useMemo(
@@ -124,6 +181,9 @@ export function useTranslation(initial: SavedTranslation | null, locale: string)
   return {
     target,
     setTarget,
+    source,
+    setSource,
+    updateSourceText,
     resetTarget,
     saved: activeSaved,
     isOpen,

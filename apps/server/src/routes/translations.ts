@@ -16,7 +16,12 @@ export async function translationRoutes(
       )
     try {
       return TranslationSuccess.parse(
-        await translate(parsed.data.text, parsed.data.target, parsed.data.scope),
+        await translate(
+          parsed.data.text,
+          parsed.data.source,
+          parsed.data.target,
+          parsed.data.scope,
+        ),
       )
     } catch (error) {
       if (!(error instanceof TranslationError)) throw error

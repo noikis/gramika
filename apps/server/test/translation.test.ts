@@ -36,10 +36,15 @@ test('translation route calls the configured service directly', async (t) => {
   const response = await app.inject({
     method: 'POST',
     url: '/api/translations',
-    payload: { text: 'Привет', target: 'en', scope: 'original' },
+    payload: { text: 'Привет', source: 'ru', target: 'en', scope: 'original' },
   })
   assert.equal(response.statusCode, 200)
-  assert.deepEqual(response.json(), { text: 'Hello', target: 'en', scope: 'original' })
+  assert.deepEqual(response.json(), {
+    text: 'Hello',
+    source: 'ru',
+    target: 'en',
+    scope: 'original',
+  })
   agent.assertNoPendingInterceptors()
 })
 
@@ -57,10 +62,51 @@ test('translation route reports missing configuration without calling upstream',
   const response = await app.inject({
     method: 'POST',
     url: '/api/translations',
-    payload: { text: 'Привет', target: 'en', scope: 'original' },
+    payload: { text: 'Привет', source: 'ru', target: 'en', scope: 'original' },
   })
   assert.equal(response.statusCode, 503)
   assert.equal(response.json().error.code, 'NOT_CONFIGURED')
+})
+
+test('translation route accepts English and French sources with Russian target', async (t) => {
+  const agent = new MockAgent()
+  agent.disableNetConnect()
+  const upstream = agent.get('https://translate.test')
+  upstream
+    .intercept({ path: '/translate', method: 'POST' })
+    .reply(200, { translatedText: 'Привет' })
+  upstream
+    .intercept({ path: '/translate', method: 'POST' })
+    .reply(200, { translatedText: 'Привет' })
+  setGlobalDispatcher(agent)
+  t.after(async () => {
+    setGlobalDispatcher(new Agent())
+    await agent.close()
+  })
+  const app = Fastify()
+  t.after(() => app.close())
+  await application(app, {
+    correction: {
+      environment: { LIBRETRANSLATE_URL: 'https://translate.test' },
+      database: null,
+    },
+  })
+  for (const source of ['en', 'fr'] as const) {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/translations',
+      payload: {
+        text: source === 'en' ? 'Hello' : 'Bonjour',
+        source,
+        target: 'ru',
+        scope: 'original',
+      },
+    })
+    assert.equal(response.statusCode, 200)
+    assert.equal(response.json().source, source)
+    assert.equal(response.json().target, 'ru')
+  }
+  agent.assertNoPendingInterceptors()
 })
 
 test('translation route rejects invalid input without calling upstream', async (t) => {
@@ -79,7 +125,7 @@ test('translation route rejects invalid input without calling upstream', async (
   const response = await app.inject({
     method: 'POST',
     url: '/api/translations',
-    payload: { text: '', target: 'de', scope: 'original' },
+    payload: { text: '', source: 'ru', target: 'de', scope: 'original' },
   })
   assert.equal(response.statusCode, 400)
   assert.equal(response.json().error.code, 'INVALID_INPUT')

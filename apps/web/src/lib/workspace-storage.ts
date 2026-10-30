@@ -2,6 +2,7 @@ import {
   CorrectionMode,
   CorrectionSuccess,
   TranslationScope,
+  TranslationSource,
   TranslationTarget,
   type CorrectionResult,
 } from '@gramota/contracts'
@@ -16,6 +17,7 @@ export type SavedResult = { result: CorrectionResult; view: ResultViewMode }
 export type SavedTranslation = {
   scope: TranslationScope
   sourceText: string
+  source: TranslationSource
   target: TranslationTarget
   translatedText: string
 }
@@ -25,7 +27,6 @@ export type CorrectionWorkspaceState = {
   activeRequestId: string | null
   results: SavedResult[]
   isRequestPending: boolean
-  translation?: SavedTranslation | null
 }
 
 export type LocalWorkspace = CorrectionWorkspaceState & {
@@ -72,22 +73,6 @@ export function loadWorkspace(): {
     )
       throw Error('Invalid workspace')
     CorrectionMode.parse(value.mode)
-    let translation: SavedTranslation | null = null
-    if (value.translation !== undefined && value.translation !== null) {
-      if (!isRecord(value.translation)) throw Error('Invalid translation')
-      translation = {
-        scope: TranslationScope.parse(value.translation.scope),
-        sourceText:
-          typeof value.translation.sourceText === 'string' ? value.translation.sourceText : '',
-        target: TranslationTarget.parse(value.translation.target),
-        translatedText:
-          typeof value.translation.translatedText === 'string'
-            ? value.translation.translatedText
-            : '',
-      }
-      if (!translation.sourceText.trim() || !translation.translatedText.trim())
-        throw Error('Invalid translation')
-    }
     const results = value.results.map(readResult)
     const first = results[0]?.result
     if (
@@ -110,7 +95,6 @@ export function loadWorkspace(): {
         results,
         activeRequestId: value.activeRequestId,
         isRequestPending: value.isRequestPending,
-        translation,
       },
       messageKey: null,
     }

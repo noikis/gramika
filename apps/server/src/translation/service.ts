@@ -3,6 +3,7 @@ import {
   TranslationInput,
   TranslationSuccess,
   type TranslationErrorCode,
+  type TranslationSource,
   type TranslationScope,
   type TranslationTarget,
 } from '@gramota/contracts'
@@ -12,10 +13,11 @@ import { HTTP_STATUS } from '../http-status'
 export function createTranslationService(deps: { url?: string; timeoutMs?: number }) {
   return async function translate(
     text: string,
+    source: TranslationSource,
     target: TranslationTarget,
     scope: TranslationScope,
   ) {
-    const input = TranslationInput.safeParse({ text, target, scope })
+    const input = TranslationInput.safeParse({ text, source, target, scope })
     if (!input.success) throw new TranslationError('INVALID_INPUT')
     if (!deps.url) throw new TranslationError('NOT_CONFIGURED')
 
@@ -32,7 +34,12 @@ export function createTranslationService(deps: { url?: string; timeoutMs?: numbe
         request(`${deps.url}/translate`, {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ q: input.data.text, source: 'ru', target, format: 'text' }),
+          body: JSON.stringify({
+            q: input.data.text,
+            source: input.data.source,
+            target,
+            format: 'text',
+          }),
           signal: controller.signal,
         }),
         timeout,
@@ -52,7 +59,12 @@ export function createTranslationService(deps: { url?: string; timeoutMs?: numbe
         !payload.translatedText.trim()
       )
         throw new TranslationError('INVALID_RESPONSE')
-      return TranslationSuccess.parse({ text: payload.translatedText, target, scope })
+      return TranslationSuccess.parse({
+        text: payload.translatedText,
+        source,
+        target,
+        scope,
+      })
     } catch (error) {
       if (error instanceof TranslationError) throw error
       throw new TranslationError('UPSTREAM_ERROR')

@@ -3,6 +3,7 @@
 **From build-plan:** feature V4.3
 **Build attempt:** 1
 **Branch:** feature/translation
+**Status:** verification failed
 
 ## Goal
 

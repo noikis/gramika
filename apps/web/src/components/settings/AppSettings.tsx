@@ -117,6 +117,7 @@ export function AppSettings({
           >
             <option value="en">{t('english')}</option>
             <option value="fr">{t('french')}</option>
+            <option value="ru">{t('russian')}</option>
           </select>
         </label>
         <Button

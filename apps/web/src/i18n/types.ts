@@ -58,8 +58,10 @@ export type InterfaceCatalog = {
   noTranslation: string
   english: string
   french: string
+  russian: string
   translate: string
   translationTarget: string
+  translationSource: string
   install: string
   notNow: string
   themeSystem: string

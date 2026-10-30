@@ -12,17 +12,16 @@ export function useWorkspacePersistence() {
   const [restored] = useState(loadWorkspace)
   const draft = useDraft(restored.workspace?.text)
   const correction = useWritingSession(draft.text, draft.revision, restored.workspace)
-  const translation = useTranslation(restored.workspace?.translation ?? null, locale)
+  const translation = useTranslation(null, locale)
   const [theme, setTheme] = useState<Theme>(restored.workspace?.theme ?? 'system')
   const serialized = JSON.stringify({
     version: 3,
     text: draft.text,
     theme,
     ...correction.workspace,
-    translation: translation.workspace,
     mode: CorrectionMode.enum.strict,
   })
-  const lastSaved = useRef(serialized)
+  const lastSaved = useRef<string | null>(null)
   const announcedRestore = useRef(false)
 
   useLayoutEffect(() => {
