@@ -260,8 +260,10 @@
     height: 32px;
   }
   .app-header .header-actions {
-    display: contents;
-    margin-left: 0;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto;
   }
   .desktop-settings summary {
     width: 44px;
@@ -311,5 +313,50 @@
 @media (max-width: 720px) {
   .settings-panel {
     width: min(290px, calc(100vw - 24px));
+  }
+}
+
+@media (max-width: 720px) {
+  .shell {
+    padding-bottom: calc(84px + env(safe-area-inset-bottom));
+  }
+  .app-header nav {
+    display: none;
+  }
+  .mobile-bottom-nav {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 32;
+    padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--line);
+    background: color-mix(in srgb, var(--surface) 96%, transparent);
+    box-shadow: 0 -4px 18px #15261a12;
+    backdrop-filter: blur(14px);
+  }
+  .mobile-bottom-nav button {
+    min-height: 52px;
+    flex-direction: column;
+    gap: 2px;
+    padding: 6px 4px;
+    border-radius: var(--radius-sm);
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 1.2;
+  }
+  .mobile-bottom-nav button svg {
+    width: 19px;
+    height: 19px;
+  }
+  .mobile-bottom-nav button[aria-current] {
+    color: var(--accent);
+    background: var(--surface-raised);
+  }
+  .app-toaster {
+    z-index: 50 !important;
+    bottom: calc(84px + env(safe-area-inset-bottom)) !important;
   }
 }

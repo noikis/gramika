@@ -281,3 +281,6 @@ h2 {
 .app-toaster {
   bottom: calc(20px + env(safe-area-inset-bottom)) !important;
 }
+.mobile-bottom-nav {
+  display: none;
+}

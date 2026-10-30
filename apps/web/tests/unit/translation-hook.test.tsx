@@ -65,6 +65,48 @@ describe('translation query caching', () => {
     expect(result.current.saved?.translatedText).toBe('Hello')
   })
 
+  it('opens a seeded translation without sending a request', () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+    const queryClient = new QueryClient()
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <QueryClientProvider client={queryClient}>
+        <LocaleProvider>{children}</LocaleProvider>
+      </QueryClientProvider>
+    )
+    const { result } = renderHook(() => useTranslation(null, 'en'), { wrapper })
+
+    act(() => result.current.open('original', ' Привет '))
+
+    expect(result.current.isOpen).toBe(true)
+    expect(result.current.saved).toMatchObject({
+      scope: 'original',
+      sourceText: 'Привет',
+      source: 'ru',
+      target: 'en',
+      translatedText: '',
+    })
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('opens an empty translation editor without sending a request', () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+    const queryClient = new QueryClient()
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <QueryClientProvider client={queryClient}>
+        <LocaleProvider>{children}</LocaleProvider>
+      </QueryClientProvider>
+    )
+    const { result } = renderHook(() => useTranslation(null, 'en'), { wrapper })
+
+    act(() => result.current.open('original', ''))
+
+    expect(result.current.isOpen).toBe(true)
+    expect(result.current.saved?.sourceText).toBe('')
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
   it('swaps correctly when the target is changed to the source', () => {
     localStorage.clear()
     localStorage.setItem('gramika.translation-target', 'en')

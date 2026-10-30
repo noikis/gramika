@@ -10,6 +10,7 @@ import { notify } from './lib/notifications'
 import { InstallApp } from './components/settings/InstallApp'
 import { useLocale } from './i18n/use-locale'
 import { clearExplicitLocale } from './i18n'
+import { TranslationScope } from '@gramota/contracts'
 import './styles/app-shell.css'
 import './styles/correction.css'
 import './styles/results.css'
@@ -51,6 +52,21 @@ function App() {
     })
   }
 
+  function showCorrection() {
+    correction.translation.close()
+    setView('correction')
+  }
+
+  function showHistory() {
+    correction.translation.close()
+    setView('history')
+  }
+
+  function showTranslation() {
+    setView('correction')
+    correction.translation.open(TranslationScope.enum.original, draft.text)
+  }
+
   function clearLocalData() {
     if (isBusy) return
     if (!clearStoredWorkspace()) return
@@ -72,20 +88,30 @@ function App() {
             рамика
           </span>
         </span>
-        <nav aria-label={t('correction') + ' / ' + t('history')}>
+        <nav aria-label={[t('correction'), t('translation'), t('history')].join(' / ')}>
           <Button
             type="button"
             variant="ghost"
-            aria-current={view === 'correction' ? 'page' : undefined}
-            onClick={() => setView('correction')}
+            aria-current={
+              view === 'correction' && !correction.translation.isOpen ? 'page' : undefined
+            }
+            onClick={showCorrection}
           >
             <Icon name="correction" /> {t('correction')}
           </Button>
           <Button
             type="button"
             variant="ghost"
+            aria-current={correction.translation.isOpen ? 'page' : undefined}
+            onClick={showTranslation}
+          >
+            <Icon name="translate" /> {t('translation')}
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
             aria-current={view === 'history' ? 'page' : undefined}
-            onClick={() => setView('history')}
+            onClick={showHistory}
           >
             <Icon name="history" /> {t('history')}
           </Button>
@@ -115,7 +141,7 @@ function App() {
               variant="secondary"
               onClick={() => {
                 correction.dismissInterrupted()
-                setView('history')
+                showHistory()
               }}
             >
               {t('history')}
@@ -138,6 +164,37 @@ function App() {
           />
         )}
       </main>
+      <nav className="mobile-bottom-nav" aria-label={t('mobileNavigation')}>
+        <Button
+          type="button"
+          variant="ghost"
+          aria-current={correction.translation.isOpen ? 'page' : undefined}
+          onClick={showTranslation}
+        >
+          <Icon name="translate" />
+          <span>{t('translation')}</span>
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          aria-current={
+            view === 'correction' && !correction.translation.isOpen ? 'page' : undefined
+          }
+          onClick={showCorrection}
+        >
+          <Icon name="correction" />
+          <span>{t('correction')}</span>
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          aria-current={view === 'history' ? 'page' : undefined}
+          onClick={showHistory}
+        >
+          <Icon name="history" />
+          <span>{t('history')}</span>
+        </Button>
+      </nav>
       <Toaster
         position="bottom-center"
         theme={theme}

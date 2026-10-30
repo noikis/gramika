@@ -3,6 +3,7 @@ import type { Messages } from './types'
 export const en = {
   correction: 'Correction',
   history: 'History',
+  mobileNavigation: 'Mobile navigation',
   settings: 'Settings',
   appearance: 'Appearance',
   language: 'Language',

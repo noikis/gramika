@@ -32,7 +32,6 @@ describe('workspace storage', () => {
         activeRequestId: result.requestId,
         results: [{ result, view: 'changes' }],
         isRequestPending: true,
-        translation: null,
       },
       messageKey: null,
     })

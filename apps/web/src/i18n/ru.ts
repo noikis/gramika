@@ -5,6 +5,7 @@ export const ru: Messages = {
   ...en,
   correction: 'Проверка',
   history: 'История',
+  mobileNavigation: 'Мобильная навигация',
   settings: 'Настройки',
   appearance: 'Внешний вид',
   language: 'Язык',

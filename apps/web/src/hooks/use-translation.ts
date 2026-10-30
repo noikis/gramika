@@ -168,6 +168,25 @@ export function useTranslation(initial: SavedTranslation | null, locale: string)
     setRequest({ scope, text, source, target })
   }
 
+  function open(scope: TranslationScope, sourceText: string) {
+    if (closingTimer.current !== null) window.clearTimeout(closingTimer.current)
+    setIsClosing(false)
+    const text = sourceText.trim()
+    if (saved && saved.scope === scope && saved.sourceText === text) {
+      setOpen(true)
+      return
+    }
+    setRequest(null)
+    setSaved({
+      scope,
+      sourceText: text,
+      source,
+      target,
+      translatedText: '',
+    })
+    setOpen(true)
+  }
+
   const activeSaved = useMemo(
     () => (saved ? { ...saved, translatedText: query.data?.text ?? saved.translatedText } : null),
     [query.data?.text, saved],
@@ -191,6 +210,7 @@ export function useTranslation(initial: SavedTranslation | null, locale: string)
     pending: query.isFetching,
     error,
     translate,
+    open,
     close,
     clear,
     workspace: activeSaved,

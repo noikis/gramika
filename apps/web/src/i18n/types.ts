@@ -11,6 +11,7 @@ export type LocaleCode = `${Locale}`
 export type InterfaceCatalog = {
   correction: string
   history: string
+  mobileNavigation: string
   settings: string
   appearance: string
   language: string

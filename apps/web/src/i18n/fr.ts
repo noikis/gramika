@@ -5,6 +5,7 @@ export const fr: Messages = {
   ...en,
   correction: 'Correction',
   history: 'Historique',
+  mobileNavigation: 'Navigation mobile',
   settings: 'Paramètres',
   appearance: 'Apparence',
   language: 'Langue',
