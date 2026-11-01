@@ -11,7 +11,6 @@ export type LocaleCode = `${Locale}`
 export type InterfaceCatalog = {
   dictionary: string
   dictionaryPossibleForms: string
-  dictionaryAnalysesNote: string
   dictionaryForms: string
   dictionaryForm: string
   dictionaryGrammarLabel: string
@@ -20,6 +19,7 @@ export type InterfaceCatalog = {
   dictionaryAudioFailed: string
   dictionaryDetailsLoading: string
   dictionaryNoForms: string
+  dictionaryNoMatchingForms: string
   dictionaryNoPronunciation: string
   dictionaryCitation: string
   dictionaryGrammar: Record<string, string>

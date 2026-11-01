@@ -48,7 +48,7 @@
   margin: 0;
 }
 .dictionary-headword {
-  margin: 4px 0 8px;
+  margin: 4px 0 16px;
 }
 .dictionary-analysis {
   display: flex;
@@ -61,10 +61,10 @@
   font-size: var(--text-sm);
 }
 .dictionary-analyses {
-  margin-top: 8px;
+  margin-top: 0;
 }
 .dictionary-examples {
-  margin-top: 4px;
+  margin-top: 8px;
 }
 .dictionary-examples > summary {
   min-height: 44px;
@@ -83,28 +83,46 @@
 }
 .dictionary-citation {
   color: var(--muted);
-  font-size: var(--text-xs);
+  font-size: 12px;
+}
+.dictionary-citation .dictionary-verbatim {
+  font-size: 12px;
 }
 .dictionary-citation .expand-control {
   height: 28px;
   flex-basis: 28px;
-  font-size: var(--text-base);
+  font-size: 12px;
 }
 .dictionary-entry-details {
   border-top: 1px solid var(--line);
   margin-top: 24px;
   padding-top: 8px;
 }
-.dictionary-pronunciation-details {
-  border-top: 0;
-  margin-top: 8px;
-  padding-top: 0;
-}
 .dictionary-forms {
   width: 100%;
   table-layout: fixed;
   text-align: start;
   font-size: var(--text-sm);
+}
+.dictionary-form-filters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 8px 0 16px;
+  font-size: var(--text-sm);
+}
+.dictionary-form-filters label {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.dictionary-case-filter {
+  grid-column: 1 / -1;
+}
+@media (max-width: 480px) {
+  .dictionary-form-filters {
+    grid-template-columns: 1fr;
+  }
 }
 .dictionary-forms th,
 .dictionary-forms td {
@@ -121,18 +139,14 @@
 }
 .dictionary-forms td:last-child {
   color: var(--muted);
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
 }
-.dictionary-pronunciation {
-  margin: 12px 0 20px;
-}
-.dictionary-pronunciation audio {
-  width: 100%;
-  max-width: 100%;
-}
-.dictionary-ipa {
-  margin: 0 0 8px;
-  overflow-wrap: anywhere;
+.dictionary-form-grammar {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 .dictionary-definition {
   margin-top: 20px;
@@ -146,7 +160,7 @@
   margin: 0;
 }
 .dictionary-definition li + li {
-  margin-top: 18px;
+  margin-top: 24px;
 }
 .dictionary-verbatim {
   white-space: pre-wrap;
@@ -154,17 +168,36 @@
 }
 .dictionary-sense-label {
   font-size: 0.875rem;
+  margin: 0 0 8px;
+}
+.dictionary-definition > ol > li > .dictionary-verbatim,
+.dictionary-examples blockquote > .dictionary-verbatim {
+  margin: 0;
+}
+.dictionary-definition > ol > li > .dictionary-verbatim + .dictionary-verbatim {
+  margin-top: 8px;
 }
 .dictionary-source {
-  font-size: var(--text-xs);
+  font-size: 12px;
   color: var(--muted);
+  margin-top: 8px;
+}
+.dictionary-citation {
+  margin-top: 8px;
+}
+.dictionary-citation > .dictionary-verbatim {
+  margin: 8px 0 0;
 }
 .dictionary-panel summary {
   display: flex;
   align-items: center;
   list-style: none;
   cursor: pointer;
-  padding: 8px 0;
+  min-height: 44px;
+  padding: 0;
+}
+.dictionary-panel summary .expand-control {
+  height: 28px;
 }
 .dictionary-panel summary::-webkit-details-marker {
   display: none;
@@ -173,7 +206,7 @@
   content: '−';
 }
 .dictionary-panel blockquote {
-  margin: 12px 0;
+  margin: 8px 0 0;
   padding: 0;
 }
 .dictionary-action {

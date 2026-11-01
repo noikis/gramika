@@ -83,7 +83,8 @@ export function useDictionary(onOpen: () => void) {
   }
 
   async function loadDetails(word: string, isRetry = false) {
-    if (detailsControllers.current.has(word) || (!isRetry && details[word])) return
+    if (detailsControllers.current.has(word)) return
+    if (!isRetry && details[word]) return details[word].data ?? undefined
     const current = identity.current
     const active = new AbortController()
     detailsControllers.current.set(word, active)
@@ -93,8 +94,10 @@ export function useDictionary(onOpen: () => void) {
     }))
     try {
       const data = await requestDictionaryDetails(word, active.signal)
-      if (current === identity.current)
+      if (current === identity.current) {
         setDetails((previous) => ({ ...previous, [word]: { status: 'ready', data, error: null } }))
+        return data
+      }
     } catch (error) {
       if (current !== identity.current) return
       const code = error instanceof DictionaryApiError ? error.code : null

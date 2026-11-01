@@ -5,8 +5,6 @@ export const ru: Messages = {
   ...en,
   dictionary: 'Словарь',
   dictionaryPossibleForms: 'Возможные формы слова',
-  dictionaryAnalysesNote:
-    'Возможные словарные разборы. Словарь не выбирает разбор по контексту предложения.',
   dictionaryForms: 'Формы слова',
   dictionaryForm: 'Форма',
   dictionaryGrammarLabel: 'Грамматика',
@@ -15,7 +13,8 @@ export const ru: Messages = {
   dictionaryAudioFailed: 'Не удалось воспроизвести запись произношения.',
   dictionaryDetailsLoading: 'Загрузка словарных данных…',
   dictionaryNoForms: 'Для этой статьи нет данных о формах слова.',
-  dictionaryNoPronunciation: 'Для этой статьи нет данных о произношении.',
+  dictionaryNoMatchingForms: 'Нет форм, соответствующих выбранным фильтрам.',
+  dictionaryNoPronunciation: 'Для этой статьи нет записи произношения.',
   dictionaryCitation: 'Цитата и автор',
   dictionaryGrammar: {
     nominative: 'Именительный падеж',

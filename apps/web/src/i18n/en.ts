@@ -3,8 +3,6 @@ import type { Messages } from './types'
 export const en = {
   dictionary: 'Dictionary',
   dictionaryPossibleForms: 'Possible word forms',
-  dictionaryAnalysesNote:
-    'Possible dictionary analyses; these are not selected from the sentence context.',
   dictionaryForms: 'Forms',
   dictionaryForm: 'Form',
   dictionaryGrammarLabel: 'Grammar',
@@ -13,7 +11,8 @@ export const en = {
   dictionaryAudioFailed: 'The pronunciation recording could not be played.',
   dictionaryDetailsLoading: 'Loading dictionary details…',
   dictionaryNoForms: 'No forms available for this entry.',
-  dictionaryNoPronunciation: 'No pronunciation available for this entry.',
+  dictionaryNoMatchingForms: 'No forms match these filters.',
+  dictionaryNoPronunciation: 'No pronunciation recording is available for this entry.',
   dictionaryCitation: 'Citation',
   dictionaryGrammar: {
     nominative: 'Nominative',

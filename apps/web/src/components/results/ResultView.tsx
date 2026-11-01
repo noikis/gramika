@@ -26,6 +26,7 @@ function ResultContent({
   title = 'Result',
   compact = false,
   actions,
+  secondaryActions,
   translation,
   dictionary,
 }: ResultViewProps) {
@@ -153,66 +154,81 @@ function ResultContent({
           {viewToggle}
         </div>
       )}
-      <div className="result-content">
-        {view === 'text' ? (
-          <Textarea
-            className="editor-input result-text"
-            readOnly
-            aria-labelledby={labelId}
-            value={result.correctedText}
-            lang="ru"
-            spellCheck={false}
-            onSelect={(event) => {
-              const start = event.currentTarget.selectionStart
-              const end = event.currentTarget.selectionEnd
-              textSelection.current = { start, end }
-              if (start === end || start < 0 || end > result.correctedText.length) {
-                setManualSelection(null)
-                return
-              }
-              const range = start < end ? { start, end } : { start: end, end: start }
-              const value = result.correctedText.slice(range.start, range.end)
-              setManualSelection(
-                value
-                  ? {
-                      version: 3,
-                      requestId: result.requestId,
-                      kind: 'expression',
-                      mode: result.mode,
-                      source: 'edited',
-                      correctedRange: range,
-                      value,
-                    }
-                  : null,
-              )
-            }}
-          />
-        ) : (
-          <ResultChanges
-            result={result}
-            diff={diff}
-            selected={selected}
-            panelId={panelId}
-            onSelect={(index) => select(index)}
-            onManualSelection={setManualSelection}
-            manualSelection={manualSelection}
-            selectionSurfaceRef={changesSurfaceRef}
-            translation={translation}
-          />
-        )}
-        {manualSelection && view === 'text' ? (
-          <ExpressionExplanationPanel
-            key={JSON.stringify(manualSelection)}
-            selection={manualSelection}
-            translation={translation}
-            actions={languageActions}
-          />
-        ) : (
-          <div className="speech-row">{languageActions}</div>
+      <div className={compact ? 'workspace-result-card' : undefined}>
+        <div className="result-content">
+          {view === 'text' ? (
+            <Textarea
+              className="editor-input result-text"
+              readOnly
+              aria-labelledby={labelId}
+              value={result.correctedText}
+              lang="ru"
+              spellCheck={false}
+              onSelect={(event) => {
+                const start = event.currentTarget.selectionStart
+                const end = event.currentTarget.selectionEnd
+                textSelection.current = { start, end }
+                if (start === end || start < 0 || end > result.correctedText.length) {
+                  setManualSelection(null)
+                  return
+                }
+                const range = start < end ? { start, end } : { start: end, end: start }
+                const value = result.correctedText.slice(range.start, range.end)
+                setManualSelection(
+                  value
+                    ? {
+                        version: 3,
+                        requestId: result.requestId,
+                        kind: 'expression',
+                        mode: result.mode,
+                        source: 'edited',
+                        correctedRange: range,
+                        value,
+                      }
+                    : null,
+                )
+              }}
+            />
+          ) : (
+            <ResultChanges
+              result={result}
+              diff={diff}
+              selected={selected}
+              panelId={panelId}
+              onSelect={(index) => select(index)}
+              onManualSelection={setManualSelection}
+              manualSelection={manualSelection}
+              selectionSurfaceRef={changesSurfaceRef}
+              translation={translation}
+              showExplanation={!compact}
+            />
+          )}
+          {!compact && manualSelection && view === 'text' ? (
+            <ExpressionExplanationPanel
+              key={JSON.stringify(manualSelection)}
+              selection={manualSelection}
+              translation={translation}
+              actions={languageActions}
+            />
+          ) : (
+            <div className="speech-row">{languageActions}</div>
+          )}
+        </div>
+        {compact && <div className="result-actions">{actions}</div>}
+        {compact && manualSelection && (
+          <div className="result-selection-explanation">
+            <ExpressionExplanationPanel
+              key={JSON.stringify(manualSelection)}
+              selection={manualSelection}
+              translation={translation}
+            />
+          </div>
         )}
       </div>
       {compact && <p className="result-model-caption">{title}</p>}
-      {compact && <div className="result-actions">{actions}</div>}
+      {compact && secondaryActions && (
+        <div className="result-secondary-actions">{secondaryActions}</div>
+      )}
       {compact && !corrections.length && <p className="clipboard-feedback">{t('noChanges')}</p>}
       {view === 'changes' && current && comparison && (
         <CorrectionComparison

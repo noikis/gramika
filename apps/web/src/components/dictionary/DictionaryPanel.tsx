@@ -1,12 +1,12 @@
-import { useId, useState } from 'react'
+import { dictionaryGrammarLabel, dictionaryPartHeadingLabel } from './dictionary-grammar-label'
 import { DictionaryExampleSource, type DictionaryResult } from '@gramota/contracts'
 import { useLocale } from '../../i18n/use-locale'
 import type { DictionaryState } from '../../hooks/use-dictionary'
 import { Button } from '../ui/button'
-import { Icon } from '../ui/icon'
 import { DictionaryWordForm } from './DictionaryWordForm'
 import { DictionaryExampleText } from './DictionaryExampleText'
 import { DictionaryEntryDetails } from './DictionaryEntryDetails'
+import { DictionaryPronunciationButton } from './DictionaryPronunciationButton'
 
 function DictionaryEntry({
   result,
@@ -15,42 +15,18 @@ function DictionaryEntry({
   result: DictionaryResult
   dictionary: DictionaryState
 }) {
-  const { t } = useLocale()
-  const labels = t('dictionaryParts')
-  const labelFor = (value: string) => (Object.hasOwn(labels, value) ? labels[value] : value)
-  const [isPronunciationOpen, setPronunciationOpen] = useState(false)
-  const pronunciationId = useId()
+  const { t, locale } = useLocale()
+  const labelFor = dictionaryGrammarLabel
   return (
     <section className="dictionary-entry">
       <div className="dictionary-headword">
         <h3 lang="ru">{result.word}</h3>
-        <Button
-          type="button"
-          variant="ghost"
-          aria-label={t('dictionaryPronunciation')}
-          title={t('dictionaryPronunciation')}
-          aria-expanded={isPronunciationOpen}
-          aria-controls={pronunciationId}
-          onClick={() => {
-            setPronunciationOpen(!isPronunciationOpen)
-            if (!isPronunciationOpen) void dictionary.loadDetails(result.word)
-          }}
-        >
-          <Icon name="volume" />
-        </Button>
+        <DictionaryPronunciationButton word={result.word} dictionary={dictionary} />
       </div>
       <DictionaryWordForm
         matches={result.matches}
         query={dictionary.query}
         headword={result.word}
-      />
-      <DictionaryEntryDetails
-        section="pronunciation"
-        word={result.word}
-        dictionary={dictionary}
-        isPronunciationOpen={isPronunciationOpen}
-        onPronunciationToggle={setPronunciationOpen}
-        pronunciationId={pronunciationId}
       />
       {result.definitions.map((entry, entryIndex) => {
         const senses = entry.senses.filter((sense) => sense.glosses.some((gloss) => gloss.trim()))
@@ -58,15 +34,18 @@ function DictionaryEntry({
         const label = entry.pos ? labelFor(entry.pos) : null
         return (
           <div className="dictionary-definition" key={entryIndex}>
-            {label && <h4>{label}</h4>}
+            {label && entry.pos && (
+              <h4 lang="ru">{dictionaryPartHeadingLabel(entry.pos, locale)}</h4>
+            )}
             <ol>
               {senses.map((sense, senseIndex) => (
                 <li key={senseIndex}>
-                  {sense.tags.filter((tag) => labelFor(tag) !== label).length > 0 && (
-                    <p className="dictionary-sense-label">
+                  {sense.tags.filter((tag) => labelFor(tag) && labelFor(tag) !== label).length >
+                    0 && (
+                    <p className="dictionary-sense-label" lang="ru">
                       {sense.tags
                         .map(labelFor)
-                        .filter((tag) => tag !== label)
+                        .filter((tag) => tag && tag !== label)
                         .join(' · ')}
                     </p>
                   )}
@@ -90,22 +69,28 @@ function DictionaryEntry({
                           <p className="dictionary-verbatim" lang="ru">
                             <DictionaryExampleText example={example} />
                           </p>
-                          <footer className="dictionary-source">
-                            {t('dictionarySource')}:{' '}
-                            {example.source === DictionaryExampleSource.enum.wiktionary
-                              ? t('dictionaryWiktionary')
-                              : t('dictionaryGenerated')}
-                          </footer>
-                          {example.citation && (
+                          {example.citation ? (
                             <details className="dictionary-citation">
                               <summary>
-                                <span>{t('dictionaryCitation')}</span>
+                                <span>
+                                  {t('dictionarySource')}{' '}
+                                  {example.source === DictionaryExampleSource.enum.wiktionary
+                                    ? t('dictionaryWiktionary')
+                                    : t('dictionaryGenerated')}
+                                </span>
                                 <span className="expand-control" aria-hidden="true" />
                               </summary>
-                              <p className="dictionary-verbatim" lang="ru">
-                                {example.citation}
+                              <p className="dictionary-verbatim">
+                                {t('dictionaryCitation')}: <span lang="ru">{example.citation}</span>
                               </p>
                             </details>
+                          ) : (
+                            <footer className="dictionary-source">
+                              {t('dictionarySource')}{' '}
+                              {example.source === DictionaryExampleSource.enum.wiktionary
+                                ? t('dictionaryWiktionary')
+                                : t('dictionaryGenerated')}
+                            </footer>
                           )}
                         </blockquote>
                       ))}
@@ -117,14 +102,7 @@ function DictionaryEntry({
           </div>
         )
       })}
-      <DictionaryEntryDetails
-        section="forms"
-        word={result.word}
-        dictionary={dictionary}
-        isPronunciationOpen={isPronunciationOpen}
-        onPronunciationToggle={setPronunciationOpen}
-        pronunciationId={pronunciationId}
-      />
+      <DictionaryEntryDetails word={result.word} dictionary={dictionary} />
     </section>
   )
 }

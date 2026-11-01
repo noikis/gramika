@@ -5,8 +5,6 @@ export const fr: Messages = {
   ...en,
   dictionary: 'Dictionnaire',
   dictionaryPossibleForms: 'Formes possibles',
-  dictionaryAnalysesNote:
-    'Analyses possibles du dictionnaire ; elles ne sont pas choisies selon le contexte de la phrase.',
   dictionaryForms: 'Formes',
   dictionaryForm: 'Forme',
   dictionaryGrammarLabel: 'Grammaire',
@@ -15,7 +13,8 @@ export const fr: Messages = {
   dictionaryAudioFailed: 'Impossible de lire cet enregistrement.',
   dictionaryDetailsLoading: 'Chargement des détails…',
   dictionaryNoForms: 'Aucune forme disponible pour cette entrée.',
-  dictionaryNoPronunciation: 'Aucune prononciation disponible pour cette entrée.',
+  dictionaryNoMatchingForms: 'Aucune forme ne correspond à ces filtres.',
+  dictionaryNoPronunciation: 'Aucun enregistrement de prononciation disponible pour cette entrée.',
   dictionaryCitation: 'Référence',
   dictionaryGrammar: {
     nominative: 'Nominatif',

@@ -146,14 +146,14 @@ describe('dictionary presentation', () => {
       'защита',
       'защит',
     ])
-    expect(screen.getAllByRole('heading', { name: 'Noun' })).toHaveLength(2)
+    expect(screen.getAllByRole('heading', { name: 'Существительное (noun)' })).toHaveLength(2)
     expect(screen.getAllByRole('listitem')).toHaveLength(4)
     expect(container.querySelector('.dictionary-verbatim')!.textContent).toBe(
       '  Первое; знач.\nБез изменений.  ',
     )
-    expect(screen.getByText('unknown-label')).toBeTruthy()
-    expect(screen.getByText('mystery')).toBeTruthy()
-    expect(screen.getByText('Participle')).toBeTruthy()
+    expect(screen.queryByText('unknown-label')).toBeNull()
+    expect(screen.queryByText('mystery')).toBeNull()
+    expect(screen.getByText('Причастие')).toBeTruthy()
     const examples = container.querySelectorAll<HTMLDetailsElement>('.dictionary-examples')
     expect(examples).toHaveLength(2)
     expect(examples[0].open).toBe(false)
@@ -161,7 +161,7 @@ describe('dictionary presentation', () => {
     expect(examples[0].open).toBe(true)
     expect(examples[1].open).toBe(false)
     expect(examples[0].querySelector('p')!.textContent).toBe('  Пример.  ')
-    expect(examples[0].querySelector('footer')!.textContent).toBe('source: Wiktionary')
+    expect(examples[0].querySelector('footer')!.textContent).toBe('source Wiktionary')
     expect(examples[0].querySelector('.expand-control')).not.toBeNull()
   })
 

@@ -44,6 +44,7 @@ export function ResultChanges({
   manualSelection,
   translation,
   selectionSurfaceRef,
+  showExplanation = true,
 }: {
   result: ResultViewResult
   diff: TextDiff
@@ -53,6 +54,7 @@ export function ResultChanges({
   onManualSelection: (selection: ExpressionExplanationInput | null) => void
   manualSelection: ExpressionExplanationInput | null
   selectionSurfaceRef?: import('react').RefObject<HTMLDivElement | null>
+  showExplanation?: boolean
   translation?: ResultViewProps['translation']
 }) {
   const container = useRef<HTMLDivElement>(null)
@@ -209,7 +211,7 @@ export function ResultChanges({
           )
         })}
       </div>
-      {manualSelection && (
+      {showExplanation && manualSelection && (
         <ExpressionExplanationPanel
           key={JSON.stringify(manualSelection)}
           selection={manualSelection}

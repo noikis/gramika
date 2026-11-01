@@ -82,7 +82,7 @@
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
-    gap: 12px;
+    gap: 16px;
     margin-top: 12px;
   }
   .original-editor-controls > .editor-actions,
@@ -104,7 +104,9 @@
     grid-column: 1 / -1;
   }
   .original-editor-controls .editor-actions > button {
-    justify-self: end;
+    justify-self: stretch;
+    width: 100%;
+    min-height: 52px;
   }
 }
 .character-count {

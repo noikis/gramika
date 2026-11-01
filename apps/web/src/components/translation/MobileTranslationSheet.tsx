@@ -34,6 +34,8 @@ export function MobileTranslationSheet({
           maxHeight: 'calc(88dvh - 65px)',
         }}
         role="dialog"
+        inert={!tools.isOpen}
+        aria-hidden={!tools.isOpen}
         aria-modal="true"
         aria-label={t(tools.activeTab)}
       >

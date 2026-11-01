@@ -132,23 +132,25 @@ export function CorrectionPage({ draft, correction, onNew, isBusy }: WorkspacePr
                         <Icon name="copy" />
                         {correction.copying ? t('copying') : t('copy')}
                       </Button>
-                      {correction.canRegenerate(activeResult.modelId) && (
-                        <Button
-                          type="button"
-                          className="regenerate-action desktop-regenerate-action"
-                          title="New paid request"
-                          variant="secondary"
-                          disabled={correction.pendingModel === activeResult.modelId}
-                          onClick={() => correction.regenerate(activeResult.modelId)}
-                          aria-label={`Generate ${activeResult.modelId === DEFAULT_MODEL_ID ? 'Gemma' : 'Gemini'} again. New paid request`}
-                        >
-                          <Icon name="sparkles" />
-                          {correction.pendingModel === activeResult.modelId
-                            ? t('loading')
-                            : t('generateAgain')}
-                        </Button>
-                      )}
                     </>
+                  }
+                  secondaryActions={
+                    correction.canRegenerate(activeResult.modelId) && (
+                      <Button
+                        type="button"
+                        className="regenerate-action desktop-regenerate-action"
+                        title="New paid request"
+                        variant="secondary"
+                        disabled={correction.pendingModel === activeResult.modelId}
+                        onClick={() => correction.regenerate(activeResult.modelId)}
+                        aria-label={`Generate ${activeResult.modelId === DEFAULT_MODEL_ID ? 'Gemma' : 'Gemini'} again. New paid request`}
+                      >
+                        <Icon name="sparkles" />
+                        {correction.pendingModel === activeResult.modelId
+                          ? t('loading')
+                          : t('generateAgain')}
+                      </Button>
+                    )
                   }
                 />
               </div>
