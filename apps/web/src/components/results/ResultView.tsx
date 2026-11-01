@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react'
 import type { ExpressionExplanationInput } from '@gramota/contracts'
-import { ExpressionExplanationPanel } from '../explanations/ExplanationPanel'
+import { ExpressionExplanationPanel } from '../explanations/ExpressionExplanationPanel'
 import { Textarea } from '../ui/textarea'
 import { explanationSelection, diffText } from '../../lib/text-diff'
 import { correctionDescription } from '../../lib/whitespace-display'

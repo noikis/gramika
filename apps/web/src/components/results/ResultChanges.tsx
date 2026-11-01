@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef } from 'react'
 import type { ExpressionExplanationInput } from '@gramota/contracts'
 import type { TextDiff } from '../../lib/text-diff'
 import { correctionDescription } from '../../lib/whitespace-display'
-import { ExpressionExplanationPanel } from '../explanations/ExplanationPanel'
+import { ExpressionExplanationPanel } from '../explanations/ExpressionExplanationPanel'
 import type { ResultViewResult } from './types'
 import type { ResultViewProps } from './types'
 

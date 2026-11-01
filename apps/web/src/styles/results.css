@@ -418,21 +418,6 @@
   font-size: 12px;
   font-weight: 600;
 }
-.ui-select {
-  width: 100%;
-  min-height: var(--control);
-  padding: 0 36px 0 12px;
-  border: 2px solid color-mix(in srgb, var(--accent) 32%, var(--line));
-  border-radius: var(--radius-sm);
-  background: var(--surface);
-  color: var(--accent);
-  outline: none;
-}
-.ui-select:hover,
-.ui-select:focus {
-  border-color: var(--accent);
-  box-shadow: none;
-}
 .readable-text-surface {
   min-height: 96px;
   padding: 16px;

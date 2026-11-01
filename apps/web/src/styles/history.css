@@ -4,8 +4,7 @@
 .history-page > h1 {
   margin-bottom: var(--space-4);
 }
-.history-page button,
-.history-page select {
+.history-page button {
   border-radius: var(--radius-control);
   font-size: var(--text-sm);
 }
@@ -72,8 +71,7 @@
   color: var(--muted);
   font-size: var(--text-sm);
 }
-.history-field input,
-.history-field select {
+.history-field input {
   width: 100%;
   min-width: 0;
   min-height: var(--control);
@@ -116,48 +114,11 @@
   border-radius: 0;
   background: transparent;
 }
-.filter-fields .history-field select,
-.history-page .sort-field select {
-  appearance: none;
-  padding: 10px 42px 10px 14px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--surface);
-  color: var(--text);
-  color-scheme: inherit;
-}
-.history-field:has(> select) {
-  position: relative;
-}
-.history-field:has(> select)::after {
-  content: '';
-  position: absolute;
-  right: 18px;
-  bottom: 22px;
-  width: 7px;
-  height: 7px;
-  border-right: 1.8px solid var(--text);
-  border-bottom: 1.8px solid var(--text);
-  transform: rotate(45deg);
-  pointer-events: none;
-}
 @media (forced-colors: active) {
   .history-page select {
     appearance: auto;
   }
-  .history-field:has(> select)::after {
-    display: none;
   }
-}
-.history-page select option,
-.history-page select optgroup {
-  background: var(--surface);
-  color: var(--text);
-}
-.history-page select option:checked {
-  background: var(--added-bg);
-  color: var(--text);
-}
 .history-empty button {
   background: transparent;
 }
@@ -177,12 +138,6 @@
   align-items: center;
   gap: var(--space-2);
   white-space: nowrap;
-}
-.sort-field select {
-  width: auto;
-  border: 0;
-  background: transparent;
-  padding-inline: 8px;
 }
 .history-list {
   border-top: var(--border-width) solid var(--border);
@@ -356,12 +311,10 @@ body:has(dialog[open]) {
   .history-page .filter-fields {
     padding: 12px 0;
   }
-  .history-page .sort-field select {
-    max-width: 100%;
-  }
   @starting-style {
     .request-sheet[open] {
       transform: translateY(100%);
     }
   }
 }
+

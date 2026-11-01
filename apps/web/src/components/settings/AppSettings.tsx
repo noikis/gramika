@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef } from 'react'
 import { THEMES, type Theme } from '../../lib/workspace-storage'
 import { Button } from '../ui/button'
+import { Select } from '../ui/select'
 import { Icon } from '../ui/icon'
 import { LOCALES, type Locale } from '../../i18n'
 import { useLocale } from '../../i18n/use-locale'
@@ -96,7 +97,7 @@ export function AppSettings({
         <ThemeControl theme={theme} onChange={onThemeChange} name={`theme-${clearDescriptionId}`} />
         <label>
           {t('language')}
-          <select
+          <Select
             value={locale}
             onChange={(event) => onLocaleChange(event.target.value as Locale)}
             disabled={isBusy}
@@ -106,11 +107,11 @@ export function AppSettings({
                 {value === 'en' ? 'English' : value === 'fr' ? 'Français' : 'Русский'}
               </option>
             ))}
-          </select>
+          </Select>
         </label>
         <label>
           {t('translationTarget')}
-          <select
+          <Select
             value={translationTarget}
             onChange={(event) => onTranslationTargetChange(event.target.value as TranslationTarget)}
             disabled={isBusy}
@@ -118,7 +119,7 @@ export function AppSettings({
             <option value="en">{t('english')}</option>
             <option value="fr">{t('french')}</option>
             <option value="ru">{t('russian')}</option>
-          </select>
+          </Select>
         </label>
         <Button
           type="button"

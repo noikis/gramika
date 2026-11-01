@@ -2,6 +2,7 @@ import { useId, useRef, useState } from 'react'
 import { MAX_INPUT_CHARACTERS, MODELS, type HistorySearchQuery } from '@gramota/contracts'
 import { shortModelName } from '../../lib/history-format'
 import { Button } from '../ui/button'
+import { Select } from '../ui/select'
 import { Icon } from '../ui/icon'
 import { useLocale } from '../../i18n/use-locale'
 import type { HistoryFiltersState } from './history-filter-state'
@@ -73,7 +74,7 @@ export function HistoryFilters({
         )}
         <label className="history-field sort-field">
           <span className="sr-only">Sort by</span>
-          <select
+          <Select
             value={filters.sort}
             onChange={(event) =>
               onUpdate({ sort: event.target.value as HistorySearchQuery['sort'] })
@@ -81,13 +82,13 @@ export function HistoryFilters({
           >
             <option value="newest">{t('newestFirst')}</option>
             <option value="oldest">{t('oldestFirst')}</option>
-          </select>
+          </Select>
         </label>
       </div>
       <div className="filter-fields" id={filterPanelId} hidden={!isOpen}>
         <label className="history-field">
           {t('model')}
-          <select
+          <Select
             value={filters.model}
             onChange={(event) => onUpdate({ model: event.target.value })}
           >
@@ -97,11 +98,11 @@ export function HistoryFilters({
                 {shortModelName(id)}
               </option>
             ))}
-          </select>
+          </Select>
         </label>
         <label className="history-field">
           {t('resultFilter')}
-          <select
+          <Select
             value={filters.result}
             onChange={(event) =>
               onUpdate({ result: event.target.value as HistorySearchQuery['result'] })
@@ -112,7 +113,7 @@ export function HistoryFilters({
             <option value="unchanged">{t('unchanged')}</option>
             <option value="failed">{t('failed')}</option>
             <option value="pending">{t('pending')}</option>
-          </select>
+          </Select>
         </label>
         <label className="history-field">
           {t('from')}
