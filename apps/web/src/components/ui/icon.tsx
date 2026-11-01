@@ -1,6 +1,7 @@
 import type { ComponentProps } from 'react'
 
 const paths = {
+  book: 'M12 5c-3-2-6-2-9-1v15c3-1 6-1 9 1 3-2 6-2 9-1V4c-3-1-6-1-9 1v15',
   correction: 'M4 20l4-1 12-12-3-3L5 16z M14 7l3 3 M4 20h16',
   settings: 'M4 7h16 M4 17h16 M8 4v6 M16 14v6',
   install: 'M12 3v12 M7 10l5 5 5-5 M4 16v5h16v-5',

@@ -5,6 +5,7 @@ import { notify } from '../lib/notifications'
 import { useDraft } from './use-draft'
 import { useWritingSession } from './use-writing-session'
 import { useLocale } from '../i18n/use-locale'
+import { useDictionary } from './use-dictionary'
 import { useTranslation } from './use-translation'
 
 export function useWorkspacePersistence() {
@@ -13,6 +14,7 @@ export function useWorkspacePersistence() {
   const draft = useDraft(restored.workspace?.text)
   const correction = useWritingSession(draft.text, draft.revision, restored.workspace)
   const translation = useTranslation(null, locale)
+  const dictionary = useDictionary(() => translation.tools.open('dictionary'))
   const [theme, setTheme] = useState<Theme>(restored.workspace?.theme ?? 'system')
   const serialized = JSON.stringify({
     version: 3,
@@ -50,7 +52,7 @@ export function useWorkspacePersistence() {
 
   return {
     draft,
-    correction: { ...correction, translation },
+    correction: { ...correction, translation, dictionary, tools: translation.tools },
     theme,
     setTheme,
     clearStoredWorkspace,

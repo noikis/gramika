@@ -17,6 +17,8 @@ export type ResultViewProps = {
   title?: string
   compact?: boolean
   actions?: ReactNode
+  secondaryActions?: ReactNode
+  dictionary?: import('../../hooks/use-dictionary').DictionaryState
   translation?: {
     target: TranslationTarget
     saved: { scope: string; target: string; translatedText: string } | null

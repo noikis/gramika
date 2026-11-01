@@ -13,9 +13,16 @@ import { HTTP_STATUS } from './http-status'
 import { ErrorCode } from '@gramota/contracts'
 import { createTranslationService } from './translation'
 import { translationRoutes } from './routes/translations'
+import {
+  createDictionaryService,
+  createDictionaryDetailsService,
+  type DictionaryServiceOptions,
+} from './dictionary'
+import { dictionaryRoutes } from './routes/dictionary'
 
 export interface AppOptions extends FastifyServerOptions, RootOptions {
   correction?: AppResourcesOptions
+  dictionary?: Pick<DictionaryServiceOptions, 'timeoutMs'>
 }
 
 const options: AppOptions = loggingOptions
@@ -56,6 +63,17 @@ const app: FastifyPluginAsync<AppOptions> = async (fastify, opts): Promise<void>
   fastify.register(rootRoutes, { frontendRoot: opts.frontendRoot })
   await healthRoutes(fastify, database, config.available)
   await correctionRoutes(fastify, correct)
+  await dictionaryRoutes(
+    fastify,
+    createDictionaryService({
+      url: config.dictionaryBaseUrl,
+      timeoutMs: opts.dictionary?.timeoutMs,
+    }),
+    createDictionaryDetailsService({
+      url: config.dictionaryBaseUrl,
+      timeoutMs: opts.dictionary?.timeoutMs,
+    }),
+  )
   await translationRoutes(
     fastify,
     createTranslationService({

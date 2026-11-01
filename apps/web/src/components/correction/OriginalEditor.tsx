@@ -3,10 +3,11 @@ import type { ExpressionExplanationInput } from '@gramota/contracts'
 import { CorrectionMode } from '@gramota/contracts'
 import { Button } from '../ui/button'
 import { Textarea } from '../ui/textarea'
-import { ExpressionExplanationPanel } from '../explanations/ExplanationPanel'
+import { ExpressionExplanationPanel } from '../explanations/ExpressionExplanationPanel'
 import { Icon } from '../ui/icon'
 import { useLocale } from '../../i18n/use-locale'
 import { SpeechButton } from '../ui/speech-button'
+import { DictionaryAction } from '../dictionary/DictionaryAction'
 import { TranslationAction } from '../translation/TranslationAction'
 import type { Correction, WorkspaceProps } from './types'
 
@@ -103,6 +104,35 @@ export function OriginalEditor({ draft, correction, onNew, isBusy }: WorkspacePr
     const frame = requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }))
     return () => cancelAnimationFrame(frame)
   }, [inputRef])
+  const languageActions = (
+    <>
+      <SpeechButton
+        sourceId="original-editor"
+        lang="ru-RU"
+        getSelection={() => speechSelection || null}
+        getText={() => {
+          const selection = selectionRef.current
+          return selection && selection.start !== selection.end
+            ? text.slice(
+                Math.min(selection.start, selection.end),
+                Math.max(selection.start, selection.end),
+              )
+            : text
+        }}
+      />
+      <DictionaryAction
+        getSelection={() => speechSelection || null}
+        dictionary={correction.dictionary}
+      />
+      <TranslationAction
+        scope="original"
+        getText={() => text}
+        getSelection={() => speechSelection || null}
+        translation={correction.translation}
+      />
+    </>
+  )
+
   return (
     <section className="editor original-editor" aria-labelledby="original-title">
       <div className="editor-heading">
@@ -159,48 +189,31 @@ export function OriginalEditor({ draft, correction, onNew, isBusy }: WorkspacePr
           }
         }}
       />
-      {manualSelection && result && (
-        <ExpressionExplanationPanel
-          key={JSON.stringify(manualSelection)}
-          selection={manualSelection}
-          translation={correction.translation}
-        />
-      )}
       <p id="input-feedback" className="clipboard-feedback" role="status">
         {correction.validationMessage}
       </p>
-      <div className="speech-row">
-        <SpeechButton
-          sourceId="original-editor"
-          lang="ru-RU"
-          getSelection={() => speechSelection || null}
-          getText={() => {
-            const selection = selectionRef.current
-            return selection && selection.start !== selection.end
-              ? text.slice(
-                  Math.min(selection.start, selection.end),
-                  Math.max(selection.start, selection.end),
-                )
-              : text
-          }}
-        />
-        <TranslationAction
-          scope="original"
-          getText={() => text}
-          getSelection={() => speechSelection || null}
-          translation={correction.translation}
-        />
-      </div>
-      <div className="editor-actions">
-        <ModeControl correction={correction} />
-        <Button
-          type="button"
-          disabled={!correction.canCorrect}
-          onClick={correction.correct}
-          aria-describedby="correction-status"
-        >
-          {correction.pending && !correction.isOpinionPending ? t('correcting') : t('correct')}
-        </Button>
+      <div className="original-editor-controls">
+        {manualSelection && result ? (
+          <ExpressionExplanationPanel
+            key={JSON.stringify(manualSelection)}
+            selection={manualSelection}
+            translation={correction.translation}
+            actions={languageActions}
+          />
+        ) : (
+          <div className="speech-row">{languageActions}</div>
+        )}
+        <div className="editor-actions">
+          <ModeControl correction={correction} />
+          <Button
+            type="button"
+            disabled={!correction.canCorrect}
+            onClick={correction.correct}
+            aria-describedby="correction-status"
+          >
+            {correction.pending && !correction.isOpinionPending ? t('correcting') : t('correct')}
+          </Button>
+        </div>
       </div>
     </section>
   )

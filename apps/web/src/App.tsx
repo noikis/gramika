@@ -44,6 +44,8 @@ function App() {
   function newCorrection() {
     if (isBusy || !correction.reset()) return
     correction.translation.clear()
+    correction.dictionary.clear()
+    correction.tools.close()
     draft.edit('')
     setView('correction')
     requestAnimationFrame(() => {
@@ -53,12 +55,12 @@ function App() {
   }
 
   function showCorrection() {
-    correction.translation.close()
+    correction.tools.close()
     setView('correction')
   }
 
   function showHistory() {
-    correction.translation.close()
+    correction.tools.close()
     setView('history')
   }
 
@@ -92,9 +94,7 @@ function App() {
           <Button
             type="button"
             variant="ghost"
-            aria-current={
-              view === 'correction' && !correction.translation.isOpen ? 'page' : undefined
-            }
+            aria-current={view === 'correction' && !correction.tools.isOpen ? 'page' : undefined}
             onClick={showCorrection}
           >
             <Icon name="correction" /> {t('correction')}
@@ -177,9 +177,7 @@ function App() {
         <Button
           type="button"
           variant="ghost"
-          aria-current={
-            view === 'correction' && !correction.translation.isOpen ? 'page' : undefined
-          }
+          aria-current={view === 'correction' && !correction.tools.isOpen ? 'page' : undefined}
           onClick={showCorrection}
         >
           <Icon name="correction" />

@@ -85,18 +85,21 @@ export function CorrectionPage({ draft, correction, onNew, isBusy }: WorkspacePr
         <h1 className="sr-only">{t('correction')}</h1>
         <p>{t('writeWithConfidence')}</p>
       </div>
-      <div
-        className={`translation-stage${correction.translation.isOpen ? ' has-translation' : ''}`}
-      >
-        {correction.translation.isOpen && (
+      <div className={`translation-stage${correction.tools.isOpen ? ' has-translation' : ''}`}>
+        {correction.tools.isOpen && (
           <button
             type="button"
             className="translation-backdrop"
             aria-label={t('close')}
-            onClick={correction.translation.close}
+            onClick={correction.tools.close}
           />
         )}
-        <LanguageToolsSidebar translation={correction.translation} />
+        <LanguageToolsSidebar
+          translation={correction.translation}
+          dictionary={correction.dictionary}
+          tools={correction.tools}
+          onTranslationOpen={() => correction.translation.open('original', draft.text)}
+        />
         <div className="editors correction-workspace">
           <OriginalEditor draft={draft} correction={correction} onNew={onNew} isBusy={isBusy} />
           <section className="editor result-editor" aria-labelledby="result-title">
@@ -116,12 +119,12 @@ export function CorrectionPage({ draft, correction, onNew, isBusy }: WorkspacePr
                   title={`${activeResult.modelId === DEFAULT_MODEL_ID ? 'Gemma 4' : correction.opinionModelName} · ${activeResult.mode === 'strict' ? t('strictMode') : t('rewriteMode')}`}
                   compact
                   translation={correction.translation}
+                  dictionary={correction.dictionary}
                   actions={
                     <>
                       <Button
                         type="button"
                         className="workspace-copy-action"
-                        variant="secondary"
                         disabled={correction.copying}
                         onClick={correction.copy}
                         aria-label={`Copy ${activeResult.modelId === DEFAULT_MODEL_ID ? 'Gemma' : 'Gemini'} result`}
@@ -129,23 +132,25 @@ export function CorrectionPage({ draft, correction, onNew, isBusy }: WorkspacePr
                         <Icon name="copy" />
                         {correction.copying ? t('copying') : t('copy')}
                       </Button>
-                      {correction.canRegenerate(activeResult.modelId) && (
-                        <Button
-                          type="button"
-                          className="regenerate-action desktop-regenerate-action"
-                          title="New paid request"
-                          variant="secondary"
-                          disabled={correction.pendingModel === activeResult.modelId}
-                          onClick={() => correction.regenerate(activeResult.modelId)}
-                          aria-label={`Generate ${activeResult.modelId === DEFAULT_MODEL_ID ? 'Gemma' : 'Gemini'} again. New paid request`}
-                        >
-                          <Icon name="sparkles" />
-                          {correction.pendingModel === activeResult.modelId
-                            ? t('loading')
-                            : t('generateAgain')}
-                        </Button>
-                      )}
                     </>
+                  }
+                  secondaryActions={
+                    correction.canRegenerate(activeResult.modelId) && (
+                      <Button
+                        type="button"
+                        className="regenerate-action desktop-regenerate-action"
+                        title="New paid request"
+                        variant="secondary"
+                        disabled={correction.pendingModel === activeResult.modelId}
+                        onClick={() => correction.regenerate(activeResult.modelId)}
+                        aria-label={`Generate ${activeResult.modelId === DEFAULT_MODEL_ID ? 'Gemma' : 'Gemini'} again. New paid request`}
+                      >
+                        <Icon name="sparkles" />
+                        {correction.pendingModel === activeResult.modelId
+                          ? t('loading')
+                          : t('generateAgain')}
+                      </Button>
+                    )
                   }
                 />
               </div>

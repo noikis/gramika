@@ -1,6 +1,7 @@
+import { useDictionarySelection } from '../../hooks/use-dictionary-selection'
 import { useMemo, useRef, useState } from 'react'
 import type { ExpressionExplanationInput } from '@gramota/contracts'
-import { ExpressionExplanationPanel } from '../explanations/ExplanationPanel'
+import { ExpressionExplanationPanel } from '../explanations/ExpressionExplanationPanel'
 import { Textarea } from '../ui/textarea'
 import { explanationSelection, diffText } from '../../lib/text-diff'
 import { correctionDescription } from '../../lib/whitespace-display'
@@ -10,6 +11,7 @@ import { ResultChanges } from './ResultChanges'
 import { ResultViewToggle } from './ResultViewToggle'
 import type { ResultViewProps } from './types'
 import { SpeechButton } from '../ui/speech-button'
+import { DictionaryAction } from '../dictionary/DictionaryAction'
 import { TranslationAction } from '../translation/TranslationAction'
 
 export function ResultView(props: ResultViewProps) {
@@ -24,12 +26,16 @@ function ResultContent({
   title = 'Result',
   compact = false,
   actions,
+  secondaryActions,
   translation,
+  dictionary,
 }: ResultViewProps) {
   const { t } = useLocale()
   const isHistory = !compact && Boolean(actions)
   const [selected, setSelected] = useState(0)
   const [manualSelection, setManualSelection] = useState<ExpressionExplanationInput | null>(null)
+  const { surfaceRef: changesSurfaceRef, getSelection: getChangesSelection } =
+    useDictionarySelection()
   const textSelection = useRef<{ start: number; end: number } | null>(null)
   const panelId = `${labelId}-details`
   const diff = useMemo(
@@ -90,6 +96,44 @@ function ResultContent({
     />
   )
 
+  const languageActions = (
+    <>
+      {speechAction}
+      {dictionary && (
+        <DictionaryAction
+          dictionary={dictionary}
+          getSelection={() => {
+            if (view === 'changes') return getChangesSelection()
+            const range = textSelection.current
+            return range && range.start !== range.end
+              ? result.correctedText.slice(
+                  Math.min(range.start, range.end),
+                  Math.max(range.start, range.end),
+                )
+              : null
+          }}
+        />
+      )}
+      {translation && (
+        <TranslationAction
+          scope="result"
+          getText={() => result.correctedText}
+          getSelection={() => {
+            const range = textSelection.current
+            return range && range.start !== range.end
+              ? result.correctedText.slice(
+                  Math.min(range.start, range.end),
+                  Math.max(range.start, range.end),
+                )
+              : null
+          }}
+          translation={translation}
+        />
+      )}
+      {compact && <span className="result-view-action">{viewToggle}</span>}
+    </>
+  )
+
   return (
     <>
       {compact ? (
@@ -110,85 +154,80 @@ function ResultContent({
           {viewToggle}
         </div>
       )}
-      <div className="result-content">
-        {view === 'text' ? (
-          <Textarea
-            className="editor-input result-text"
-            readOnly
-            aria-labelledby={labelId}
-            value={result.correctedText}
-            lang="ru"
-            spellCheck={false}
-            onSelect={(event) => {
-              const start = event.currentTarget.selectionStart
-              const end = event.currentTarget.selectionEnd
-              textSelection.current = { start, end }
-              if (start === end || start < 0 || end > result.correctedText.length) {
-                setManualSelection(null)
-                return
-              }
-              const range = start < end ? { start, end } : { start: end, end: start }
-              const value = result.correctedText.slice(range.start, range.end)
-              setManualSelection(
-                value
-                  ? {
-                      version: 3,
-                      requestId: result.requestId,
-                      kind: 'expression',
-                      mode: result.mode,
-                      source: 'edited',
-                      correctedRange: range,
-                      value,
-                    }
-                  : null,
-              )
-            }}
-          />
-        ) : (
-          <ResultChanges
-            result={result}
-            diff={diff}
-            selected={selected}
-            panelId={panelId}
-            onSelect={(index) => select(index)}
-            onManualSelection={setManualSelection}
-            manualSelection={manualSelection}
-            translation={translation}
-          />
-        )}
-        <div className="speech-row">
-          {speechAction}
-          {translation && (
-            <TranslationAction
-              scope="result"
-              getText={() => result.correctedText}
-              getSelection={() => {
-                const range = textSelection.current
-                return range && range.start !== range.end
-                  ? result.correctedText.slice(
-                      Math.min(range.start, range.end),
-                      Math.max(range.start, range.end),
-                    )
-                  : null
+      <div className={compact ? 'workspace-result-card' : undefined}>
+        <div className="result-content">
+          {view === 'text' ? (
+            <Textarea
+              className="editor-input result-text"
+              readOnly
+              aria-labelledby={labelId}
+              value={result.correctedText}
+              lang="ru"
+              spellCheck={false}
+              onSelect={(event) => {
+                const start = event.currentTarget.selectionStart
+                const end = event.currentTarget.selectionEnd
+                textSelection.current = { start, end }
+                if (start === end || start < 0 || end > result.correctedText.length) {
+                  setManualSelection(null)
+                  return
+                }
+                const range = start < end ? { start, end } : { start: end, end: start }
+                const value = result.correctedText.slice(range.start, range.end)
+                setManualSelection(
+                  value
+                    ? {
+                        version: 3,
+                        requestId: result.requestId,
+                        kind: 'expression',
+                        mode: result.mode,
+                        source: 'edited',
+                        correctedRange: range,
+                        value,
+                      }
+                    : null,
+                )
               }}
+            />
+          ) : (
+            <ResultChanges
+              result={result}
+              diff={diff}
+              selected={selected}
+              panelId={panelId}
+              onSelect={(index) => select(index)}
+              onManualSelection={setManualSelection}
+              manualSelection={manualSelection}
+              selectionSurfaceRef={changesSurfaceRef}
               translation={translation}
+              showExplanation={!compact}
             />
           )}
+          {!compact && manualSelection && view === 'text' ? (
+            <ExpressionExplanationPanel
+              key={JSON.stringify(manualSelection)}
+              selection={manualSelection}
+              translation={translation}
+              actions={languageActions}
+            />
+          ) : (
+            <div className="speech-row">{languageActions}</div>
+          )}
         </div>
+        {compact && <div className="result-actions">{actions}</div>}
+        {compact && manualSelection && (
+          <div className="result-selection-explanation">
+            <ExpressionExplanationPanel
+              key={JSON.stringify(manualSelection)}
+              selection={manualSelection}
+              translation={translation}
+            />
+          </div>
+        )}
       </div>
       {compact && <p className="result-model-caption">{title}</p>}
-      {manualSelection && view === 'text' && (
-        <ExpressionExplanationPanel
-          key={JSON.stringify(manualSelection)}
-          selection={manualSelection}
-          translation={translation}
-        />
-      )}
-      {compact && (
-        <div className="result-actions">
-          {viewToggle}
-          {actions}
-        </div>
+      {compact && secondaryActions && (
+        <div className="result-secondary-actions">{secondaryActions}</div>
       )}
       {compact && !corrections.length && <p className="clipboard-feedback">{t('noChanges')}</p>}
       {view === 'changes' && current && comparison && (
@@ -202,6 +241,7 @@ function ResultContent({
           selected={selected}
           total={corrections.length}
           description={description}
+          dictionary={dictionary}
           panelId={panelId}
           onSelect={select}
           translation={translation}

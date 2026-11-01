@@ -4,6 +4,7 @@ import { resolve } from 'node:path'
 const SERVER_DIRECTORY = resolve(__dirname, '..')
 const PROJECT_DIRECTORY = resolve(SERVER_DIRECTORY, '../..')
 const DEFAULT_SQLITE_PATH = 'data/gramota.sqlite'
+const DEFAULT_DICTIONARY_BASE_URL = 'https://dictionary.noikis.ru'
 
 export type Environment = Record<string, string | undefined>
 export type ServerConfig = {
@@ -12,6 +13,7 @@ export type ServerConfig = {
   proxyUrl?: string
   databasePath: string
   libreTranslateUrl?: string
+  dictionaryBaseUrl?: string
 }
 
 export function readEnvironment(): Environment {
@@ -38,6 +40,9 @@ export function parseConfig(env: Environment): ServerConfig {
     proxyUrl,
     databasePath: resolve(SERVER_DIRECTORY, env.SQLITE_PATH || DEFAULT_SQLITE_PATH),
     libreTranslateUrl,
+    dictionaryBaseUrl: parseServiceUrl(
+      env.DICTIONARY_BASE_URL?.trim() || DEFAULT_DICTIONARY_BASE_URL,
+    ),
   }
 }
 

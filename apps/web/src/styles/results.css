@@ -248,6 +248,20 @@
   color: var(--accent);
   background: var(--surface);
 }
+.result-view-action {
+  display: inline-flex;
+  margin-inline-start: auto;
+}
+.result-view-action .result-toggle {
+  gap: 2px;
+  padding: 3px;
+}
+.result-view-action .result-toggle label {
+  padding: 6px 8px;
+}
+.expression-action-row:has(.result-view-action) .explain-button {
+  margin-inline-start: 8px;
+}
 .result-actions {
   display: flex;
   align-items: center;
@@ -255,6 +269,29 @@
   flex-wrap: wrap;
   gap: 12px;
   margin-top: 12px;
+}
+.workspace-result-card {
+  display: contents;
+}
+.result-selection-explanation > .explanation-panel {
+  margin-top: 12px;
+  padding-top: 0;
+  border-top: 0;
+}
+.result-secondary-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+.correction-workspace .workspace-copy-action {
+  min-width: 120px;
+  min-height: var(--control);
+  padding-inline: 24px;
+}
+@media (max-width: 720px) {
+  .correction-workspace .workspace-copy-action {
+    width: 100%;
+  }
 }
 .inspector-heading {
   display: flex;
@@ -418,21 +455,6 @@
   font-size: 12px;
   font-weight: 600;
 }
-.ui-select {
-  width: 100%;
-  min-height: var(--control);
-  padding: 0 36px 0 12px;
-  border: 2px solid color-mix(in srgb, var(--accent) 32%, var(--line));
-  border-radius: var(--radius-sm);
-  background: var(--surface);
-  color: var(--accent);
-  outline: none;
-}
-.ui-select:hover,
-.ui-select:focus {
-  border-color: var(--accent);
-  box-shadow: none;
-}
 .readable-text-surface {
   min-height: 96px;
   padding: 16px;
@@ -479,6 +501,7 @@
 .correction-workspace {
   flex: 1 1 auto;
   min-width: 0;
+  align-content: start;
   grid-template-columns: minmax(0, 1fr);
   grid-template-areas: 'original' 'result' 'opinion';
 }
@@ -504,6 +527,16 @@
   font-size: var(--text-sm);
   line-height: 20px;
   font-weight: 600;
+}
+.expression-action-row .explain-button {
+  width: auto;
+  min-height: var(--control);
+  margin-inline-start: auto;
+  font-size: var(--text-sm);
+}
+.result-content .expression-tools-panel > .explanation-panel,
+.result-content .expression-tools-panel > .history-error {
+  margin: 0 24px 20px;
 }
 @media (max-width: 720px) {
   .shell:has(.mobile-copy-bar) {
@@ -615,6 +648,14 @@
   }
 }
 @media (min-width: 721px) {
+  .translation-stage {
+    align-items: flex-start;
+  }
+  .desktop-translation-sidebar {
+    position: sticky;
+    top: var(--space-5);
+    max-height: calc(100dvh - 2 * var(--space-5));
+  }
   .translation-sidebar.is-open.is-closing {
     flex-basis: 0;
     width: 0;
@@ -626,17 +667,52 @@
     column-gap: 24px;
   }
   .correction-workspace .result-actions {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+    margin-top: 16px;
   }
-  .correction-workspace .result-actions > .result-toggle {
-    justify-self: start;
+  .correction-workspace .workspace-result-card {
+    display: block;
+    padding: 24px;
+    border-radius: var(--radius);
+    background: var(--surface);
+    box-shadow: 0 14px 45px #363f3012;
+  }
+  .workspace-result-card .result-content {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+  .workspace-result-card .result-content .result-text,
+  .workspace-result-card .result-content .result-changes {
+    padding: 12px 0;
+  }
+  .workspace-result-card .result-content .speech-row {
+    margin-top: 12px;
+    padding: 0;
+  }
+  .workspace-result-card .result-content .expression-tools-panel > .explanation-panel,
+  .workspace-result-card .result-content .expression-tools-panel > .history-error {
+    margin-inline: 0;
+  }
+  .workspace-result-card .result-view-action .result-toggle {
+    gap: 4px;
+    padding: 4px;
+  }
+  .workspace-result-card .result-view-action .result-toggle label {
+    justify-content: center;
+    padding: 8px 12px;
+    font-weight: 600;
   }
   .correction-workspace .workspace-copy-action {
-    justify-self: center;
+    order: 1;
+    width: 100%;
+    min-height: 52px;
   }
   .correction-workspace .regenerate-action {
-    justify-self: end;
+    align-self: end;
   }
 }
 @media (prefers-reduced-motion: reduce) {

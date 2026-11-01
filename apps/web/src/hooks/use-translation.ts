@@ -1,4 +1,5 @@
-import { useMemo, useRef, useState } from 'react'
+import { useLanguageTools } from './use-language-tools'
+import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
   TranslationScope,
@@ -50,9 +51,7 @@ export function useTranslation(initial: SavedTranslation | null, locale: string)
     () => initial?.source ?? DEFAULT_TRANSLATION_SOURCE,
   )
   const [saved, setSaved] = useState<SavedTranslation | null>(initial)
-  const [isOpen, setOpen] = useState(Boolean(initial))
-  const [isClosing, setIsClosing] = useState(false)
-  const closingTimer = useRef<number | null>(null)
+  const tools = useLanguageTools(Boolean(initial))
   const [request, setRequest] = useState<{
     scope: TranslationScope
     text: string
@@ -127,21 +126,13 @@ export function useTranslation(initial: SavedTranslation | null, locale: string)
   }
 
   function clear() {
-    if (closingTimer.current !== null) window.clearTimeout(closingTimer.current)
-    setIsClosing(false)
     setRequest(null)
     setSaved(null)
-    setOpen(false)
+    if (tools.activeTab === 'translation') tools.close()
   }
 
   function close() {
-    if (closingTimer.current !== null) window.clearTimeout(closingTimer.current)
-    setIsClosing(true)
-    setOpen(false)
-    closingTimer.current = window.setTimeout(() => {
-      setIsClosing(false)
-      closingTimer.current = null
-    }, 300)
+    tools.close()
   }
 
   function updateSourceText(text: string) {
@@ -162,18 +153,15 @@ export function useTranslation(initial: SavedTranslation | null, locale: string)
   function translate(scope: TranslationScope, sourceText: string, selectedText?: string) {
     const text = selectedText?.trim() || sourceText.trim()
     if (!text || query.isFetching) return
-    setOpen(true)
-    setIsClosing(false)
+    tools.open('translation')
     setSaved({ scope, sourceText: text, source, target, translatedText: '' })
     setRequest({ scope, text, source, target })
   }
 
   function open(scope: TranslationScope, sourceText: string) {
-    if (closingTimer.current !== null) window.clearTimeout(closingTimer.current)
-    setIsClosing(false)
     const text = sourceText.trim()
     if (saved && saved.scope === scope && saved.sourceText === text) {
-      setOpen(true)
+      tools.open('translation')
       return
     }
     setRequest(null)
@@ -184,7 +172,7 @@ export function useTranslation(initial: SavedTranslation | null, locale: string)
       target,
       translatedText: '',
     })
-    setOpen(true)
+    tools.open('translation')
   }
 
   const activeSaved = useMemo(
@@ -205,8 +193,9 @@ export function useTranslation(initial: SavedTranslation | null, locale: string)
     updateSourceText,
     resetTarget,
     saved: activeSaved,
-    isOpen,
-    isClosing,
+    tools,
+    isOpen: tools.isOpen && tools.activeTab === 'translation',
+    isClosing: tools.isClosing && tools.activeTab === 'translation',
     pending: query.isFetching,
     error,
     translate,

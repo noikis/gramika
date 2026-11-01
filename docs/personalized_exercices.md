@@ -1,4 +1,5 @@
 # Gramika — Dictionary & Personalized Exercises
+
 ## Feature Planning Notes
 
 **Status:** Planned features  
@@ -109,18 +110,18 @@ Users often do not know which areas of grammar they need to improve. The applica
 
 The following exercise types were identified as especially useful.
 
-| Exercise | Description |
-|---|---|
-| Fill in the blank | Complete a sentence using the correct word or grammatical form |
-| Correct the sentence | Find and correct grammatical or punctuation mistakes |
-| Multiple choice | Select the correct form, word, or construction |
-| Identify grammatical form | Identify case, number, gender, tense, or other attributes |
-| Noun declension | Produce the requested case and number |
-| Verb conjugation | Produce the requested person, number, or tense |
-| Adjective agreement | Select the adjective form matching a noun |
-| Vocabulary definitions | Identify words from Russian definitions |
-| Word stress | Identify the correctly stressed form |
-| Sentence construction | Arrange words into a grammatically correct sentence |
+| Exercise                  | Description                                                    |
+| ------------------------- | -------------------------------------------------------------- |
+| Fill in the blank         | Complete a sentence using the correct word or grammatical form |
+| Correct the sentence      | Find and correct grammatical or punctuation mistakes           |
+| Multiple choice           | Select the correct form, word, or construction                 |
+| Identify grammatical form | Identify case, number, gender, tense, or other attributes      |
+| Noun declension           | Produce the requested case and number                          |
+| Verb conjugation          | Produce the requested person, number, or tense                 |
+| Adjective agreement       | Select the adjective form matching a noun                      |
+| Vocabulary definitions    | Identify words from Russian definitions                        |
+| Word stress               | Identify the correctly stressed form                           |
+| Sentence construction     | Arrange words into a grammatically correct sentence            |
 
 Not all exercise types need to be included in the initial release.
 
@@ -141,11 +142,11 @@ Declensions and conjugations are particularly well suited to dictionary-based ex
 
 Exercise selection should combine three categories.
 
-| Category | Initial proposed share | Purpose |
-|---|---:|---|
-| Personal | 50% | Practice actual mistakes and vocabulary from corrections |
-| Related | 30% | Practice the same grammatical principles in new contexts |
-| General | 20% | Introduce new topics and identify previously unknown weaknesses |
+| Category | Initial proposed share | Purpose                                                         |
+| -------- | ---------------------: | --------------------------------------------------------------- |
+| Personal |                    50% | Practice actual mistakes and vocabulary from corrections        |
+| Related  |                    30% | Practice the same grammatical principles in new contexts        |
+| General  |                    20% | Introduce new topics and identify previously unknown weaknesses |
 
 These percentages are **initial suggestions, not permanent rules**.
 

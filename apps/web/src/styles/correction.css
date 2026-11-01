@@ -77,6 +77,38 @@
   gap: 12px;
   padding-top: 12px;
 }
+@media (min-width: 721px) {
+  .original-editor-controls {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 16px;
+    margin-top: 12px;
+  }
+  .original-editor-controls > .editor-actions,
+  .original-editor-controls > .expression-tools-panel {
+    display: contents;
+  }
+  .original-editor-controls .speech-row {
+    grid-column: 1;
+    margin-top: 0;
+    padding-top: 0;
+  }
+  .original-editor-controls .model-control {
+    grid-area: 1 / 2;
+    justify-self: end;
+  }
+  .original-editor-controls .editor-actions > button,
+  .original-editor-controls .expression-tools-panel > .explanation-panel,
+  .original-editor-controls .expression-tools-panel > .history-error {
+    grid-column: 1 / -1;
+  }
+  .original-editor-controls .editor-actions > button {
+    justify-self: stretch;
+    width: 100%;
+    min-height: 52px;
+  }
+}
 .character-count {
   color: var(--muted);
   font-size: 12px;
