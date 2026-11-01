@@ -24,6 +24,7 @@ apps/server/benchmark-data/
 *.sqlite-journal
 .playwright-mcp/
 /test-results/text-diff/
+/test-results/dictionary/
 artifacts/
 
 # Blueprint generated local state

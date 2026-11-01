@@ -17,6 +17,7 @@ and keys must never enter the frontend bundle, image layers, Git or logs.
 | `GRAMOTA_PORT` | Docker Compose host port, default 3000; serves both web and API. |
 | `OPENROUTER_API_KEY` | Server-only key required for correction. |
 | `OPENROUTER_PROXY_URL` | HTTP(S) proxy required in production; ignored in development. |
+| `DICTIONARY_BASE_URL` | Optional server-only HTTP(S) dictionary URL; defaults to `https://dictionary.noikis.ru`. Invalid URLs disable lookup with `DICTIONARY_FAILED`. Compose forwards it through the existing `.env` file. |
 | `SQLITE_PATH` | Optional native-server path, relative to `apps/server` unless absolute; default `data/gramota.sqlite`. Compose retains the default path in its volume. |
 
 ## Local development
@@ -28,6 +29,14 @@ the API after changing `.env`; its watcher follows compiled files, not database
 writes. Use the computer's system VPN; do not configure a production proxy for
 native development. A local Docker container still runs in production mode and
 requires a proxy even when the host is the development computer.
+
+Dictionary lookup uses direct HTTP independently of OpenRouter, its key, proxy
+and SQLite. `POST /api/dictionary/lookup` accepts `{ "word": "слово" }`, resolves
+the Russian word and fetches definitions sequentially within one 15-second
+deadline. It has no automatic retries or persistent cache. No match returns
+HTTP 200 with an empty `results` array. Dictionary failures use the public
+`INVALID_INPUT` (400), `DICTIONARY_UNAVAILABLE` (503), `DICTIONARY_TIMEOUT` (504)
+and `DICTIONARY_FAILED` (502) codes; upstream text is never returned as an error.
 
 ## Production container
 

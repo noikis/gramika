@@ -89,3 +89,21 @@ the service may return `503` when its reverse index is unavailable.
 - Do not put personal text, secrets, or large dictionary responses in logs or
   fixtures. Use mocked HTTP responses for automated tests.
 
+## Application backend and inspection script
+
+The application uses `POST /api/dictionary/lookup` with `{ "word": "слово" }`.
+Its public Zod contracts live in `packages/contracts/src/dictionary.ts`.
+The backend retains all resolve analyses grouped by exact lemma and preserves
+definitions and examples verbatim. Examples expose only `text` and the
+`wiktionary` source. No-match results have an empty `results` array, without
+search or exact-word fallback. See [the V4.4 specification](v4.4-dictionary-spec.md)
+for the full contract and [configuration guide](container.md) for deployment.
+
+For manual dictionary inspection, first run `npm run build:ts -w apps/server`,
+then `node scripts/dictionary-lookup.mjs слово`. This makes live dictionary
+requests and uses the same backend response schemas and adapter. Adapted `<word>.json`
+and untouched response bodies in `<word>.raw.json` are written to ignored
+`test-results/dictionary/`. Raw files are inspection artifacts only and never
+returned by the application API. The script uses the public service URL and
+the same overall 15-second deadline per word.
+
