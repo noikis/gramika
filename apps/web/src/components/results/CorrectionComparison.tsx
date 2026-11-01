@@ -1,4 +1,5 @@
 import type { ChangeGroup } from '@gramota/text-diff'
+import { DictionaryExcerpt } from '../dictionary/DictionaryExcerpt'
 import { ExplanationPanel } from '../explanations/ExplanationPanel'
 import { ComparisonExcerpt } from './ComparisonExcerpt'
 import { CorrectionNavigation } from './CorrectionNavigation'
@@ -19,6 +20,7 @@ export function CorrectionComparison({
   panelId,
   onSelect,
   translation,
+  dictionary,
 }: {
   result: ResultViewResult
   current: ChangeGroup
@@ -31,6 +33,7 @@ export function CorrectionComparison({
   description: string
   panelId: string
   onSelect: (index: number) => void
+  dictionary?: ResultViewProps['dictionary']
   translation?: ResultViewProps['translation']
 }) {
   const { t } = useLocale()
@@ -68,23 +71,27 @@ export function CorrectionComparison({
           <div>
             <dt>{t('original')}</dt>
             <dd>
-              <ComparisonExcerpt
-                text={result.originalText}
-                range={current.originalRange}
-                spans={current.originalSpans}
-                empty={t('noOriginalText')}
-              />
+              <DictionaryExcerpt dictionary={dictionary}>
+                <ComparisonExcerpt
+                  text={result.originalText}
+                  range={current.originalRange}
+                  spans={current.originalSpans}
+                  empty={t('noOriginalText')}
+                />
+              </DictionaryExcerpt>
             </dd>
           </div>
           <div>
             <dt>{t('corrected')}</dt>
             <dd>
-              <ComparisonExcerpt
-                text={result.correctedText}
-                range={current.correctedRange}
-                spans={current.correctedSpans}
-                empty={t('removedText')}
-              />
+              <DictionaryExcerpt dictionary={dictionary}>
+                <ComparisonExcerpt
+                  text={result.correctedText}
+                  range={current.correctedRange}
+                  spans={current.correctedSpans}
+                  empty={t('removedText')}
+                />
+              </DictionaryExcerpt>
             </dd>
           </div>
         </dl>

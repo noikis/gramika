@@ -9,6 +9,34 @@ export const LOCALES = Object.values(Locale)
 export type LocaleCode = `${Locale}`
 
 export type InterfaceCatalog = {
+  dictionary: string
+  dictionaryPossibleForms: string
+  dictionaryAnalysesNote: string
+  dictionaryForms: string
+  dictionaryForm: string
+  dictionaryGrammarLabel: string
+  dictionaryPronunciation: string
+  dictionaryRecording: string
+  dictionaryAudioFailed: string
+  dictionaryDetailsLoading: string
+  dictionaryNoForms: string
+  dictionaryNoPronunciation: string
+  dictionaryCitation: string
+  dictionaryGrammar: Record<string, string>
+  dictionarySource: string
+  dictionaryInvalid: string
+  dictionaryIdle: string
+  dictionaryLoading: string
+  dictionaryEmpty: string
+  dictionaryTimeout: string
+  dictionaryUnavailable: string
+  dictionaryFailed: string
+  dictionarySelected: string
+  dictionaryExamples: string
+  dictionaryWiktionary: string
+  dictionaryGenerated: string
+  dictionaryParts: Record<string, string>
+
   correction: string
   history: string
   mobileNavigation: string

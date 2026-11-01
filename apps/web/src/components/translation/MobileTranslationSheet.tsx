@@ -1,20 +1,16 @@
-import type { RefObject } from 'react'
+import type { ReactNode } from 'react'
 import { Sheet } from 'react-modal-sheet'
 import { useLocale } from '../../i18n/use-locale'
-import { TranslationFields } from './TranslationFields'
-import { TranslationHeading } from './TranslationHeading'
-import type { TranslationState } from './translation-types'
+import type { LanguageToolsState } from '../../hooks/use-language-tools'
 
 export function MobileTranslationSheet({
-  translation,
-  sourceRef,
-  copying,
-  onCopy,
+  tools,
+  heading,
+  children,
 }: {
-  translation: TranslationState
-  sourceRef: RefObject<HTMLTextAreaElement | null>
-  copying: boolean
-  onCopy: () => void
+  tools: LanguageToolsState
+  heading: ReactNode
+  children: ReactNode
 }) {
   const { t } = useLocale()
   return (
@@ -22,8 +18,8 @@ export function MobileTranslationSheet({
       unstyled
       className="translation-sheet-root"
       style={{ zIndex: 31 }}
-      isOpen={translation.isOpen}
-      onClose={translation.close}
+      isOpen={tools.isOpen}
+      onClose={tools.close}
       snapPoints={[0, 1]}
       initialSnap={1}
       dragCloseThreshold={0.45}
@@ -31,6 +27,7 @@ export function MobileTranslationSheet({
       detent="content"
     >
       <Sheet.Container
+        data-language-tools="mobile"
         className="translation-sheet-container"
         style={{
           bottom: 'calc(65px + env(safe-area-inset-bottom))',
@@ -38,22 +35,17 @@ export function MobileTranslationSheet({
         }}
         role="dialog"
         aria-modal="true"
-        aria-label={t('translation')}
+        aria-label={t(tools.activeTab)}
       >
         <Sheet.Header className="translation-sheet-header">
           <Sheet.DragIndicator className="translation-drag-indicator" />
-          <TranslationHeading translation={translation} />
+          {heading}
         </Sheet.Header>
         <Sheet.Content className="translation-sheet-content" disableDrag>
-          <TranslationFields
-            translation={translation}
-            sourceRef={sourceRef}
-            copying={copying}
-            onCopy={onCopy}
-          />
+          {children}
         </Sheet.Content>
       </Sheet.Container>
-      <Sheet.Backdrop className="translation-sheet-backdrop" onClick={translation.close} />
+      <Sheet.Backdrop className="translation-sheet-backdrop" onClick={tools.close} />
     </Sheet>
   )
 }

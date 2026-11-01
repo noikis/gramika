@@ -94,8 +94,8 @@ the service may return `503` when its reverse index is unavailable.
 The application uses `POST /api/dictionary/lookup` with `{ "word": "слово" }`.
 Its public Zod contracts live in `packages/contracts/src/dictionary.ts`.
 The backend retains all resolve analyses grouped by exact lemma and preserves
-definitions and examples verbatim. Examples expose only `text` and the
-`wiktionary` source. No-match results have an empty `results` array, without
+definitions and examples verbatim. Examples retain exact text and the `wiktionary` source, plus optional original
+citations and validated UTF-16 highlight ranges. No-match results have an empty `results` array, without
 search or exact-word fallback. See [the V4.4 specification](v4.4-dictionary-spec.md)
 for the full contract and [configuration guide](container.md) for deployment.
 
@@ -107,3 +107,14 @@ and untouched response bodies in `<word>.raw.json` are written to ignored
 returned by the application API. The script uses the public service URL and
 the same overall 15-second deadline per word.
 
+
+### On-demand forms and pronunciation
+
+`POST /api/dictionary/details` with `{ "word": "слово" }` fetches the exact
+headword's full entry, retaining separate groups of forms and sounds. The app
+exposes IPA and HTTPS audio URLs from `mp3_url` or `ogg_url`, preferring MP3;
+it does not construct a recording URL from a file name. Missing detail fields
+are valid empty data. Details use the same sanitized errors and three-second
+application deadline as lookup. The frontend requests details only when opened,
+retains them in memory for the current lookup, and leaves definitions available
+if a detail request fails.

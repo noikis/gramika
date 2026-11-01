@@ -1,3 +1,4 @@
+import { useDictionarySelection } from '../../hooks/use-dictionary-selection'
 import { useMemo, useRef, useState } from 'react'
 import type { ExpressionExplanationInput } from '@gramota/contracts'
 import { ExpressionExplanationPanel } from '../explanations/ExpressionExplanationPanel'
@@ -10,6 +11,7 @@ import { ResultChanges } from './ResultChanges'
 import { ResultViewToggle } from './ResultViewToggle'
 import type { ResultViewProps } from './types'
 import { SpeechButton } from '../ui/speech-button'
+import { DictionaryAction } from '../dictionary/DictionaryAction'
 import { TranslationAction } from '../translation/TranslationAction'
 
 export function ResultView(props: ResultViewProps) {
@@ -25,11 +27,14 @@ function ResultContent({
   compact = false,
   actions,
   translation,
+  dictionary,
 }: ResultViewProps) {
   const { t } = useLocale()
   const isHistory = !compact && Boolean(actions)
   const [selected, setSelected] = useState(0)
   const [manualSelection, setManualSelection] = useState<ExpressionExplanationInput | null>(null)
+  const { surfaceRef: changesSurfaceRef, getSelection: getChangesSelection } =
+    useDictionarySelection()
   const textSelection = useRef<{ start: number; end: number } | null>(null)
   const panelId = `${labelId}-details`
   const diff = useMemo(
@@ -88,6 +93,44 @@ function ResultContent({
           : result.correctedText
       }}
     />
+  )
+
+  const languageActions = (
+    <>
+      {speechAction}
+      {dictionary && (
+        <DictionaryAction
+          dictionary={dictionary}
+          getSelection={() => {
+            if (view === 'changes') return getChangesSelection()
+            const range = textSelection.current
+            return range && range.start !== range.end
+              ? result.correctedText.slice(
+                  Math.min(range.start, range.end),
+                  Math.max(range.start, range.end),
+                )
+              : null
+          }}
+        />
+      )}
+      {translation && (
+        <TranslationAction
+          scope="result"
+          getText={() => result.correctedText}
+          getSelection={() => {
+            const range = textSelection.current
+            return range && range.start !== range.end
+              ? result.correctedText.slice(
+                  Math.min(range.start, range.end),
+                  Math.max(range.start, range.end),
+                )
+              : null
+          }}
+          translation={translation}
+        />
+      )}
+      {compact && <span className="result-view-action">{viewToggle}</span>}
+    </>
   )
 
   return (
@@ -153,43 +196,23 @@ function ResultContent({
             onSelect={(index) => select(index)}
             onManualSelection={setManualSelection}
             manualSelection={manualSelection}
+            selectionSurfaceRef={changesSurfaceRef}
             translation={translation}
           />
         )}
-        <div className="speech-row">
-          {speechAction}
-          {translation && (
-            <TranslationAction
-              scope="result"
-              getText={() => result.correctedText}
-              getSelection={() => {
-                const range = textSelection.current
-                return range && range.start !== range.end
-                  ? result.correctedText.slice(
-                      Math.min(range.start, range.end),
-                      Math.max(range.start, range.end),
-                    )
-                  : null
-              }}
-              translation={translation}
-            />
-          )}
-        </div>
+        {manualSelection && view === 'text' ? (
+          <ExpressionExplanationPanel
+            key={JSON.stringify(manualSelection)}
+            selection={manualSelection}
+            translation={translation}
+            actions={languageActions}
+          />
+        ) : (
+          <div className="speech-row">{languageActions}</div>
+        )}
       </div>
       {compact && <p className="result-model-caption">{title}</p>}
-      {manualSelection && view === 'text' && (
-        <ExpressionExplanationPanel
-          key={JSON.stringify(manualSelection)}
-          selection={manualSelection}
-          translation={translation}
-        />
-      )}
-      {compact && (
-        <div className="result-actions">
-          {viewToggle}
-          {actions}
-        </div>
-      )}
+      {compact && <div className="result-actions">{actions}</div>}
       {compact && !corrections.length && <p className="clipboard-feedback">{t('noChanges')}</p>}
       {view === 'changes' && current && comparison && (
         <CorrectionComparison
@@ -202,6 +225,7 @@ function ResultContent({
           selected={selected}
           total={corrections.length}
           description={description}
+          dictionary={dictionary}
           panelId={panelId}
           onSelect={select}
           translation={translation}

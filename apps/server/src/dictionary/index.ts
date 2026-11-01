@@ -1,2 +1,14 @@
-export { createDictionaryService, DictionaryError, type DictionaryServiceOptions } from './service'
-export { ResolveResponse, DefinitionsResponse, groupMatches, adaptDefinitions } from './adapter'
+export {
+  createDictionaryService,
+  createDictionaryDetailsService,
+  DictionaryError,
+  type DictionaryServiceOptions,
+} from './service'
+export {
+  ResolveResponse,
+  DefinitionsResponse,
+  FullWordResponse,
+  groupMatches,
+  adaptDefinitions,
+  adaptDetails,
+} from './adapter'

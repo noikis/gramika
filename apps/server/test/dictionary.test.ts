@@ -227,6 +227,8 @@ test('защиты keeps six senses, multiple glosses and examples attached verb
       ...rest,
       examples: examples.map(({ text }) => ({
         text,
+        citation: 'citation',
+        highlights: [{ start: 0, end: 2 }],
         source: DictionaryExampleSource.enum.wiktionary,
       })),
     })),
@@ -582,7 +584,11 @@ test('inspection script reuses the adapter while retaining original response bod
   assert.equal('lang_code' in response.results[0].definitions[0], false)
   assert.equal('references' in response.results[0].matches[0], false)
   assert.deepEqual(response.results[0].definitions[0].senses[0].examples, [
-    { text: '  Приме́р  ', source: DictionaryExampleSource.enum.wiktionary },
+    {
+      text: '  Приме́р  ',
+      source: DictionaryExampleSource.enum.wiktionary,
+      citation: 'original-citation',
+    },
   ])
   assert.equal(DictionaryResponse.safeParse(response).success, true)
   const missing = transport([json(resolved), new Response('not found', { status: 404 })])
