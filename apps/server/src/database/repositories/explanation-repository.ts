@@ -49,7 +49,14 @@ export function createExplanationRepository(db: DatabaseClient): ExplanationRepo
         .onConflictDoUpdate({ target: explanationAttempts.id, set: { record: attempt } })
         .run()
     },
-    metrics(requestId) {
+    metrics(requestId, userId) {
+      const ownedRequest = db
+        .select({ id: modelRequests.id })
+        .from(modelRequests)
+        .innerJoin(corrections, eq(corrections.id, modelRequests.correctionId))
+        .where(and(eq(modelRequests.id, requestId), userId ? eq(corrections.userId, userId) : undefined))
+        .get()
+      if (!ownedRequest) return ExplanationMetrics.parse({ attempts: [], legacySelections: [] })
       const attempts = db
         .select()
         .from(explanationAttempts)
@@ -82,7 +89,7 @@ export function createExplanationRepository(db: DatabaseClient): ExplanationRepo
         )
       return ExplanationMetrics.parse({ attempts, legacySelections })
     },
-    getSource(requestId) {
+    getSource(requestId, userId) {
       const row = db
         .select({
           originalText: corrections.originalText,
@@ -97,21 +104,24 @@ export function createExplanationRepository(db: DatabaseClient): ExplanationRepo
             eq(modelRequests.id, requestId),
             eq(modelRequests.status, 'succeeded'),
             isNull(corrections.deletedAt),
+            userId ? eq(corrections.userId, userId) : undefined,
           ),
         )
         .get()
       return row?.correctedText ? { ...row, correctedText: row.correctedText } : null
     },
-    get(selection) {
+    get(selection, userId) {
       return (
         db
           .select({ explanation: explanations.explanation })
           .from(explanations)
-          .where(matches(selection))
+          .innerJoin(modelRequests, eq(modelRequests.id, explanations.requestId))
+          .innerJoin(corrections, eq(corrections.id, modelRequests.correctionId))
+          .where(and(matches(selection), userId ? eq(corrections.userId, userId) : undefined))
           .get()?.explanation ?? null
       )
     },
-    save(selection, explanation) {
+    save(selection, explanation, userId) {
       db.insert(explanations)
         .values({ ...columns(selection), explanation })
         .onConflictDoNothing()
@@ -119,7 +129,9 @@ export function createExplanationRepository(db: DatabaseClient): ExplanationRepo
       return db
         .select({ explanation: explanations.explanation })
         .from(explanations)
-        .where(matches(selection))
+        .innerJoin(modelRequests, eq(modelRequests.id, explanations.requestId))
+        .innerJoin(corrections, eq(corrections.id, modelRequests.correctionId))
+        .where(and(matches(selection), userId ? eq(corrections.userId, userId) : undefined))
         .get()!.explanation
     },
   }

@@ -91,6 +91,8 @@ export const en = {
   history: 'History',
   mobileNavigation: 'Mobile navigation',
   settings: 'Settings',
+  account: 'Account',
+  signOut: 'Sign out',
   appearance: 'Appearance',
   language: 'Language',
   clearLocalData: 'Clear local data',

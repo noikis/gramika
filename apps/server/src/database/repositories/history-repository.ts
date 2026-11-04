@@ -48,7 +48,7 @@ export function registerHistorySearch(db: Database.Database) {
   )
 }
 
-function historyFilter(db: DatabaseClient, query: HistorySearchQuery) {
+function historyFilter(db: DatabaseClient, query: HistorySearchQuery, userId?: string) {
   const matchingAttempt = db
     .select({ id: modelRequests.id })
     .from(modelRequests)
@@ -83,6 +83,7 @@ function historyFilter(db: DatabaseClient, query: HistorySearchQuery) {
     )
 
   return and(
+    userId ? eq(corrections.userId, userId) : undefined,
     isNull(corrections.deletedAt),
     query.search
       ? or(
@@ -96,8 +97,8 @@ function historyFilter(db: DatabaseClient, query: HistorySearchQuery) {
   )
 }
 
-function selectHistoryPage(db: DatabaseClient, query: HistorySearchQuery) {
-  const filter = historyFilter(db, query)
+function selectHistoryPage(db: DatabaseClient, query: HistorySearchQuery, userId?: string) {
+  const filter = historyFilter(db, query, userId)
   const total = db.select({ total: count() }).from(corrections).where(filter).get()!.total
   const page = Math.min(query.page, Math.max(1, Math.ceil(total / HISTORY_PAGE_SIZE)))
   const direction = query.sort === 'oldest' ? asc : desc
@@ -115,8 +116,8 @@ function selectHistoryPage(db: DatabaseClient, query: HistorySearchQuery) {
 
 export function createHistoryRepository(db: DatabaseClient) {
   return {
-    list(query: HistorySearchQuery = HistorySearchQuery.parse({})) {
-      const { total, page, rows } = selectHistoryPage(db, query)
+    list(query: HistorySearchQuery = HistorySearchQuery.parse({}), userId?: string) {
+      const { total, page, rows } = selectHistoryPage(db, query, userId)
       const models = db
         .selectDistinct({ model: modelRequests.requestedModel })
         .from(modelRequests)
@@ -150,21 +151,21 @@ export function createHistoryRepository(db: DatabaseClient) {
       })
     },
 
-    softDelete(id: string) {
+    softDelete(id: string, userId?: string) {
       return (
         db
           .update(corrections)
           .set({ deletedAt: new Date().toISOString() })
-          .where(and(eq(corrections.id, id), isNull(corrections.deletedAt)))
+          .where(and(eq(corrections.id, id), userId ? eq(corrections.userId, userId) : undefined, isNull(corrections.deletedAt)))
           .run().changes === 1
       )
     },
 
-    get(id: string) {
+    get(id: string, userId?: string) {
       const correction = db
         .select()
         .from(corrections)
-        .where(and(eq(corrections.id, id), isNull(corrections.deletedAt)))
+        .where(and(eq(corrections.id, id), userId ? eq(corrections.userId, userId) : undefined, isNull(corrections.deletedAt)))
         .get()
       if (!correction) return null
 

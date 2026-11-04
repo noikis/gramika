@@ -8,9 +8,9 @@ export type ExplanationSource = {
 }
 
 export interface ExplanationRepository {
-  getSource(requestId: string): ExplanationSource | null
-  get(selection: ExplanationRequest): string | null
-  save(selection: ExplanationRequest, explanation: string): string
+  getSource(requestId: string, userId?: string): ExplanationSource | null
+  get(selection: ExplanationRequest, userId?: string): string | null
+  save(selection: ExplanationRequest, explanation: string, userId?: string): string
   recordAttempt(attempt: ExplanationAttempt): void
-  metrics(requestId: string): ExplanationMetrics
+  metrics(requestId: string, userId?: string): ExplanationMetrics
 }

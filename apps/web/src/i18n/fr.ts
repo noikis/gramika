@@ -93,6 +93,8 @@ export const fr: Messages = {
   history: 'Historique',
   mobileNavigation: 'Navigation mobile',
   settings: 'Paramètres',
+  account: 'Compte',
+  signOut: 'Se déconnecter',
   appearance: 'Apparence',
   language: 'Langue',
   clearLocalData: 'Effacer les données locales',

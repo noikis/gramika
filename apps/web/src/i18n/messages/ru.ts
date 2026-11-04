@@ -1,6 +1,8 @@
 import type { MessageCatalog } from './types'
 
 export const ruMessages = {
+  account: 'Аккаунт',
+  signOut: 'Выйти',
   ttsReadAloud: 'Читать вслух',
   ttsReadSelection: 'Читать выделенный текст',
   ttsPause: 'Пауза',

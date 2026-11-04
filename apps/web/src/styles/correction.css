@@ -294,7 +294,7 @@
   .app-header .header-actions {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 12px;
     margin-left: auto;
   }
   .desktop-settings summary {

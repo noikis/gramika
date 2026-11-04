@@ -56,9 +56,7 @@ export function InstallApp({
   const [isHidden, setIsHidden] = useState(isDismissed)
   const [isOpen, setIsOpen] = useState(false)
   const [isInstalling, setIsInstalling] = useState(false)
-  const [promptEvent, setPromptEvent] = useState<InstallPromptEvent | null>(
-    deferredInstallPrompt,
-  )
+  const [promptEvent, setPromptEvent] = useState<InstallPromptEvent | null>(deferredInstallPrompt)
   const isIOS =
     /iPad|iPhone|iPod/.test(navigator.userAgent) ||
     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
@@ -133,10 +131,7 @@ export function InstallApp({
         onClick={() => setIsOpen(true)}
       >
         <Icon name="install" />
-        <span>
-          {t('install')}
-          <span className="install-name"> Грамика</span>
-        </span>
+        <span>{t('install')}</span>
       </Button>
       <dialog
         ref={dialogRef}

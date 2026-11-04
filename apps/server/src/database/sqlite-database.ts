@@ -13,10 +13,11 @@ import {
 } from './repositories/correction-repository'
 import { createHistoryRepository, registerHistorySearch } from './repositories/history-repository'
 import { createModelPreferenceRepository } from './repositories/model-preference-repository'
+import * as schema from './schema'
 
 const BUSY_TIMEOUT_MS = 5000
 
-export type DatabaseClient = BetterSQLite3Database
+export type DatabaseClient = BetterSQLite3Database<typeof schema>
 
 export class SqliteDatabase {
   readonly explanations: ReturnType<typeof createExplanationRepository>
@@ -24,6 +25,7 @@ export class SqliteDatabase {
   readonly corrections: ReturnType<typeof createCorrectionRepository>
   readonly history: ReturnType<typeof createHistoryRepository>
   readonly modelPreferences: ReturnType<typeof createModelPreferenceRepository>
+  readonly drizzle
 
   constructor(path: string, now = new Date().toISOString()) {
     this.db = this.openConnection(path)
@@ -31,6 +33,7 @@ export class SqliteDatabase {
     try {
       registerHistorySearch(this.db)
       const database = this.createDrizzleClient()
+      this.drizzle = database
       migrateDatabase(database)
       recoverInterruptedAttempts(database, now)
       recoverInterruptedExplanations(database, now)
@@ -67,6 +70,6 @@ export class SqliteDatabase {
   }
 
   private createDrizzleClient() {
-    return drizzle(this.db, { logger: false })
+    return drizzle(this.db, { logger: false, schema })
   }
 }

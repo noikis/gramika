@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { HistoryErrorCode, HistoryFailure, HistorySearchQuery } from '@gramota/contracts'
 import type { HistoryRepository } from '../database'
 import { LogOperation } from '../logging'
+import '../fastify-types'
 
 export async function historyRoutes(
   app: FastifyInstance,
@@ -53,16 +54,16 @@ export async function historyRoutes(
       reply.code(HTTP_STATUS.SERVICE_UNAVAILABLE).send(unavailable())
     })
 
-    history.get('/api/history', async (_request, reply) => {
+    history.get('/api/history', async (request, reply) => {
       if (!historyRepository) return reply.code(HTTP_STATUS.SERVICE_UNAVAILABLE).send(unavailable())
-      return historyRepository.list()
+      return historyRepository.list(undefined, request.authUserId)
     })
 
     history.post('/api/history/search', async (request, reply) => {
       const parsed = HistorySearchQuery.safeParse(request.body)
       if (!parsed.success) return reply.code(HTTP_STATUS.BAD_REQUEST).send(invalidQuery())
       if (!historyRepository) return reply.code(HTTP_STATUS.SERVICE_UNAVAILABLE).send(unavailable())
-      return historyRepository.list(parsed.data)
+      return historyRepository.list(parsed.data, request.authUserId)
     })
 
     history.delete<{ Params: { correctionId: string } }>(
@@ -80,7 +81,7 @@ export async function historyRoutes(
           )
         if (!historyRepository)
           return reply.code(HTTP_STATUS.SERVICE_UNAVAILABLE).send(unavailable())
-        if (!historyRepository.softDelete(parsed.data))
+        if (!historyRepository.softDelete(parsed.data, request.authUserId))
           return reply.code(HTTP_STATUS.NOT_FOUND).send(
             HistoryFailure.parse({
               error: {
@@ -110,7 +111,7 @@ export async function historyRoutes(
 
         if (!historyRepository)
           return reply.code(HTTP_STATUS.SERVICE_UNAVAILABLE).send(unavailable())
-        const detail = historyRepository.get(parsed.data)
+        const detail = historyRepository.get(parsed.data, request.authUserId)
         if (!detail)
           return reply.code(HTTP_STATUS.NOT_FOUND).send(
             HistoryFailure.parse({

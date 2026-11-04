@@ -19,6 +19,8 @@ import {
   type DictionaryServiceOptions,
 } from './dictionary'
 import { dictionaryRoutes } from './routes/dictionary'
+import { createAuth, registerAuthRoutes } from './auth'
+import { readEnvironment } from './config'
 
 export interface AppOptions extends FastifyServerOptions, RootOptions {
   correction?: AppResourcesOptions
@@ -28,7 +30,16 @@ export interface AppOptions extends FastifyServerOptions, RootOptions {
 const options: AppOptions = loggingOptions
 
 const app: FastifyPluginAsync<AppOptions> = async (fastify, opts): Promise<void> => {
-  const { config, database, transport } = createAppResources(fastify, opts.correction)
+  const { config, database, sqliteDatabase, transport } = createAppResources(fastify, opts.correction)
+
+  const environment = readEnvironment()
+  if (
+    sqliteDatabase &&
+    environment.BETTER_AUTH_SECRET &&
+    process.env.NODE_ENV !== 'test' &&
+    !process.env.NODE_TEST_CONTEXT
+  )
+    registerAuthRoutes(fastify, createAuth(sqliteDatabase, environment))
 
   fastify.setErrorHandler((_error, request, reply) => {
     const statusCode =

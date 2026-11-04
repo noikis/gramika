@@ -58,6 +58,7 @@ export function createCorrectionService(deps: Dependencies) {
     onRepositoryFailure = deps.onRepositoryFailure,
     mode: CorrectionMode = CorrectionMode.enum.strict,
     forceRefresh = false,
+    userId?: string,
   ) {
     const input = CorrectionInput.safeParse({ text, modelId, correctionId, mode, forceRefresh })
     if (!input.success) throw new AttemptError(ErrorCode.enum.INVALID_INPUT, null)
@@ -76,6 +77,7 @@ export function createCorrectionService(deps: Dependencies) {
 
     try {
       const saved = deps.repository.findReusable({
+        userId,
         originalText: text,
         modelId,
         mode: input.data.mode,
@@ -107,6 +109,7 @@ export function createCorrectionService(deps: Dependencies) {
     // Record the start of the correction attempt
     try {
       deps.repository.beginAttempt({
+        userId,
         ids,
         originalText: text,
         modelId,

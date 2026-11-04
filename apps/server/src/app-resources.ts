@@ -47,5 +47,5 @@ export function createAppResources(app: FastifyInstance, options: AppResourcesOp
     app.log.info('Application resources closed')
   })
 
-  return { config, database, transport }
+  return { config, database, sqliteDatabase: database instanceof SqliteDatabase ? database : null, transport }
 }

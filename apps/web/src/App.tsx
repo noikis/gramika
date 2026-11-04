@@ -15,8 +15,17 @@ import './styles/app-shell.css'
 import './styles/correction.css'
 import './styles/results.css'
 import './styles/correction-mobile.css'
+import { LoginScreen } from './components/auth/LoginScreen'
+import { authClient } from './auth-client'
 
 function App() {
+  const session = authClient.useSession()
+  if (session.isPending) return <div className="auth-loading" aria-busy="true" />
+  if (!session.data) return <LoginScreen />
+  return <AuthenticatedApp />
+}
+
+function AuthenticatedApp() {
   const { locale, setLocale, resetLocale, t, message } = useLocale()
   const { draft, correction, theme, setTheme, clearStoredWorkspace } = useWorkspacePersistence()
   const [view, setView] = useState<'correction' | 'history'>('correction')
@@ -129,6 +138,7 @@ function App() {
               onLocaleChange={setLocale}
               translationTarget={correction.translation.target}
               onTranslationTargetChange={correction.translation.setTarget}
+              onSignOut={() => void authClient.signOut()}
             />
           </div>
         </div>

@@ -52,6 +52,7 @@ export function AppSettings({
   onLocaleChange,
   translationTarget,
   onTranslationTargetChange,
+  onSignOut,
 }: {
   theme: Theme
   onThemeChange: (theme: Theme) => void
@@ -61,6 +62,7 @@ export function AppSettings({
   onLocaleChange: (locale: Locale) => void
   translationTarget: TranslationTarget
   onTranslationTargetChange: (target: TranslationTarget) => void
+  onSignOut: () => void
 }) {
   const detailsRef = useRef<HTMLDetailsElement>(null)
   const clearDescriptionId = useId()
@@ -87,9 +89,8 @@ export function AppSettings({
       }}
     >
       <Button asChild variant="ghost">
-        <summary aria-label={t('settings')} title={t('settings')}>
-          <Icon name="settings" />
-          <span className="settings-label">{t('settings')}</span>
+        <summary className="profile-trigger" aria-label={t('account')} title={t('account')}>
+          <span className="material-symbols-rounded" aria-hidden="true">person</span>
         </summary>
       </Button>
       <div className="settings-panel">
@@ -137,6 +138,9 @@ export function AppSettings({
         <p id={clearDescriptionId} className="sr-only">
           {t('clearDescription')}
         </p>
+        <Button type="button" variant="ghost" onClick={onSignOut}>
+          <span className="material-symbols-rounded" aria-hidden="true">logout</span> {t('signOut')}
+        </Button>
       </div>
     </details>
   )

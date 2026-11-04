@@ -20,12 +20,12 @@ export async function modelSettingsRoutes(
   app.register(async (api) => {
     setCorrectionErrorHandler(api)
 
-    api.get('/api/correction-config', async (_request, reply) => {
+    api.get('/api/correction-config', async (request, reply) => {
       try {
         if (!preferences) return sendCorrectionFailure(reply, ErrorCode.enum.STORAGE_ERROR)
 
-        const selected = ModelId.safeParse(preferences.get())
-        if (!selected.success) preferences.set(DEFAULT_MODEL_ID)
+        const selected = ModelId.safeParse(preferences.get(request.authUserId))
+        if (!selected.success && request.authUserId) preferences.set(DEFAULT_MODEL_ID, request.authUserId)
 
         return CorrectionConfig.parse({
           modelId: selected.success ? selected.data : DEFAULT_MODEL_ID,
@@ -46,7 +46,7 @@ export async function modelSettingsRoutes(
       try {
         if (!preferences) return sendCorrectionFailure(reply, ErrorCode.enum.STORAGE_ERROR)
 
-        preferences.set(parsed.data.modelId)
+        preferences.set(parsed.data.modelId, request.authUserId)
         return parsed.data
       } catch (error) {
         return sendCorrectionFailure(reply, ErrorCode.enum.STORAGE_ERROR, null, error)

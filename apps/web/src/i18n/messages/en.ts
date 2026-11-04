@@ -1,6 +1,8 @@
 import type { MessageCatalog } from './types'
 
 export const enMessages = {
+  account: 'Account',
+  signOut: 'Sign out',
   ttsReadAloud: 'Read aloud',
   ttsReadSelection: 'Read selected text',
   ttsPause: 'Pause',

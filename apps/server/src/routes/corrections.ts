@@ -33,6 +33,7 @@ export async function correctionRoutes(
               createCorrectionStorageFailureLogger(request),
               parsed.data.mode,
               parsed.data.forceRefresh,
+              request.authUserId,
             ),
           )
         } catch (error) {

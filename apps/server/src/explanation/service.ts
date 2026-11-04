@@ -55,12 +55,12 @@ function readStorage<T>(action: () => T): T {
 export function createExplanationService(deps: Dependencies) {
   const pending = new Map<string, Promise<string>>()
 
-  function read(input: unknown) {
+  function read(input: unknown, userId?: string) {
     const parsed = ExplanationRequest.safeParse(input)
     if (!parsed.success) throw new CorrectionError(ErrorCode.enum.INVALID_INPUT)
     if (!deps.repository) throw new CorrectionError(ErrorCode.enum.STORAGE_ERROR)
     const selection = parsed.data
-    const source = readStorage(() => deps.repository!.getSource(selection.requestId))
+    const source = readStorage(() => deps.repository!.getSource(selection.requestId, userId))
     const expression = 'kind' in selection && selection.kind === 'expression'
     const sourceText =
       expression && selection.source === 'original' ? source?.originalText : source?.correctedText
@@ -100,22 +100,22 @@ export function createExplanationService(deps: Dependencies) {
       )
         throw new CorrectionError(ErrorCode.enum.INVALID_INPUT)
     }
-    return { selection, source, original, corrected }
+    return { selection, source, original, corrected, userId }
   }
 
-  function lookup(input: unknown) {
-    const { selection } = read(input)
-    const explanation = readStorage(() => deps.repository!.get(selection))
+  function lookup(input: unknown, userId?: string) {
+    const { selection } = read(input, userId)
+    const explanation = readStorage(() => deps.repository!.get(selection, userId))
     return { result: explanation === null ? null : { selection, explanation } }
   }
 
-  function metrics(input: unknown) {
+  function metrics(input: unknown, userId?: string) {
     const parsed = ExplanationMetricsInput.safeParse(input)
     if (!parsed.success) throw new CorrectionError(ErrorCode.enum.INVALID_INPUT)
     if (!deps.repository) throw new CorrectionError(ErrorCode.enum.STORAGE_ERROR)
-    if (!readStorage(() => deps.repository!.getSource(parsed.data.requestId)))
+    if (!readStorage(() => deps.repository!.getSource(parsed.data.requestId, userId)))
       throw new CorrectionError(ErrorCode.enum.INVALID_INPUT)
-    return readStorage(() => deps.repository!.metrics(parsed.data.requestId))
+    return readStorage(() => deps.repository!.metrics(parsed.data.requestId, userId))
   }
 
   async function generate(value: ReturnType<typeof read>) {
@@ -266,9 +266,9 @@ export function createExplanationService(deps: Dependencies) {
       if (!response.correctedText?.trim())
         throw new CorrectionError(ErrorCode.enum.INVALID_RESPONSE)
       // The user may delete the parent history entry while the model is running.
-      read(selection)
+      read(selection, value.userId)
       const explanation = readStorage(() =>
-        deps.repository!.save(selection, response.correctedText!),
+        deps.repository!.save(selection, response.correctedText!, value.userId),
       )
       attempt = { ...attempt, status: 'succeeded' }
       return explanation
@@ -291,9 +291,9 @@ export function createExplanationService(deps: Dependencies) {
     }
   }
 
-  async function explain(input: unknown) {
-    const value = read(input)
-    const saved = readStorage(() => deps.repository!.get(value.selection))
+  async function explain(input: unknown, userId?: string) {
+    const value = read(input, userId)
+    const saved = readStorage(() => deps.repository!.get(value.selection, userId))
     if (saved !== null) return { selection: value.selection, explanation: saved }
     const key = JSON.stringify([
       value.selection.requestId,
@@ -308,7 +308,7 @@ export function createExplanationService(deps: Dependencies) {
     }
     try {
       const explanation = await task
-      read(value.selection)
+      read(value.selection, value.userId)
       return { selection: value.selection, explanation }
     } finally {
       if (pending.get(key) === task) pending.delete(key)

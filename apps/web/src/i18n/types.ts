@@ -41,6 +41,8 @@ export type InterfaceCatalog = {
   history: string
   mobileNavigation: string
   settings: string
+  account: string
+  signOut: string
   appearance: string
   language: string
   clearLocalData: string

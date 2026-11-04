@@ -93,6 +93,8 @@ export const ru: Messages = {
   history: 'История',
   mobileNavigation: 'Мобильная навигация',
   settings: 'Настройки',
+  account: 'Аккаунт',
+  signOut: 'Выйти',
   appearance: 'Внешний вид',
   language: 'Язык',
   clearLocalData: 'Очистить локальные данные',

@@ -1,37 +1,37 @@
-# Feature: Translation
+# Feature: Separate user workspaces and histories
 
-**From build-plan:** feature V4.3
+**From build-plan:** V4.7
 **Build attempt:** 1
-**Branch:** feature/translation
-**Status:** verification failed
+**Branch:** feat/auth
+**Status:** implementing
 
 ## Goal
 
-Provide Russian-to-English/French translation through the self-hosted LibreTranslate service for selected or whole text from Original, clean Result, and Explanation surfaces.
+Implement the approved authentication and per-user workspace separation specification in `docs/gramika_auth_implementation_spec.md`, with no SMTP, no email verification, no email reset delivery yet, a pinned stable Better Auth release compatible with Node LTS, a recoverable SQLite backup, and same-origin deployment.
 
 ## In scope
 
-- Server-only LibreTranslate transport, validated public contracts, configuration and `POST /api/translations`.
-- Compact Translate actions paired with Read aloud and an expandable translation drawer.
-- English/French target selection in Settings, with locale-based first-use default and local persistence.
-- Workspace persistence for the active translation, excluding correction history and metrics.
-- Mocked route coverage and web/server build and lint checks.
+- Better Auth on the existing Fastify + SQLite/Drizzle backend.
+- Google OAuth and email/password sign-in and registration without email verification.
+- 30-day sliding sessions, sign-out, session bootstrap, protected routes, and strict server-derived ownership.
+- Backup and legacy-data isolation so new workspaces start empty.
+- Responsive login, sign-up, inline forgot-password state, theme and RU/EN/FR support using `prototypes/login_screen.png`.
+- Focused auth and isolation tests plus regression builds and lint.
 
 ## Out of scope
 
-Automatic source detection, non-Russian source languages, translation history, SQLite records, OpenRouter calls, benchmarks, and browser automation.
-
-## Build loop
-
-Implemented on `feature/translation`; final work commit and landing remain owned by `/complete`.
+- SMTP, email verification, email-based password reset delivery, and account recovery implementation.
+- Invitations, roles, billing, MFA, passkeys, account deletion, profile editing, and device management.
+- Changes to correction, diff, dictionary, translation, or broader frontend behavior.
 
 ## Build steps
 
-- [x] Add contracts, configuration, server transport, service and route.
-- [x] Add target preference and workspace persistence with legacy-version loading.
-- [x] Add Original, Result and Explanation actions, drawer, copy behavior and localized labels.
-- [x] Add focused mocked translation route tests and run affected checks.
+- [x] Audit current runtime, schema, repositories, routes, client persistence, and deployment configuration.
+- [ ] Add pinned Better Auth dependencies, auth schema/migrations, same-origin handlers, Google OAuth, credentials, sessions, and sign-out.
+- [ ] Back up the existing SQLite database; add ownership and isolate legacy anonymous data from new workspaces.
+- [ ] Protect backend routes and add auth-aware frontend routing, login/sign-up screens, inline forgot-password state, and sign-out.
+- [ ] Add focused tests and run server/web builds and lint; document production configuration and restore procedure.
 
 ## Testing
 
-`npm run build:ts -w apps/server`, `npm run build -w apps/web`, and `npm run lint -w apps/web` pass. The full server test command includes pre-existing frontend-refactor path failures in text-diff presentation tests; translation route tests pass.
+Use the repository's declared server tests, web build, server TypeScript build, and web/server lint checks. Do not invoke the manual benchmark command.

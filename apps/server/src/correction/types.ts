@@ -35,6 +35,7 @@ export type Outcome = {
 }
 
 export type StartAttempt = {
+  userId?: string
   ids: Attempt
   originalText: string
   modelId: string
@@ -47,6 +48,7 @@ export type StartAttempt = {
 
 export interface CorrectionRepository {
   findReusable(input: {
+    userId?: string
     originalText: string
     modelId: string
     mode: CorrectionMode

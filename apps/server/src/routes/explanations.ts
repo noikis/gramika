@@ -11,6 +11,7 @@ import {
 import { CorrectionError } from '../correction'
 import type { createExplanationService } from '../explanation'
 import { HTTP_STATUS } from '../http-status'
+import '../fastify-types'
 
 const MAX_EXPLANATION_BODY_BYTES = 64 * 1024
 const statuses = {
@@ -50,7 +51,7 @@ export async function explanationRoutes(
       )
     })
     api.post('/api/explanations/metrics', async (request) =>
-      ExplanationMetrics.parse(service.metrics(request.body)),
+      ExplanationMetrics.parse(service.metrics(request.body, request.authUserId)),
     )
     for (const isLookup of [true, false]) {
       api.post(
@@ -60,8 +61,8 @@ export async function explanationRoutes(
           const parsed = ExplanationRequest.safeParse(request.body)
           if (!parsed.success) throw new CorrectionError(ErrorCode.enum.INVALID_INPUT)
           return isLookup
-            ? ExplanationLookup.parse(service.lookup(parsed.data))
-            : ExplanationSuccess.parse(await service.explain(parsed.data))
+            ? ExplanationLookup.parse(service.lookup(parsed.data, request.authUserId))
+            : ExplanationSuccess.parse(await service.explain(parsed.data, request.authUserId))
         },
       )
     }

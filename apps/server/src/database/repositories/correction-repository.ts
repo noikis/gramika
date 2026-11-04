@@ -39,6 +39,7 @@ export function createCorrectionRepository(db: DatabaseClient): CorrectionReposi
             .where(
               and(
                 isNull(corrections.deletedAt),
+                input.userId ? eq(corrections.userId, input.userId) : undefined,
                 eq(corrections.originalText, input.originalText),
                 eq(modelRequests.requestedModel, input.modelId),
                 eq(modelRequests.mode, input.mode),
@@ -73,6 +74,7 @@ export function createCorrectionRepository(db: DatabaseClient): CorrectionReposi
       )
     },
     beginAttempt({
+      userId,
       ids,
       originalText,
       modelId,
@@ -99,6 +101,7 @@ export function createCorrectionRepository(db: DatabaseClient): CorrectionReposi
             tx.insert(corrections)
               .values({
                 id: ids.correctionId,
+                userId,
                 createdAt: startedAt,
                 lastUsedAt: startedAt,
                 originalText,
