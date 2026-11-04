@@ -16,6 +16,10 @@ export function useResultPair(draftRevision: number, initial?: CorrectionWorkspa
   const visibleHistory = history?.revision === draftRevision ? history : null
   const allResults = visibleHistory?.results ?? []
   const results = allResults.filter((entry) => entry.result.mode === mode)
+  const visibleVariant =
+    allResults.find((entry) => entry.result.requestId === activeRequestId)?.result ??
+    allResults.at(-1)?.result ??
+    null
   const visibleResult =
     results.find((entry) => entry.result.requestId === activeRequestId)?.result ??
     results.at(-1)?.result ??
@@ -43,6 +47,11 @@ export function useResultPair(draftRevision: number, initial?: CorrectionWorkspa
 
   function selectResult(requestId: string) {
     if (results.some((entry) => entry.result.requestId === requestId)) setActiveRequestId(requestId)
+  }
+
+  function selectVariant(requestId: string) {
+    if (allResults.some((entry) => entry.result.requestId === requestId))
+      setActiveRequestId(requestId)
   }
 
   function setResultView(requestId: string, view: ResultViewMode) {
@@ -80,7 +89,9 @@ export function useResultPair(draftRevision: number, initial?: CorrectionWorkspa
     mode,
     activeRequestId,
     results,
+    variants: allResults,
     visibleResult,
+    visibleVariant,
     history: visibleHistory,
     allResults,
     correctionId: firstResult?.correctionId,
@@ -89,6 +100,7 @@ export function useResultPair(draftRevision: number, initial?: CorrectionWorkspa
     receive,
     selectMode,
     selectResult,
+    selectVariant,
     setResultView,
     reset,
     clear,

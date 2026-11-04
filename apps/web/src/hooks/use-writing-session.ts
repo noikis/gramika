@@ -1,4 +1,10 @@
-import { DEFAULT_MODEL_ID, MODELS, OriginalText, type ModelId } from '@gramota/contracts'
+import {
+  DEFAULT_MODEL_ID,
+  MODELS,
+  OriginalText,
+  type CorrectionMode,
+  type ModelId,
+} from '@gramota/contracts'
 import { modelName } from '../lib/history-format'
 import type { CorrectionWorkspaceState } from '../lib/workspace-storage'
 import { useServiceConfig } from './use-service-config'
@@ -16,7 +22,7 @@ export function useWritingSession(
   const config = useServiceConfig()
   const result = useResultPair(draftRevision, initial)
   const request = useSubmission(draftRevision, initial, result.receive)
-  const clipboard = useClipboardCopy(result.visibleResult, (value) =>
+  const clipboard = useClipboardCopy(result.visibleVariant, (value) =>
     result.setResultView(value.requestId, 'text'),
   )
   const validation = OriginalText.safeParse(text.trim())
@@ -60,6 +66,22 @@ export function useWritingSession(
     })
   }
 
+  async function requestVariant(mode: CorrectionMode) {
+    if (
+      !canCorrect ||
+      !result.visibleVariant ||
+      result.visibleVariant.originalText !== text.trim()
+    )
+      return
+    return request.submit({
+      text: text.trim(),
+      modelId: DEFAULT_MODEL_ID,
+      forceRefresh: true,
+      mode,
+      correctionId: result.visibleVariant.correctionId,
+    })
+  }
+
   function selectMode(value: string) {
     if (!request.isSending()) result.selectMode(value)
   }
@@ -98,15 +120,19 @@ export function useWritingSession(
     pendingModel: request.pendingModel,
     isOpinionPending: request.pendingModel === SECOND_OPINION_MODEL_ID,
     visibleResult: result.visibleResult,
+    visibleVariant: result.visibleVariant,
     results: result.results,
+    variants: result.variants,
     activeRequestId: result.activeRequestId,
     selectResult: result.selectResult,
+    selectVariant: result.selectVariant,
     setResultView: result.setResultView,
     isModeChanged: result.isModeChanged,
     canCorrect,
     canRequestOpinion,
     correct: () => submit(DEFAULT_MODEL_ID),
     requestOpinion: () => submit(SECOND_OPINION_MODEL_ID),
+    requestVariant,
     regenerate: (modelId: ModelId) => submit(modelId, true),
     canRegenerate,
     opinionModelName: modelName(SECOND_OPINION_MODEL_ID),
@@ -117,6 +143,8 @@ export function useWritingSession(
       text && !validation.success ? (validation.error.issues[0]?.message ?? '') : '',
     error: visibleError?.modelId === DEFAULT_MODEL_ID ? visibleError.message : '',
     opinionError: visibleError?.modelId === SECOND_OPINION_MODEL_ID ? visibleError.message : '',
+    variantError:
+      request.error?.revision === draftRevision && !pending ? request.error.message : '',
     draftChanged: result.draftChanged,
   }
 }

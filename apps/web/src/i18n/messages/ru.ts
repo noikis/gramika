@@ -56,6 +56,8 @@ export const ruMessages = {
   moved: 'Перемещено',
   nothing: '(ничего)',
   resultCounter: 'Результат {current} из {total}',
+  variantCounter: 'Вариант {current} из {total}',
+  correctionsNumber: '{count} исправлений',
   historyRange: '{start}–{end} из {total} проверок',
   perPage: '{count} на странице',
   pageCounter: 'Страница {current} из {total}',

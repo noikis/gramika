@@ -48,6 +48,20 @@ export type InterfaceCatalog = {
   original: string
   result: string
   newCorrection: string
+  newText: string
+  moreVariant: string
+  chooseMode: string
+  keepVariants: string
+  strictDescription: string
+  rewriteDescription: string
+  modeHintStrict: string
+  modeHintRewrite: string
+  checkCompleted: string
+  checkText: string
+  checkingText: string
+  correctionsList: string
+  done: string
+  explanationFailed: string
   paste: string
   typeOrPaste: string
   correct: string

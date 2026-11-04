@@ -11,10 +11,11 @@ import { DictionaryAction } from '../dictionary/DictionaryAction'
 import { TranslationAction } from '../translation/TranslationAction'
 import type { Correction, WorkspaceProps } from './types'
 
-function ModeControl({ correction }: { correction: Correction }) {
+function ModeControl({ correction, mobile = false }: { correction: Correction; mobile?: boolean }) {
   const { t } = useLocale()
   return (
     <div className="model-control">
+      {mobile && <p className="mobile-mode-title">{t('correctionMode')}</p>}
       <fieldset className="mode-switch">
         <legend className="sr-only">{t('correctionMode')}</legend>
         {CorrectionMode.options.map((mode) => (
@@ -27,10 +28,16 @@ function ModeControl({ correction }: { correction: Correction }) {
               disabled={correction.pending}
               onChange={() => correction.selectMode(mode)}
             />
+            {mobile && mode === correction.mode && <Icon name="check" />}
             {mode === 'strict' ? t('strictMode') : t('rewriteMode')}
           </label>
         ))}
       </fieldset>
+      {mobile && (
+        <p className="mobile-mode-hint">
+          {correction.mode === 'strict' ? t('modeHintStrict') : t('modeHintRewrite')}
+        </p>
+      )}
       {correction.configFailed && (
         <Button type="button" variant="secondary" onClick={correction.reloadConfig}>
           {t('retryConnection')}
@@ -40,17 +47,25 @@ function ModeControl({ correction }: { correction: Correction }) {
   )
 }
 
-export function OriginalEditor({ draft, correction, onNew, isBusy }: WorkspaceProps) {
+export function OriginalEditor({
+  draft,
+  correction,
+  onNew,
+  isBusy,
+  mobile = false,
+}: WorkspaceProps & { mobile?: boolean }) {
   const { t } = useLocale()
   const { text, edit, paste, pending, inputRef } = draft
   const [manualSelection, setManualSelection] = useState<ExpressionExplanationInput | null>(null)
   const [speechSelection, setSpeechSelection] = useState('')
   const selectionRef = useRef<{ start: number; end: number } | null>(null)
   const translationInitialized = useRef(false)
+  const shownResult = mobile ? correction.visibleVariant : correction.visibleResult
   const result =
-    !correction.draftChanged && correction.visibleResult?.originalText === text
-      ? correction.visibleResult
+    !correction.draftChanged && shownResult?.originalText === text.trim()
+      ? shownResult
       : null
+  const isCompact = mobile && Boolean(result)
 
   useEffect(() => {
     // The selection belongs to the current correction mode and request.
@@ -101,13 +116,15 @@ export function OriginalEditor({ draft, correction, onNew, isBusy }: WorkspacePr
   }, [text, inputRef])
 
   useEffect(() => {
+    if (isCompact) return
     const frame = requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }))
     return () => cancelAnimationFrame(frame)
-  }, [inputRef])
+  }, [inputRef, isCompact])
   const languageActions = (
     <>
       <SpeechButton
         sourceId="original-editor"
+        showLabel={mobile}
         lang="ru-RU"
         getSelection={() => speechSelection || null}
         getText={() => {
@@ -120,33 +137,36 @@ export function OriginalEditor({ draft, correction, onNew, isBusy }: WorkspacePr
             : text
         }}
       />
-      <DictionaryAction
-        getSelection={() => speechSelection || null}
-        dictionary={correction.dictionary}
-      />
+      {!mobile && (
+        <DictionaryAction
+          getSelection={() => speechSelection || null}
+          dictionary={correction.dictionary}
+        />
+      )}
       <TranslationAction
         scope="original"
         getText={() => text}
         getSelection={() => speechSelection || null}
         translation={correction.translation}
+        showLabel={mobile}
       />
     </>
   )
 
-  return (
-    <section className="editor original-editor" aria-labelledby="original-title">
+  const editorBody = (
+    <>
       <div className="editor-heading">
         <h2 id="original-title" className="sr-only">
-          <label htmlFor="original">Original</label>
+          <label htmlFor="original">{t('original')}</label>
         </h2>
         <Button
           type="button"
           variant="ghost"
           onClick={onNew}
           disabled={isBusy}
-          aria-label={t('newCorrection')}
+          aria-label={mobile ? t('newText') : t('newCorrection')}
         >
-          <Icon name="plus" /> {t('newCorrection')}
+          <Icon name="plus" /> {mobile ? t('newText') : t('newCorrection')}
         </Button>
         <Button type="button" variant="secondary" onClick={paste} disabled={pending}>
           <Icon name="paste" />
@@ -192,8 +212,62 @@ export function OriginalEditor({ draft, correction, onNew, isBusy }: WorkspacePr
       <p id="input-feedback" className="clipboard-feedback" role="status">
         {correction.validationMessage}
       </p>
+    </>
+  )
+
+  if (mobile)
+    return (
+      <>
+        <section
+          className={`editor original-editor mobile-original-editor${isCompact ? ' is-compact' : ''}`}
+          aria-labelledby="original-title"
+        >
+          {editorBody}
+          {!isCompact && (
+            <div className="mobile-editor-language-actions">
+              <div className="speech-row">{languageActions}</div>
+            </div>
+          )}
+        </section>
+        {!isCompact && (
+          <div className="mobile-mode-actions">
+            <ModeControl correction={correction} mobile />
+            {correction.error && (
+              <p role="alert" className="mobile-error-banner">
+                <Icon name="error" /> {correction.error}
+              </p>
+            )}
+            <Button
+              type="button"
+              className="mobile-check-button"
+              disabled={!correction.canCorrect}
+              onClick={correction.correct}
+              aria-describedby="correction-status"
+            >
+              {correction.pending ? (
+                <span className="mobile-button-spinner" aria-hidden="true" />
+              ) : (
+                <Icon name={correction.error ? 'reset' : 'check'} />
+              )}
+              {correction.pending
+                ? t('checkingText')
+                : correction.error
+                  ? t('retry')
+                  : t('correct')}
+            </Button>
+            <p id="correction-status" className="clipboard-feedback" role="status">
+              {correction.availability}
+            </p>
+          </div>
+        )}
+      </>
+    )
+
+  return (
+    <section className="editor original-editor" aria-labelledby="original-title">
+      {editorBody}
       <div className="original-editor-controls">
-        {manualSelection && result ? (
+        {manualSelection && result && !mobile ? (
           <ExpressionExplanationPanel
             key={JSON.stringify(manualSelection)}
             selection={manualSelection}

@@ -8,23 +8,6 @@
   color: var(--muted);
   margin: 0;
 }
-.workspace-complete-status {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-family: var(--font-sans) !important;
-  font-style: normal !important;
-  font-weight: 700;
-  color: var(--text) !important;
-}
-.workspace-complete-status::before {
-  content: '';
-  width: 10px;
-  height: 10px;
-  flex: 0 0 auto;
-  border-radius: 50%;
-  background: var(--accent);
-}
 .editors {
   display: grid;
   align-items: start;

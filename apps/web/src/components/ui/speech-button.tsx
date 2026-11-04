@@ -11,6 +11,7 @@ type SpeechButtonProps = {
   getSelection?: () => string | null
   lang: string
   className?: string
+  showLabel?: boolean
 }
 
 export function SpeechButton({
@@ -19,6 +20,7 @@ export function SpeechButton({
   getSelection,
   lang,
   className,
+  showLabel = false,
 }: SpeechButtonProps) {
   const { message } = useLocale()
   const tts = useMemo(
@@ -90,6 +92,7 @@ export function SpeechButton({
       onClick={activate}
     >
       <Icon name={status === 'speaking' ? 'pause' : status === 'paused' ? 'play' : 'volume'} />
+      {showLabel && <span>{label}</span>}
     </Button>
   )
 }

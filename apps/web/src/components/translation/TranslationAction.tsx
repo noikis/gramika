@@ -9,6 +9,7 @@ export function TranslationAction({
   getText,
   getSelection,
   translation,
+  showLabel = false,
 }: {
   scope: TranslationScope
   getText: () => string
@@ -17,6 +18,7 @@ export function TranslationAction({
     pending: boolean
     translate: (scope: TranslationScope, text: string, selected?: string) => void
   }
+  showLabel?: boolean
 }) {
   const { t } = useLocale()
   const captured = useRef<string | null>(null)
@@ -38,6 +40,7 @@ export function TranslationAction({
       }}
     >
       <Icon name="translate" />
+      {showLabel && <span>{t('translate')}</span>}
     </Button>
   )
 }

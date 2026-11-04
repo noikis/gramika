@@ -51,6 +51,8 @@ export const enMessages = {
   moved: 'Moved',
   nothing: '(nothing)',
   resultCounter: 'Result {current} of {total}',
+  variantCounter: 'Version {current} of {total}',
+  correctionsNumber: '{count} corrections',
   historyRange: '{start}-{end} of {total} corrections',
   perPage: '{count} per page',
   pageCounter: 'Page {current} of {total}',

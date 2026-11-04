@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { DEFAULT_MODEL_ID } from '@gramota/contracts'
 import { Button } from '../components/ui/button'
 import { Icon } from '../components/ui/icon'
@@ -7,6 +8,23 @@ import { ResultView } from '../components/results/ResultView'
 import type { Correction, WorkspaceProps } from '../components/correction/types'
 import { useLocale } from '../i18n/use-locale'
 import { LanguageToolsSidebar } from '../components/translation/LanguageToolsSidebar'
+import { MobileCorrectionPage } from './MobileCorrectionPage'
+
+export function CorrectionPage(props: WorkspaceProps) {
+  const [isMobile, setIsMobile] = useState(
+    () => window.matchMedia?.('(max-width: 720px)').matches ?? false,
+  )
+
+  useEffect(() => {
+    const query = window.matchMedia?.('(max-width: 720px)')
+    if (!query) return
+    const update = () => setIsMobile(query.matches)
+    query.addEventListener('change', update)
+    return () => query.removeEventListener('change', update)
+  }, [])
+
+  return isMobile ? <MobileCorrectionPage {...props} /> : <DesktopCorrectionPage {...props} />
+}
 
 function OpinionAction({ correction }: { correction: Correction }) {
   const { t } = useLocale()
@@ -71,7 +89,7 @@ function MobileRegenerateAction({ correction }: { correction: Correction }) {
   )
 }
 
-export function CorrectionPage({ draft, correction, onNew, isBusy }: WorkspaceProps) {
+function DesktopCorrectionPage({ draft, correction, onNew, isBusy }: WorkspaceProps) {
   const { t } = useLocale()
   const activeEntry = correction.visibleResult
     ? correction.results.find(
@@ -83,11 +101,7 @@ export function CorrectionPage({ draft, correction, onNew, isBusy }: WorkspacePr
     <>
       <div className="workspace-intro">
         <h1 className="sr-only">{t('correction')}</h1>
-        <p className={correction.visibleResult ? 'workspace-complete-status' : undefined}>
-          {correction.visibleResult
-            ? `Проверка завершена · ${correction.results.length} ${correction.results.length === 1 ? 'вариант' : 'варианта'}`
-            : t('writeWithConfidence')}
-        </p>
+        <p>{t('writeWithConfidence')}</p>
       </div>
       <div className={`translation-stage${correction.tools.isOpen ? ' has-translation' : ''}`}>
         {correction.tools.isOpen && (

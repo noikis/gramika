@@ -14,6 +14,7 @@ import { TranslationScope } from '@gramota/contracts'
 import './styles/app-shell.css'
 import './styles/correction.css'
 import './styles/results.css'
+import './styles/correction-mobile.css'
 
 function App() {
   const { locale, setLocale, resetLocale, t, message } = useLocale()

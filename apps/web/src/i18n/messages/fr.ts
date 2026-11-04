@@ -56,6 +56,8 @@ export const frMessages = {
   moved: 'Déplacé',
   nothing: '(rien)',
   resultCounter: 'Résultat {current} sur {total}',
+  variantCounter: 'Version {current} sur {total}',
+  correctionsNumber: '{count} corrections',
   historyRange: '{start}-{end} sur {total} corrections',
   perPage: '{count} par page',
   pageCounter: 'Page {current} sur {total}',

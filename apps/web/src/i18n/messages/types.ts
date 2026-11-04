@@ -43,6 +43,8 @@ export type MessageCatalog = {
   moved: string
   nothing: string
   resultCounter: string
+  variantCounter: string
+  correctionsNumber: string
   historyRange: string
   perPage: string
   pageCounter: string
