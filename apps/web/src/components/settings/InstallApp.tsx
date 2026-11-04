@@ -11,6 +11,15 @@ interface InstallPromptEvent extends Event {
   prompt(): Promise<{ outcome: 'accepted' | 'dismissed' }>
 }
 
+let deferredInstallPrompt: InstallPromptEvent | null = null
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeinstallprompt', (event) => {
+    event.preventDefault()
+    deferredInstallPrompt = event as InstallPromptEvent
+  })
+}
+
 function isStandalone() {
   return (
     window.matchMedia('(display-mode: standalone)').matches ||
@@ -47,7 +56,9 @@ export function InstallApp({
   const [isHidden, setIsHidden] = useState(isDismissed)
   const [isOpen, setIsOpen] = useState(false)
   const [isInstalling, setIsInstalling] = useState(false)
-  const [promptEvent, setPromptEvent] = useState<InstallPromptEvent | null>(null)
+  const [promptEvent, setPromptEvent] = useState<InstallPromptEvent | null>(
+    deferredInstallPrompt,
+  )
   const isIOS =
     /iPad|iPhone|iPod/.test(navigator.userAgent) ||
     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
@@ -57,11 +68,13 @@ export function InstallApp({
   useEffect(() => {
     function capturePrompt(event: Event) {
       event.preventDefault()
-      setPromptEvent(event as InstallPromptEvent)
+      deferredInstallPrompt = event as InstallPromptEvent
+      setPromptEvent(deferredInstallPrompt)
     }
     function installed() {
       setIsInstalled(true)
       setIsOpen(false)
+      deferredInstallPrompt = null
       setPromptEvent(null)
     }
     window.addEventListener('beforeinstallprompt', capturePrompt)
@@ -101,6 +114,7 @@ export function InstallApp({
     } catch {
       notify(message('installError'))
     } finally {
+      deferredInstallPrompt = null
       setPromptEvent(null)
       setIsInstalling(false)
     }
