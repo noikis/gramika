@@ -83,7 +83,11 @@ export function CorrectionPage({ draft, correction, onNew, isBusy }: WorkspacePr
     <>
       <div className="workspace-intro">
         <h1 className="sr-only">{t('correction')}</h1>
-        <p>{t('writeWithConfidence')}</p>
+        <p className={correction.visibleResult ? 'workspace-complete-status' : undefined}>
+          {correction.visibleResult
+            ? `Проверка завершена · ${correction.results.length} ${correction.results.length === 1 ? 'вариант' : 'варианта'}`
+            : t('writeWithConfidence')}
+        </p>
       </div>
       <div className={`translation-stage${correction.tools.isOpen ? ' has-translation' : ''}`}>
         {correction.tools.isOpen && (
