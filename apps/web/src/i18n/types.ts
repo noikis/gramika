@@ -43,6 +43,40 @@ export type InterfaceCatalog = {
   settings: string
   account: string
   signOut: string
+  authEyebrow: string
+  authHero: string
+  authHeroAccent: string
+  authLead: string
+  authWelcome: string
+  authSigninLead: string
+  authSignup: string
+  authSignupLead: string
+  authReset: string
+  authResetLead: string
+  authGoogle: string
+  authDivider: string
+  authEmail: string
+  authPassword: string
+  authConfirmPassword: string
+  authForgot: string
+  authShowPassword: string
+  authHidePassword: string
+  authSignin: string
+  authCreateAccount: string
+  authBackToSignin: string
+  authNewToGramika: string
+  authAlreadyAccount: string
+  authPasswordRecoveryUnavailable: string
+  authPasswordMismatch: string
+  authServiceUnavailable: string
+  authFootnote: string
+  authSampleTitle: string
+  authSampleChanges: string
+  authSampleOriginal: string
+  authSampleCorrected: string
+  authFooter: string
+  authPleaseWait: string
+  interruptedNotice: string
   appearance: string
   language: string
   clearLocalData: string
@@ -158,3 +192,6 @@ export type Messages = InterfaceCatalog & {
   savedExplanation: string
   interruptedRequest: string
 }
+
+
+

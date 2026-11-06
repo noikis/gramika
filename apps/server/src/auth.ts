@@ -5,20 +5,11 @@ import type { FastifyInstance } from 'fastify'
 import type { SqliteDatabase } from './database/sqlite-database'
 
 export function createAuth(database: SqliteDatabase, environment: Record<string, string | undefined>) {
-  const baseURL = environment.BETTER_AUTH_URL?.trim() || 'http://localhost:3000'
+  const baseURL = environment.BETTER_AUTH_URL?.trim()
+  if (!baseURL) throw new Error('BETTER_AUTH_URL is required when authentication is enabled')
   const trustedOrigins = [
     baseURL,
     environment.WEB_ORIGIN?.trim(),
-    ...(environment.NODE_ENV === 'development'
-      ? [
-          'http://localhost:3000',
-          'http://127.0.0.1:3000',
-          'http://localhost:5173',
-          'http://127.0.0.1:5173',
-          'http://localhost:4173',
-          'http://127.0.0.1:4173',
-        ]
-      : []),
   ]
     .filter((value): value is string => Boolean(value))
 
@@ -47,6 +38,7 @@ export function createAuth(database: SqliteDatabase, environment: Record<string,
 export function registerAuthRoutes(
   fastify: FastifyInstance,
   auth: ReturnType<typeof createAuth>,
+  baseURL: string,
 ) {
   fastify.all('/api/auth/*', async (request, reply) => {
     const headers = fromNodeHeaders(request.headers)
@@ -55,7 +47,7 @@ export function registerAuthRoutes(
       body = JSON.stringify(request.body)
       headers.set('content-type', 'application/json')
     }
-    const webRequest = new Request(new URL(request.raw.url ?? '/', 'http://localhost'), {
+    const webRequest = new Request(new URL(request.raw.url ?? '/', baseURL), {
       method: request.method,
       headers,
       body,

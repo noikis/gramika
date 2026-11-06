@@ -1,6 +1,4 @@
 export type MessageCatalog = {
-  account: string
-  signOut: string
   ttsReadAloud: string
   ttsReadSelection: string
   ttsPause: string

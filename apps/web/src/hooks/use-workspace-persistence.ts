@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { CorrectionMode } from '@gramota/contracts'
-import { clearWorkspace, loadWorkspace, saveWorkspace, type Theme } from '../lib/workspace-storage'
+import { clearWorkspace, ensureWorkspaceIdentity, loadWorkspace, saveWorkspace, type Theme } from '../lib/workspace-storage'
 import { notify } from '../lib/notifications'
 import { useDraft } from './use-draft'
 import { useWritingSession } from './use-writing-session'
@@ -8,9 +8,12 @@ import { useLocale } from '../i18n/use-locale'
 import { useDictionary } from './use-dictionary'
 import { useTranslation } from './use-translation'
 
-export function useWorkspacePersistence() {
+export function useWorkspacePersistence(userId?: string) {
   const { message, locale } = useLocale()
-  const [restored] = useState(loadWorkspace)
+  const [restored] = useState(() => {
+    if (userId) ensureWorkspaceIdentity(userId)
+    return loadWorkspace()
+  })
   const draft = useDraft(restored.workspace?.text)
   const correction = useWritingSession(draft.text, draft.revision, restored.workspace)
   const translation = useTranslation(null, locale)

@@ -1,8 +1,6 @@
 import type { MessageCatalog } from './types'
 
 export const frMessages = {
-  account: 'Compte',
-  signOut: 'Se déconnecter',
   ttsReadAloud: 'Lire à voix haute',
   ttsReadSelection: 'Lire le texte sélectionné',
   ttsPause: 'Pause',

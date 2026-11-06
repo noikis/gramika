@@ -24,6 +24,11 @@ const root: FastifyPluginAsync<RootOptions> = async (fastify, options): Promise<
     dotfiles: 'deny',
     cacheControl: false,
   })
+
+  fastify.get('/*', async (request, reply) => {
+    if (request.url.startsWith('/api/')) return reply.code(404).send({ error: 'Not found' })
+    return reply.sendFile('index.html')
+  })
 }
 
 export default root

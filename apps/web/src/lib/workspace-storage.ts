@@ -10,6 +10,7 @@ import type { ResultViewMode } from '../components/results/types'
 import type { MessageCatalog } from '../i18n/messages/types'
 
 export const WORKSPACE_STORAGE_KEY = 'gramota.workspace'
+const WORKSPACE_IDENTITY_KEY = 'gramota.workspace.identity'
 const WORKSPACE_VERSION = 3
 export const THEMES = ['system', 'light', 'dark'] as const
 export type Theme = (typeof THEMES)[number]
@@ -126,5 +127,16 @@ export function clearWorkspace(): boolean {
     return true
   } catch {
     return false
+  }
+}
+
+export function ensureWorkspaceIdentity(userId: string): void {
+  try {
+    if (localStorage.getItem(WORKSPACE_IDENTITY_KEY) !== userId) {
+      localStorage.removeItem(WORKSPACE_STORAGE_KEY)
+      localStorage.setItem(WORKSPACE_IDENTITY_KEY, userId)
+    }
+  } catch {
+    // Workspace loading already fails safely when browser storage is unavailable.
   }
 }

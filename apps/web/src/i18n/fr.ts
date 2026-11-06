@@ -95,6 +95,7 @@ export const fr: Messages = {
   settings: 'Paramètres',
   account: 'Compte',
   signOut: 'Se déconnecter',
+  authPleaseWait: 'Veuillez patienter…', interruptedNotice: 'Une demande était en cours lorsque cet espace a été fermé. Elle est peut-être terminée.', authEyebrow: 'UNE AIDE À L’ÉCRITURE PLUS ATTENTIVE', authHero: 'Vos mots.', authHeroAccent: 'Plus justes.', authLead: 'Corrigez la grammaire et la ponctuation en préservant le sens et le ton de vos messages.', authWelcome: 'Bienvenue sur Gramika', authSigninLead: 'Connectez-vous à votre espace d’écriture personnel.', authSignup: 'Créer un compte', authSignupLead: 'Retrouvez vos corrections et votre historique au même endroit.', authReset: 'Réinitialiser le mot de passe', authResetLead: 'Saisissez l’adresse e-mail associée à votre compte Gramika.', authGoogle: 'Continuer avec Google', authDivider: 'ou continuer par e-mail', authEmail: 'Adresse e-mail', authPassword: 'Mot de passe', authConfirmPassword: 'Confirmer le mot de passe', authForgot: 'Mot de passe oublié ?', authShowPassword: 'Afficher le mot de passe', authHidePassword: 'Masquer le mot de passe', authSignin: 'Se connecter', authCreateAccount: 'Créer un compte', authBackToSignin: 'Retour à la connexion', authNewToGramika: 'Vous découvrez Gramika ?', authAlreadyAccount: 'Vous avez déjà un compte ?', authPasswordRecoveryUnavailable: 'La récupération par e-mail n’est pas encore disponible.', authPasswordMismatch: 'Les mots de passe ne correspondent pas.', authServiceUnavailable: 'Le service d’authentification est indisponible. Réessayez.', authFootnote: 'Vos corrections et votre historique restent propres à votre compte.', authSampleTitle: 'Une petite correction', authSampleChanges: '2 corrections', authSampleOriginal: 'Original', authSampleCorrected: 'Corrigé', authFooter: 'Écrivez plus sereinement.',
   appearance: 'Apparence',
   language: 'Langue',
   clearLocalData: 'Effacer les données locales',
@@ -251,3 +252,5 @@ export const fr: Messages = {
   interruptedRequest:
     'Cette demande a été interrompue. L’utilisation et le coût finaux peuvent être indisponibles.',
 }
+
+

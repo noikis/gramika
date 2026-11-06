@@ -95,6 +95,7 @@ export const ru: Messages = {
   settings: 'Настройки',
   account: 'Аккаунт',
   signOut: 'Выйти',
+  authPleaseWait: 'Подождите…', interruptedNotice: 'Запрос выполнялся, когда рабочее пространство было закрыто. Возможно, он уже завершён.', authEyebrow: 'ПОМОЩНИК ДЛЯ УВЕРЕННОГО ПИСЬМА', authHero: 'Ваши слова.', authHeroAccent: 'Только точнее.', authLead: 'Исправляйте грамматику и пунктуацию, сохраняя смысл и интонацию ваших сообщений.', authWelcome: 'Добро пожаловать', authSigninLead: 'Войдите в своё личное пространство Грамики.', authSignup: 'Создать аккаунт', authSignupLead: 'Сохраняйте исправления и историю своих текстов в одном месте.', authReset: 'Сброс пароля', authResetLead: 'Введите адрес почты, связанный с вашим аккаунтом Грамики.', authGoogle: 'Продолжить с Google', authDivider: 'или войдите через почту', authEmail: 'Электронная почта', authPassword: 'Пароль', authConfirmPassword: 'Повторите пароль', authForgot: 'Забыли пароль?', authShowPassword: 'Показать пароль', authHidePassword: 'Скрыть пароль', authSignin: 'Войти', authCreateAccount: 'Создать аккаунт', authBackToSignin: 'Вернуться ко входу', authNewToGramika: 'Впервые в Грамике?', authAlreadyAccount: 'Уже есть аккаунт?', authPasswordRecoveryUnavailable: 'Восстановление по электронной почте пока недоступно.', authPasswordMismatch: 'Пароли не совпадают.', authServiceUnavailable: 'Сервис авторизации недоступен. Попробуйте ещё раз.', authFootnote: 'Ваши исправления и история принадлежат только вашему аккаунту.', authSampleTitle: 'Небольшое исправление', authSampleChanges: '2 исправления', authSampleOriginal: 'Исходный текст', authSampleCorrected: 'Исправленный текст', authFooter: 'Пишите уверенно.',
   appearance: 'Внешний вид',
   language: 'Язык',
   clearLocalData: 'Очистить локальные данные',
@@ -250,3 +251,5 @@ export const ru: Messages = {
     'Это объяснение сохранено до записи метрик. Его исходное использование и стоимость недоступны.',
   interruptedRequest: 'Запрос был прерван. Итоговые данные и стоимость могут быть недоступны.',
 }
+
+

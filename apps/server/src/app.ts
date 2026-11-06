@@ -39,7 +39,7 @@ const app: FastifyPluginAsync<AppOptions> = async (fastify, opts): Promise<void>
     process.env.NODE_ENV !== 'test' &&
     !process.env.NODE_TEST_CONTEXT
   )
-    registerAuthRoutes(fastify, createAuth(sqliteDatabase, environment))
+    registerAuthRoutes(fastify, createAuth(sqliteDatabase, environment), environment.BETTER_AUTH_URL!)
 
   fastify.setErrorHandler((_error, request, reply) => {
     const statusCode =

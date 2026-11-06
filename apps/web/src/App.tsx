@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Toaster } from 'sonner'
 import { Button } from './components/ui/button'
 import { CorrectionPage } from './pages/CorrectionPage'
@@ -17,25 +17,42 @@ import './styles/results.css'
 import './styles/correction-mobile.css'
 import { LoginScreen } from './components/auth/LoginScreen'
 import { authClient } from './auth-client'
+import { useAppRoute } from './routing/use-app-route'
 
 function App() {
   const session = authClient.useSession()
   if (session.isPending) return <div className="auth-loading" aria-busy="true" />
-  if (!session.data) return <LoginScreen />
-  return <AuthenticatedApp />
+  const userId = session.data?.user?.id
+  if (!userId) return <LoginScreen />
+  return <AuthenticatedApp userId={userId} />
 }
 
-function AuthenticatedApp() {
+function AuthenticatedApp({ userId }: { userId: string }) {
   const { locale, setLocale, resetLocale, t, message } = useLocale()
-  const { draft, correction, theme, setTheme, clearStoredWorkspace } = useWorkspacePersistence()
-  const [view, setView] = useState<'correction' | 'history'>('correction')
+  const { draft, correction, theme, setTheme, clearStoredWorkspace } = useWorkspacePersistence(userId)
+  const { route, navigate } = useAppRoute()
   const [historyWrites, setHistoryWrites] = useState(0)
+  const openedTranslationText = useRef<string | null>(null)
   const isBusy =
     correction.pending ||
     correction.copying ||
     correction.translation.pending ||
     draft.pending ||
     historyWrites > 0
+
+  useEffect(() => {
+    if (window.location.pathname === '/') navigate('correction', true)
+  }, [navigate])
+
+  useEffect(() => {
+    if (route !== 'translation') {
+      openedTranslationText.current = null
+      return
+    }
+    if (openedTranslationText.current === draft.text) return
+    openedTranslationText.current = draft.text
+    correction.translation.open(TranslationScope.enum.original, draft.text)
+  }, [correction.translation, draft.text, route])
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme
@@ -57,7 +74,7 @@ function AuthenticatedApp() {
     correction.dictionary.clear()
     correction.tools.close()
     draft.edit('')
-    setView('correction')
+    navigate('correction')
     requestAnimationFrame(() => {
       draft.inputRef.current?.focus()
       window.scrollTo({ top: 0, behavior: 'instant' })
@@ -66,16 +83,16 @@ function AuthenticatedApp() {
 
   function showCorrection() {
     correction.tools.close()
-    setView('correction')
+    navigate('correction')
   }
 
   function showHistory() {
     correction.tools.close()
-    setView('history')
+    navigate('history')
   }
 
   function showTranslation() {
-    setView('correction')
+    navigate('translation')
     correction.translation.open(TranslationScope.enum.original, draft.text)
   }
 
@@ -104,7 +121,7 @@ function AuthenticatedApp() {
           <Button
             type="button"
             variant="ghost"
-            aria-current={view === 'correction' && !correction.tools.isOpen ? 'page' : undefined}
+            aria-current={route === 'correction' && !correction.tools.isOpen ? 'page' : undefined}
             onClick={showCorrection}
           >
             <Icon name="correction" /> {t('correction')}
@@ -112,7 +129,7 @@ function AuthenticatedApp() {
           <Button
             type="button"
             variant="ghost"
-            aria-current={correction.translation.isOpen ? 'page' : undefined}
+            aria-current={route === 'translation' ? 'page' : undefined}
             onClick={showTranslation}
           >
             <Icon name="translate" /> {t('translation')}
@@ -120,7 +137,7 @@ function AuthenticatedApp() {
           <Button
             type="button"
             variant="ghost"
-            aria-current={view === 'history' ? 'page' : undefined}
+            aria-current={route === 'history' ? 'page' : undefined}
             onClick={showHistory}
           >
             <Icon name="history" /> {t('history')}
@@ -146,7 +163,7 @@ function AuthenticatedApp() {
       <main>
         {correction.interrupted && (
           <aside className="local-data-controls" aria-label={t('correction')}>
-            <p>A request was running when this workspace was closed. It may have finished.</p>
+            <p>{t('interruptedNotice')}</p>
             <Button
               type="button"
               variant="secondary"
@@ -159,19 +176,19 @@ function AuthenticatedApp() {
             </Button>
           </aside>
         )}
-        {view === 'correction' ? (
-          <CorrectionPage
-            draft={draft}
-            correction={correction}
-            onNew={newCorrection}
-            isBusy={isBusy}
-          />
-        ) : (
+        {route === 'history' ? (
           <HistoryPage
             onDeleted={correction.forgetHistoryEntry}
             onCopyingChange={(isCopying) =>
               setHistoryWrites((count) => count + (isCopying ? 1 : -1))
             }
+          />
+        ) : (
+          <CorrectionPage
+            draft={draft}
+            correction={correction}
+            onNew={newCorrection}
+            isBusy={isBusy}
           />
         )}
       </main>
@@ -179,7 +196,7 @@ function AuthenticatedApp() {
         <Button
           type="button"
           variant="ghost"
-          aria-current={correction.translation.isOpen ? 'page' : undefined}
+          aria-current={route === 'translation' ? 'page' : undefined}
           onClick={showTranslation}
         >
           <Icon name="translate" />
@@ -188,7 +205,7 @@ function AuthenticatedApp() {
         <Button
           type="button"
           variant="ghost"
-          aria-current={view === 'correction' && !correction.tools.isOpen ? 'page' : undefined}
+          aria-current={route === 'correction' && !correction.tools.isOpen ? 'page' : undefined}
           onClick={showCorrection}
         >
           <Icon name="correction" />
@@ -197,7 +214,7 @@ function AuthenticatedApp() {
         <Button
           type="button"
           variant="ghost"
-          aria-current={view === 'history' ? 'page' : undefined}
+          aria-current={route === 'history' ? 'page' : undefined}
           onClick={showHistory}
         >
           <Icon name="history" />
@@ -228,3 +245,4 @@ function AuthenticatedApp() {
 }
 
 export default App
+

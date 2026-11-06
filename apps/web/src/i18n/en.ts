@@ -93,6 +93,8 @@ export const en = {
   settings: 'Settings',
   account: 'Account',
   signOut: 'Sign out',
+  authPleaseWait: 'Please wait…', interruptedNotice: 'A request was running when this workspace was closed. It may have finished.', authEyebrow: 'A MORE THOUGHTFUL WRITING ASSISTANT', authHero: 'Your words.', authHeroAccent: 'Just clearer.',
+  authLead: 'Correct grammar and punctuation without losing the meaning and tone of what you want to say.', authWelcome: 'Welcome to Gramika', authSigninLead: 'Sign in to your personal writing workspace.', authSignup: 'Create your account', authSignupLead: 'Save your corrections and keep your writing history in one place.', authReset: 'Reset your password', authResetLead: 'Enter the email address associated with your Gramika account.', authGoogle: 'Continue with Google', authDivider: 'or continue with email', authEmail: 'Email address', authPassword: 'Password', authConfirmPassword: 'Confirm password', authForgot: 'Forgot password?', authShowPassword: 'Show password', authHidePassword: 'Hide password', authSignin: 'Sign in', authCreateAccount: 'Create account', authBackToSignin: 'Back to sign in', authNewToGramika: 'New to Gramika?', authAlreadyAccount: 'Already have an account?', authPasswordRecoveryUnavailable: 'Password recovery by email is not available yet.', authPasswordMismatch: 'Passwords do not match.', authServiceUnavailable: 'Authentication service is unavailable. Try again.', authFootnote: 'Your corrections and history belong to your own account.', authSampleTitle: 'A small correction', authSampleChanges: '2 changes', authSampleOriginal: 'Original', authSampleCorrected: 'Corrected', authFooter: 'A calmer way to write.',
   appearance: 'Appearance',
   language: 'Language',
   clearLocalData: 'Clear local data',
@@ -247,3 +249,5 @@ export const en = {
     'This explanation was saved before metrics were recorded. Its original usage and cost are unavailable.',
   interruptedRequest: 'This request was interrupted. Final usage and cost may be unavailable.',
 } satisfies Messages
+
+
